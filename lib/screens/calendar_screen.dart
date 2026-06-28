@@ -5,18 +5,38 @@ import '../models/race.dart';
 import 'race_detail_screen.dart';
 import '../theme/app_colors.dart';
 
-class CalendarScreen extends StatelessWidget {
+enum _CalendarFilter {
+  all('전체'),
+  scheduled('예정'),
+  inProgress('진행중'),
+  ended('종료');
+
+  const _CalendarFilter(this.label);
+
+  final String label;
+}
+
+class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
   @override
+  State<CalendarScreen> createState() => _CalendarScreenState();
+}
+
+class _CalendarScreenState extends State<CalendarScreen> {
+  _CalendarFilter _selectedFilter = _CalendarFilter.all;
+
+  @override
   Widget build(BuildContext context) {
+    final visibleRaces = _filteredRaces(_selectedFilter);
+
     return Scaffold(
       appBar: AppBar(title: const Text('일정')),
       body: SafeArea(
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: races.length + 1,
-          separatorBuilder: (_, index) => index == 0
+          itemCount: visibleRaces.isEmpty ? 3 : visibleRaces.length + 2,
+          separatorBuilder: (_, index) => index <= 1
               ? const SizedBox(height: 12)
               : const SizedBox(height: 10),
           itemBuilder: (context, index) {
@@ -24,7 +44,22 @@ class CalendarScreen extends StatelessWidget {
               return const _CalendarHeader();
             }
 
-            final race = races[index - 1];
+            if (index == 1) {
+              return _CalendarFilterTabs(
+                selectedFilter: _selectedFilter,
+                onChanged: (filter) {
+                  setState(() {
+                    _selectedFilter = filter;
+                  });
+                },
+              );
+            }
+
+            if (visibleRaces.isEmpty) {
+              return _EmptyCalendarFilter(filter: _selectedFilter);
+            }
+
+            final race = visibleRaces[index - 2];
             return _RaceCard(
               race: race,
               onTap: () {
@@ -36,6 +71,130 @@ class CalendarScreen extends StatelessWidget {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  List<Race> _filteredRaces(_CalendarFilter filter) {
+    final sortedRaces = [...races];
+
+    if (filter == _CalendarFilter.all) {
+      sortedRaces.sort((a, b) {
+        final groupCompare = _calendarGroup(a).compareTo(_calendarGroup(b));
+        if (groupCompare != 0) return groupCompare;
+        return a.round.compareTo(b.round);
+      });
+      return sortedRaces;
+    }
+
+    return sortedRaces.where((race) {
+      final status = getRaceStatus(race);
+      return switch (filter) {
+        _CalendarFilter.scheduled => status == RaceStatus.scheduled,
+        _CalendarFilter.inProgress => status == RaceStatus.inProgress,
+        _CalendarFilter.ended => status == RaceStatus.ended,
+        _CalendarFilter.all => true,
+      };
+    }).toList();
+  }
+}
+
+int _calendarGroup(Race race) {
+  final status = getRaceStatus(race);
+  return status == RaceStatus.ended ? 1 : 0;
+}
+
+class _CalendarFilterTabs extends StatelessWidget {
+  const _CalendarFilterTabs({
+    required this.selectedFilter,
+    required this.onChanged,
+  });
+
+  final _CalendarFilter selectedFilter;
+  final ValueChanged<_CalendarFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final filter in _CalendarFilter.values) ...[
+            _FilterChipButton(
+              label: filter.label,
+              selected: filter == selectedFilter,
+              onTap: () => onChanged(filter),
+            ),
+            if (filter != _CalendarFilter.values.last) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChipButton extends StatelessWidget {
+  const _FilterChipButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.red : AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: selected ? AppColors.red : AppColors.border,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyCalendarFilter extends StatelessWidget {
+  const _EmptyCalendarFilter({required this.filter});
+
+  final _CalendarFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceHigh,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          '${filter.label} 상태의 그랑프리가 없습니다.',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
         ),
       ),
     );

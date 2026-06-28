@@ -21,6 +21,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2026 시즌 캘린더'), findsOneWidget);
     expect(find.text('24개 그랑프리'), findsOneWidget);
+    expect(find.text('전체'), findsOneWidget);
+    expect(find.text('예정'), findsWidgets);
+    expect(find.text('진행중'), findsWidgets);
+    expect(find.text('종료'), findsWidgets);
+    expect(find.text('오스트리아 그랑프리'), findsOneWidget);
+    await tester.tap(find.text('종료'));
+    await tester.pumpAndSettle();
     expect(find.text('호주 그랑프리'), findsOneWidget);
     await tester.tap(find.text('호주 그랑프리'));
     await tester.pumpAndSettle();
@@ -43,13 +50,22 @@ void main() {
 
     await tester.tap(find.text('직관'));
     await tester.pumpAndSettle();
-    expect(find.text('그랑프리 직관 정보와 여행 메모가 표시될 예정입니다.'), findsOneWidget);
+    expect(find.text('직관 가이드'), findsWidgets);
+    expect(find.text('일본 그랑프리'), findsOneWidget);
+    expect(find.text('중국 그랑프리'), findsOneWidget);
+    expect(find.text('싱가포르 그랑프리'), findsOneWidget);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('설정'), findsOneWidget);
-    expect(find.text('앱 설정 항목이 추가될 예정입니다.'), findsOneWidget);
+    expect(find.text('설정'), findsWidgets);
+    expect(find.text('일정 관리'), findsOneWidget);
+    expect(find.text('캘린더에 추가'), findsOneWidget);
+    expect(find.text('알림 설정'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('인스타그램 보러가기'), 200);
+    expect(find.text('인스타그램 보러가기'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('F1DB · CC BY 4.0'), 200);
+    expect(find.text('F1DB · CC BY 4.0'), findsOneWidget);
   });
 }
