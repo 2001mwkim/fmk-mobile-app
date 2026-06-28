@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/races.dart';
 import '../models/race.dart';
+import 'race_detail_screen.dart';
 import '../theme/app_colors.dart';
 
 class CalendarScreen extends StatelessWidget {
@@ -23,7 +24,17 @@ class CalendarScreen extends StatelessWidget {
               return const _CalendarHeader();
             }
 
-            return _RaceCard(race: races[index - 1]);
+            final race = races[index - 1];
+            return _RaceCard(
+              race: race,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => RaceDetailScreen(race: race),
+                  ),
+                );
+              },
+            );
           },
         ),
       ),
@@ -62,80 +73,93 @@ class _CalendarHeader extends StatelessWidget {
 }
 
 class _RaceCard extends StatelessWidget {
-  const _RaceCard({required this.race});
+  const _RaceCard({required this.race, required this.onTap});
 
   final Race race;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final status = getRaceDisplayStatus(race);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        border: Border.all(color: _borderColor(status)),
+    return Material(
+      color: AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(
-                color: AppColors.red,
-                borderRadius: BorderRadius.horizontal(left: Radius.circular(8)),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: _borderColor(status)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 4,
+                  decoration: const BoxDecoration(
+                    color: AppColors.red,
+                    borderRadius: BorderRadius.horizontal(
+                      left: Radius.circular(8),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _RoundBadge(round: race.round),
-                        const Spacer(),
-                        _StatusBadge(status: status),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _RoundBadge(round: race.round),
+                            const Spacer(),
+                            _StatusBadge(status: status),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          race.countryKo,
+                          style: textTheme.labelMedium?.copyWith(
+                            color: AppColors.red,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          race.nameKo,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          icon: Icons.route_outlined,
+                          text: race.circuitKo,
+                        ),
+                        const SizedBox(height: 7),
+                        _InfoLine(
+                          icon: Icons.calendar_today_outlined,
+                          text: _formatDateRange(race.startDate, race.endDate),
+                        ),
+                        if (race.hasSprint) ...[
+                          const SizedBox(height: 12),
+                          const _SprintBadge(),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      race.countryKo,
-                      style: textTheme.labelMedium?.copyWith(
-                        color: AppColors.red,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      race.nameKo,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleMedium?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoLine(icon: Icons.route_outlined, text: race.circuitKo),
-                    const SizedBox(height: 7),
-                    _InfoLine(
-                      icon: Icons.calendar_today_outlined,
-                      text: _formatDateRange(race.startDate, race.endDate),
-                    ),
-                    if (race.hasSprint) ...[
-                      const SizedBox(height: 12),
-                      const _SprintBadge(),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

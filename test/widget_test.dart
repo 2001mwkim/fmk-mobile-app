@@ -22,10 +22,24 @@ void main() {
     expect(find.text('2026 시즌 캘린더'), findsOneWidget);
     expect(find.text('24개 그랑프리'), findsOneWidget);
     expect(find.text('호주 그랑프리'), findsOneWidget);
+    await tester.tap(find.text('호주 그랑프리'));
+    await tester.pumpAndSettle();
+    expect(find.text('세션 일정'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('서킷 정보'), 200);
+    expect(find.text('서킷 정보'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Top 3 결과'), 200);
+    expect(find.text('Top 3 결과'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('순위'));
     await tester.pumpAndSettle();
-    expect(find.text('드라이버와 컨스트럭터 순위가 표시될 예정입니다.'), findsOneWidget);
+    expect(find.text('드라이버 순위'), findsOneWidget);
+    expect(find.text('키미 안토넬리'), findsOneWidget);
+    await tester.tap(find.text('컨스트럭터'));
+    await tester.pumpAndSettle();
+    expect(find.text('컨스트럭터 순위'), findsOneWidget);
+    expect(find.text('메르세데스'), findsOneWidget);
 
     await tester.tap(find.text('직관'));
     await tester.pumpAndSettle();
