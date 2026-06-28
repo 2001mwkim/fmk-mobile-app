@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'calendar_screen.dart';
 import 'settings_screen.dart';
+import '../data/races.dart';
+import '../models/race.dart';
+import '../models/race_session.dart';
 import '../theme/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -23,55 +27,516 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const _PlaceholderContent(title: '홈', subtitle: '포뮬러 매거진 코리아 홈 화면'),
+      body: races.isEmpty
+          ? const _EmptyHomeContent()
+          : const _SeasonHomeContent(),
     );
   }
 }
 
-class _PlaceholderContent extends StatelessWidget {
-  const _PlaceholderContent({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
+class _SeasonHomeContent extends StatelessWidget {
+  const _SeasonHomeContent();
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final nextRace = getNextRace(now);
+    final nextSession = getNextSession(nextRace, now);
+    final completedCount = races
+        .where((race) => getRaceStatus(race, now) == RaceStatus.ended)
+        .length;
+    final cancelledCount = races.where((race) => race.isCancelled).length;
+    final activeCount = races
+        .where((race) => getRaceStatus(race, now) == RaceStatus.inProgress)
+        .length;
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: DecoratedBox(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+        children: [
+          Text(
+            '2026 시즌',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '다가오는 그랑프리와 세션을 확인하세요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 16),
+          _NextRaceCard(race: nextRace, now: now),
+          const SizedBox(height: 12),
+          _NextSessionCard(race: nextRace, session: nextSession),
+          const SizedBox(height: 12),
+          _SeasonSummaryCard(
+            completedCount: completedCount,
+            activeCount: activeCount,
+            cancelledCount: cancelledCount,
+            totalCount: races.length,
+          ),
+          const SizedBox(height: 12),
+          _CalendarLinkCard(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const CalendarScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NextRaceCard extends StatelessWidget {
+  const _NextRaceCard({required this.race, required this.now});
+
+  final Race race;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = getRaceDisplayStatus(race, now);
+
+    return _HomeCard(
+      accent: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            label: '다음 그랑프리',
+            trailing: _StatusBadge(status: status),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            race.nameKo,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MetaBadge(text: '라운드 ${race.round}'),
+              _MetaBadge(text: '${race.countryKo} · ${race.cityKo}'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _InfoLine(icon: Icons.route_outlined, text: race.circuitKo),
+          const SizedBox(height: 8),
+          _InfoLine(
+            icon: Icons.calendar_today_outlined,
+            text: _formatDateRange(race.startDate, race.endDate),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NextSessionCard extends StatelessWidget {
+  const _NextSessionCard({required this.race, required this.session});
+
+  final Race race;
+  final RaceSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(label: '다음 세션'),
+          const SizedBox(height: 12),
+          if (session == null) ...[
+            Text(
+              '세션 일정이 없습니다.',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              race.cancelNote ?? '이 그랑프리의 세션 정보가 아직 준비되지 않았습니다.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+            ),
+          ] else ...[
+            Text(
+              session!.fullLabel,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _InfoLine(
+              icon: Icons.event_available_outlined,
+              text: session!.fullDateTime,
+            ),
+            const SizedBox(height: 8),
+            _InfoLine(icon: Icons.schedule_outlined, text: session!.time),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SeasonSummaryCard extends StatelessWidget {
+  const _SeasonSummaryCard({
+    required this.completedCount,
+    required this.activeCount,
+    required this.cancelledCount,
+    required this.totalCount,
+  });
+
+  final int completedCount;
+  final int activeCount;
+  final int cancelledCount;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
+    final upcomingCount = totalCount - completedCount - activeCount;
+
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(label: '시즌 진행 상황'),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 7,
+              backgroundColor: AppColors.black,
+              color: AppColors.red,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryMetric(label: '종료', value: '$completedCount'),
+              ),
+              Expanded(
+                child: _SummaryMetric(label: '진행중', value: '$activeCount'),
+              ),
+              Expanded(
+                child: _SummaryMetric(label: '예정', value: '$upcomingCount'),
+              ),
+            ],
+          ),
+          if (cancelledCount > 0) ...[
+            const SizedBox(height: 12),
+            Text(
+              '취소된 그랑프리 $cancelledCount개 포함',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarLinkCard extends StatelessWidget {
+  const _CalendarLinkCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surfaceHigh,
             border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
-                  ),
-                ],
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.red.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_outlined,
+                  color: AppColors.red,
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '전체 일정 보기',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '24개 그랑프리 캘린더',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.red,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+class _EmptyHomeContent extends StatelessWidget {
+  const _EmptyHomeContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: _HomeCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '시즌 데이터가 없습니다.',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '그랑프리 일정 데이터가 준비되면 홈 화면에 표시됩니다.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeCard extends StatelessWidget {
+  const _HomeCard({required this.child, this.accent = false});
+
+  final Widget child;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceHigh,
+        border: Border.all(
+          color: accent
+              ? AppColors.red.withValues(alpha: 0.7)
+              : AppColors.border,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, this.trailing});
+
+  final String label;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppColors.red,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (trailing != null) ...[const Spacer(), trailing!],
+      ],
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _statusColor(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaBadge extends StatelessWidget {
+  const _MetaBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.black,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: AppColors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textMuted),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppColors.white,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: AppColors.textMuted),
+        ),
+      ],
+    );
+  }
+}
+
+String _formatDateRange(String startDate, String endDate) {
+  final start = DateTime.parse(startDate);
+  final end = DateTime.parse(endDate);
+
+  if (start.year == end.year && start.month == end.month) {
+    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.day)}';
+  }
+
+  if (start.year == end.year) {
+    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.month)}.${_twoDigits(end.day)}';
+  }
+
+  return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${end.year}.${_twoDigits(end.month)}.${_twoDigits(end.day)}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+Color _statusColor(String status) {
+  return switch (status) {
+    RaceStatus.inProgress || RaceStatus.cancelled => AppColors.red,
+    RaceStatus.scheduled => AppColors.white,
+    _ => AppColors.textMuted,
+  };
 }

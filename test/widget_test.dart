@@ -11,6 +11,11 @@ void main() {
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
     expect(find.text('직관'), findsOneWidget);
+    expect(find.text('다음 그랑프리'), findsOneWidget);
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('시즌 진행 상황'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('전체 일정 보기'), 200);
+    expect(find.text('전체 일정 보기'), findsOneWidget);
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();
