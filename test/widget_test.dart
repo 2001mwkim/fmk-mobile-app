@@ -14,7 +14,9 @@ void main() {
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();
-    expect(find.text('레이스 캘린더와 세션 일정이 표시될 예정입니다.'), findsOneWidget);
+    expect(find.text('2026 시즌 캘린더'), findsOneWidget);
+    expect(find.text('24개 그랑프리'), findsOneWidget);
+    expect(find.text('호주 그랑프리'), findsOneWidget);
 
     await tester.tap(find.text('순위'));
     await tester.pumpAndSettle();
