@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/circuit_info.dart';
+import '../data/country_flags.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
 import '../data/team_colors.dart';
@@ -12,6 +13,16 @@ import '../models/race.dart';
 import '../models/race_result.dart';
 import '../models/race_session.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_chip.dart';
+
+// 웹 상세 페이지 전용 색 (page.tsx / globals 에서 사용하는 값).
+const Color _muted = Color(0xFF7880A0); // #7880a0
+const Color _heroSub = Color(0xFF8088A8); // #8088a8
+const Color _nameMuted = Color(0xFFAAB0CC); // #aab0cc
+const Color _tileSurface = Color(0xFF0E1018); // #0e1018
+const Color _faintBorder = Color(0x0FFFFFFF); // white/6
+const Color _hairline = Color(0x14FFFFFF); // white/8
 
 class RaceDetailScreen extends StatelessWidget {
   const RaceDetailScreen({super.key, required this.race});
@@ -23,7 +34,10 @@ class RaceDetailScreen extends StatelessWidget {
     final status = getRaceDisplayStatus(race);
     final circuitInfo = getCircuitInfo(race.id);
     final raceSession = _raceSessionOf(race);
-    final top3 = getRaceStatus(race) == RaceStatus.ended && !race.isCancelled
+    // 종료(취소 제외) GP 면 결과 카드 노출 (포디움 없으면 placeholder).
+    final showResultCard =
+        getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
+    final top3 = showResultCard
         ? getRaceTop3(race.id)
         : const <RaceResultEntry>[];
 
@@ -33,8 +47,21 @@ class RaceDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                '그랑프리 상세 · R${race.round}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: _muted,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             _HeroCard(race: race, status: status),
-            if (top3.isNotEmpty) ...[
+            if (showResultCard) ...[
               const SizedBox(height: 12),
               _Top3ResultsCard(results: top3),
             ],
@@ -61,67 +88,95 @@ class _HeroCard extends StatelessWidget {
   final Race race;
   final String status;
 
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(24));
+
   @override
   Widget build(BuildContext context) {
-    return _DetailCard(
-      accent: true,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _TrackMapPanel(race: race, status: status),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MetaBadge(text: '라운드 ${race.round}'),
-                    const Spacer(),
-                    _StatusBadge(status: status),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  race.nameKo,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
+    return Container(
+      decoration: const BoxDecoration(
+        borderRadius: _radius,
+        // to bottom right: #1c0f0e -> #1a1030 -> #141828
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1C0F0E), Color(0xFF1A1030), Color(0xFF141828)],
+        ),
+      ),
+      foregroundDecoration: const BoxDecoration(
+        borderRadius: _radius,
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x4DEF4444)), // red-500/30
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: _radius,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TrackMapPanel(race: race, status: status),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _Flag(race.countryKo, size: 26),
+                      Expanded(
+                        child: Text(
+                          race.nameKo,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                _InfoLine(
-                  icon: Icons.place_outlined,
-                  text: '${race.countryKo} · ${race.cityKo}',
-                ),
-                const SizedBox(height: 8),
-                _InfoLine(icon: Icons.route_outlined, text: race.circuitKo),
-                const SizedBox(height: 8),
-                _InfoLine(
-                  icon: Icons.calendar_today_outlined,
-                  text: _formatDateRange(race.startDate, race.endDate),
-                ),
-                if (race.hasSprint) ...[
-                  const SizedBox(height: 12),
-                  const _SprintBadge(),
-                ],
-                if (race.isCancelled && race.cancelNote != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
                   Text(
-                    race.cancelNote!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                    '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: _heroSub,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${race.startDate} – ${race.endDate}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'monospace',
+                      color: AppColors.redSoft,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (race.hasSprint) ...[
+                    const SizedBox(height: 12),
+                    const AppChip(
+                      label: '스프린트 주말',
+                      variant: AppChipVariant.blue,
+                    ),
+                  ],
+                  if (race.isCancelled && race.cancelNote != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      race.cancelNote!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -135,31 +190,74 @@ class _TrackMapPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusVariant = status == RaceStatus.inProgress
+        ? AppChipVariant.red
+        : AppChipVariant.neutral;
+
     return SizedBox(
       height: 158,
       width: double.infinity,
       child: DecoratedBox(
         decoration: const BoxDecoration(
-          color: AppColors.black,
-          border: Border(bottom: BorderSide(color: AppColors.border)),
+          border: Border(bottom: BorderSide(color: _faintBorder)),
         ),
         child: Stack(
           children: [
             Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: _SvgCircuitMap(assetPath: _circuitAssetPath(race.id)),
-              ),
+              child: _SvgCircuitMap(assetPath: _circuitAssetPath(race.id)),
             ),
+            Positioned(left: 14, top: 12, child: _RoundPill(round: race.round)),
             Positioned(
-              left: 12,
+              right: 14,
               top: 12,
-              child: _MetaBadge(text: 'ROUND ${race.round}'),
+              child: AppChip(label: status, variant: statusVariant),
             ),
-            Positioned(right: 12, top: 12, child: _StatusBadge(status: status)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RoundPill extends StatelessWidget {
+  const _RoundPill({required this.round});
+
+  final int round;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0x80000000), // black/50
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'ROUND $round',
+        style: const TextStyle(
+          fontSize: 11,
+          fontFamily: 'monospace',
+          color: AppColors.slate300,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _Flag extends StatelessWidget {
+  const _Flag(this.countryKo, {required this.size});
+
+  final String countryKo;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final flag = getCountryFlag(countryKo);
+    if (flag.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Text(flag, style: TextStyle(fontSize: size, height: 1)),
     );
   }
 }
@@ -175,9 +273,12 @@ class _SvgCircuitMap extends StatelessWidget {
       future: rootBundle.loadString(assetPath),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return CustomPaint(
-            painter: _SvgPathPainter(_parseSvg(snapshot.data!)),
-            child: const SizedBox.expand(),
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: CustomPaint(
+              painter: _SvgPathPainter(_parseSvg(snapshot.data!)),
+              child: const SizedBox.expand(),
+            ),
           );
         }
 
@@ -192,17 +293,65 @@ class _TrackMapPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        '서킷 트랙맵 이미지 준비 중',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.textMuted,
-          fontWeight: FontWeight.w700,
+    // 웹: repeating-linear-gradient(45deg, #0e1018 0 11px, #12141e 11px 22px)
+    return SizedBox.expand(
+      child: CustomPaint(
+        painter: const _DiagonalBandsPainter(),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'TRACK MAP',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  color: Color(0xFF6B7090),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.5,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '서킷 트랙맵 이미지 준비 중',
+                style: TextStyle(fontSize: 11, color: AppColors.textEnded),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _DiagonalBandsPainter extends CustomPainter {
+  const _DiagonalBandsPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFF0E1018),
+    );
+
+    final paint = Paint()
+      ..color = const Color(0xFF12141E)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 11; // 11px 밴드
+
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.rotate(45 * math.pi / 180);
+    final extent = size.width + size.height;
+    for (double x = -extent; x <= extent; x += 22) {
+      canvas.drawLine(Offset(x, -extent), Offset(x, extent), paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_DiagonalBandsPainter oldDelegate) => false;
 }
 
 class _RaceStartCard extends StatelessWidget {
@@ -212,26 +361,30 @@ class _RaceStartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DetailCard(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: const [
                 Text(
                   '레이스 · 한국시간 기준',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w800,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _muted,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 4),
                 Text(
                   '레이스 시작',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 17,
                     color: AppColors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -242,17 +395,22 @@ class _RaceStartCard extends StatelessWidget {
             children: [
               Text(
                 session.date,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w700,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  color: _muted,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 session.time,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.red,
-                  fontWeight: FontWeight.w900,
+                style: const TextStyle(
+                  fontSize: 27,
+                  fontFamily: 'monospace',
+                  height: 1,
+                  color: AppColors.redSoft,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -270,12 +428,13 @@ class _SessionScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DetailCard(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionTitle('세션 일정'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (race.sessions.isEmpty)
             Text(
               race.cancelNote ?? '세션 일정이 없습니다.',
@@ -284,63 +443,217 @@ class _SessionScheduleCard extends StatelessWidget {
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
             )
           else
-            ...race.sessions.map((session) => _SessionRow(session: session)),
+            _SessionTimeline(race: race),
         ],
       ),
     );
   }
 }
 
-class _SessionRow extends StatelessWidget {
-  const _SessionRow({required this.session});
+// 웹 RaceSessionTimeline: 날짜별 그룹 + 좌측 수직선 + 상태별 도트/박스.
+class _SessionTimeline extends StatelessWidget {
+  const _SessionTimeline({required this.race});
 
+  final Race race;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+
+    // 날짜별 그룹화(데이터 순서 유지).
+    final groups = <_SessionGroup>[];
+    for (final session in race.sessions) {
+      if (groups.isNotEmpty && groups.last.date == session.date) {
+        groups.last.sessions.add(session);
+      } else {
+        groups.add(_SessionGroup(session.date, [session]));
+      }
+    }
+
+    final rows = <Widget>[];
+    for (final group in groups) {
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 24 + 12, bottom: 10),
+          child: Text(
+            group.date,
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: _muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
+      for (final session in group.sessions) {
+        rows.add(
+          _SessionTimelineRow(
+            status: getSessionStatus(race, session, now),
+            session: session,
+          ),
+        );
+      }
+    }
+
+    return Stack(
+      children: [
+        // 수직 타임라인 라인(좌측 24px 칼럼 중앙).
+        Positioned(
+          left: 11,
+          top: 4,
+          bottom: 12,
+          child: Container(width: 2, color: _hairline),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows),
+      ],
+    );
+  }
+}
+
+class _SessionTimelineRow extends StatelessWidget {
+  const _SessionTimelineRow({required this.status, required this.session});
+
+  final SessionStatus status;
   final RaceSession session;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+    final isLive = status == SessionStatus.live;
+    final isEnded = status == SessionStatus.ended;
+    final isRace = session.id == 'race';
+    final emphasize = isLive || isRace;
+
+    final labelStyle = TextStyle(
+      fontSize: emphasize ? 15 : 14,
+      color: emphasize ? AppColors.redSoft : _nameMuted,
+      fontWeight: emphasize ? FontWeight.w900 : FontWeight.w600,
+    );
+    final timeStyle = TextStyle(
+      fontSize: emphasize ? 17 : 15,
+      fontFamily: 'monospace',
+      color: emphasize ? AppColors.redSoft : _nameMuted,
+      fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
+    );
+
+    Widget box = Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: isLive
+          ? BoxDecoration(
+              color: const Color(0x14EF4444), // red-500/8
+              border: Border.all(color: const Color(0x4DEF4444)), // /30
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 74,
-            child: Text(
-              session.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.red,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  session.fullLabel,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
+                Flexible(
+                  child: Text(
+                    session.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${session.date} · ${session.time}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-                ),
+                if (isEnded) ...[
+                  const SizedBox(width: 8),
+                  const Text(
+                    '종료',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: _muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          Text(session.time, style: timeStyle),
         ],
       ),
     );
+
+    if (isEnded) {
+      box = Opacity(opacity: 0.45, child: box);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Center(
+              child: _TimelineDot(status: status, isRace: isRace),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: box),
+      ],
+    );
   }
+}
+
+class _TimelineDot extends StatelessWidget {
+  const _TimelineDot({required this.status, required this.isRace});
+
+  final SessionStatus status;
+  final bool isRace;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLive = status == SessionStatus.live;
+    final isEnded = status == SessionStatus.ended;
+
+    if (isLive || isRace) {
+      return Container(
+        width: 13,
+        height: 13,
+        decoration: const BoxDecoration(
+          color: AppColors.red,
+          shape: BoxShape.circle,
+        ),
+      );
+    }
+    if (isEnded) {
+      return Container(
+        width: 11,
+        height: 11,
+        decoration: const BoxDecoration(
+          color: AppColors.textEnded,
+          shape: BoxShape.circle,
+        ),
+      );
+    }
+    // upcoming: 빈 도트.
+    return Container(
+      width: 11,
+      height: 11,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0x33FFFFFF),
+          width: 2,
+        ), // white/20
+      ),
+    );
+  }
+}
+
+class _SessionGroup {
+  _SessionGroup(this.date, this.sessions);
+
+  final String date;
+  final List<RaceSession> sessions;
 }
 
 class _CircuitInfoCard extends StatelessWidget {
@@ -357,48 +670,75 @@ class _CircuitInfoCard extends StatelessWidget {
       if (info.turns != null) _MetricData('코너 수', '${info.turns}'),
       if (info.laps != null) _MetricData('레이스 랩 수', '${info.laps}'),
       if (info.distanceKm != null)
-        _MetricData('총 거리', '${_formatNumber(info.distanceKm!)} km'),
+        _MetricData('총 거리', '${info.distanceKm!.toStringAsFixed(1)} km'),
       if (info.firstYear != null) _MetricData('첫 개최', '${info.firstYear}'),
     ];
 
-    return _DetailCard(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionTitle('서킷 정보'),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+            style: const TextStyle(fontSize: 12, color: _muted),
           ),
           if (metrics.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: metrics
-                  .map(
-                    (metric) =>
-                        _MetricTile(label: metric.label, value: metric.value),
-                  )
-                  .toList(),
-            ),
+            const SizedBox(height: 14),
+            _MetricGrid(metrics: metrics),
           ],
           const SizedBox(height: 14),
-          const Divider(height: 1),
+          const Divider(height: 1, color: _faintBorder),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             'Circuit layouts: F1DB (CC BY 4.0)',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.textEnded,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+// 웹 grid-cols-2 gap-2.5 재현 (2열 그리드).
+class _MetricGrid extends StatelessWidget {
+  const _MetricGrid({required this.metrics});
+
+  final List<_MetricData> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var i = 0; i < metrics.length; i += 2) {
+      final left = metrics[i];
+      final right = i + 1 < metrics.length ? metrics[i + 1] : null;
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 10));
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _MetricTile(label: left.label, value: left.value),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: right == null
+                    ? const SizedBox.shrink()
+                    : _MetricTile(label: right.label, value: right.value),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(children: rows);
   }
 }
 
@@ -409,26 +749,85 @@ class _Top3ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DetailCard(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              const Expanded(child: _SectionTitle('레이스 결과')),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              _SectionTitle('레이스 결과'),
               Text(
                 'TOP 3',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.red,
-                  fontWeight: FontWeight.w900,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: AppColors.redSoft,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final result in results) _ResultRow(result: result),
+          const SizedBox(height: 14),
+          if (results.isEmpty)
+            const _ResultsPlaceholder()
+          else
+            for (var i = 0; i < results.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _ResultRow(result: results[i]),
+            ],
         ],
       ),
+    );
+  }
+}
+
+class _ResultsPlaceholder extends StatelessWidget {
+  const _ResultsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return DottedBorderBox(
+      child: Column(
+        children: const [
+          Text(
+            '결과 데이터 준비 중',
+            style: TextStyle(
+              fontSize: 14,
+              color: _nameMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            '공식 결과가 반영되면 표시됩니다.',
+            style: TextStyle(fontSize: 12, color: _muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DottedBorderBox extends StatelessWidget {
+  const DottedBorderBox({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // 웹 border-dashed 근사: 실선 보더 + 어두운 표면.
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: child,
     );
   }
 }
@@ -440,17 +839,18 @@ class _ResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final teamColor = getTeamColor(result.teamKo);
-    final teamColorOpacity = isLightTeamColor(result.teamKo) ? 0.7 : 1.0;
-    final resultTime = result.gap ?? result.time ?? '-';
+    final teamColor = getTeamColor(
+      result.teamKo,
+    ).withValues(alpha: isLightTeamColor(result.teamKo) ? 0.7 : 1.0);
+    final resultTime = result.gap ?? result.time ?? '—';
+    final badge = _podiumBadge(result.position);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.black,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(8),
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
@@ -459,28 +859,29 @@ class _ResultRow extends StatelessWidget {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.surfaceHigh,
-              border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(8),
+              color: badge.background,
+              shape: BoxShape.circle,
             ),
             child: Text(
-              result.positionLabel,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.red,
-                fontWeight: FontWeight.w900,
+              '${result.position}',
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'monospace',
+                color: badge.foreground,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Container(
             width: 3,
-            height: 34,
+            height: 32,
             decoration: BoxDecoration(
-              color: teamColor.withValues(alpha: teamColorOpacity),
+              color: teamColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,20 +890,37 @@ class _ResultRow extends StatelessWidget {
                   result.driverKo,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: const TextStyle(
+                    fontSize: 15,
                     color: AppColors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  result.teamKo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: teamColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        result.teamKo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: _muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -513,17 +931,21 @@ class _ResultRow extends StatelessWidget {
             children: [
               Text(
                 resultTime,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w800,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  color: _nameMuted,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 '+${_formatPoints(result.points)} PTS',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w700,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: AppColors.textEnded,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -534,34 +956,26 @@ class _ResultRow extends StatelessWidget {
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({
-    required this.child,
-    this.accent = false,
-    this.padding = const EdgeInsets.all(16),
-  });
-
-  final Widget child;
-  final bool accent;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        border: Border.all(
-          color: accent
-              ? AppColors.red.withValues(alpha: 0.7)
-              : AppColors.border,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(padding: padding, child: child),
-      ),
-    );
+// 포디움 배지 색. 웹은 P1에 노란색을 쓰지만 앱 규칙상 노란색 금지 → P1은 레드 톤으로 대체.
+({Color background, Color foreground}) _podiumBadge(int position) {
+  switch (position) {
+    case 1:
+      return (
+        background: const Color(0x26EF4444),
+        foreground: AppColors.redSoft,
+      );
+    case 2:
+      return (
+        background: const Color(0x2694A3B8), // slate-400/15
+        foreground: AppColors.slate300,
+      );
+    case 3:
+      return (
+        background: const Color(0x26F97316), // orange-500/15
+        foreground: const Color(0xFFFB923C), // orange-400
+      );
+    default:
+      return (background: const Color(0x0DFFFFFF), foreground: _muted);
   }
 }
 
@@ -574,113 +988,11 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      style: const TextStyle(
+        fontSize: 13,
         color: AppColors.white,
         fontWeight: FontWeight.w800,
       ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _statusColor(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        status,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaBadge extends StatelessWidget {
-  const _MetaBadge({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.72),
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _SprintBadge extends StatelessWidget {
-  const _SprintBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: AppColors.red.withValues(alpha: 0.45)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '스프린트 주말',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -694,26 +1006,29 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 132,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.black,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(8),
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: AppColors.textMuted),
+            style: const TextStyle(
+              fontSize: 11,
+              color: _muted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            style: const TextStyle(
+              fontSize: 19,
+              fontFamily: 'monospace',
               color: AppColors.white,
               fontWeight: FontWeight.w800,
             ),
@@ -1010,23 +1325,6 @@ RaceSession? _raceSessionOf(Race race) {
 
 String _circuitAssetPath(String raceId) => 'assets/circuits/$raceId.svg';
 
-String _formatDateRange(String startDate, String endDate) {
-  final start = DateTime.parse(startDate);
-  final end = DateTime.parse(endDate);
-
-  if (start.year == end.year && start.month == end.month) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.day)}';
-  }
-
-  if (start.year == end.year) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-  }
-
-  return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${end.year}.${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-}
-
-String _twoDigits(int value) => value.toString().padLeft(2, '0');
-
 String _formatNumber(double value) {
   var text = value.toStringAsFixed(3);
   while (text.contains('.') && text.endsWith('0')) {
@@ -1044,12 +1342,4 @@ String _formatPoints(num points) {
   }
 
   return points.toString();
-}
-
-Color _statusColor(String status) {
-  return switch (status) {
-    RaceStatus.inProgress || RaceStatus.cancelled => AppColors.red,
-    RaceStatus.scheduled => AppColors.white,
-    _ => AppColors.textMuted,
-  };
 }
