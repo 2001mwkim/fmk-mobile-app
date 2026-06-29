@@ -7,6 +7,8 @@ import '../data/races.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_chip.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -106,14 +108,16 @@ class _NextRaceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = getRaceDisplayStatus(race, now);
 
-    return _HomeCard(
-      accent: true,
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
             label: '다음 그랑프리',
-            trailing: _StatusBadge(status: status),
+            trailing: AppChip(
+              label: status,
+              variant: _raceStatusVariant(status),
+            ),
           ),
           const SizedBox(height: 14),
           Text(
@@ -130,8 +134,8 @@ class _NextRaceCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _MetaBadge(text: '라운드 ${race.round}'),
-              _MetaBadge(text: '${race.countryKo} · ${race.cityKo}'),
+              AppChip(label: '라운드 ${race.round}', variant: AppChipVariant.mono),
+              AppChip(label: '${race.countryKo} · ${race.cityKo}'),
             ],
           ),
           const SizedBox(height: 14),
@@ -155,7 +159,7 @@ class _NextSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _HomeCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -206,75 +210,63 @@ class _WeekendScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surfaceHigh,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => RaceDetailScreen(race: race),
-            ),
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const _SectionHeader(label: '이번 주말 일정'),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${race.nameKo} · 한국시간 기준',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textMuted),
-                          ),
-                        ],
-                      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionHeader(label: '이번 주말 일정'),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${race.nameKo} · 한국시간 기준',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textMuted),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 15,
-                      color: AppColors.red,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 15,
+                    color: AppColors.red,
+                  ),
+                ],
               ),
-              if (race.sessions.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text(
-                    race.cancelNote ?? '세션 일정이 없습니다.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-                  ),
-                )
-              else
-                ...race.sessions.map(
-                  (session) => _WeekendSessionRow(
-                    race: race,
-                    session: session,
-                    now: now,
-                  ),
+            ),
+            if (race.sessions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Text(
+                  race.cancelNote ?? '세션 일정이 없습니다.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                 ),
-            ],
-          ),
+              )
+            else
+              ...race.sessions.map(
+                (session) =>
+                    _WeekendSessionRow(race: race, session: session, now: now),
+              ),
+          ],
         ),
       ),
     );
@@ -347,7 +339,10 @@ class _WeekendSessionRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _SessionStatusBadge(status: status),
+              AppChip(
+                label: _sessionStatusLabel(status),
+                variant: _sessionStatusVariant(status),
+              ),
               const SizedBox(height: 5),
               Text(
                 '${session.date} · ${session.time}',
@@ -359,42 +354,6 @@ class _WeekendSessionRow extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SessionStatusBadge extends StatelessWidget {
-  const _SessionStatusBadge({required this.status});
-
-  final SessionStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (status) {
-      SessionStatus.upcoming => '예정',
-      SessionStatus.live => '진행중',
-      SessionStatus.ended => '종료',
-    };
-    final color = status == SessionStatus.live
-        ? AppColors.red
-        : status == SessionStatus.upcoming
-        ? AppColors.white
-        : AppColors.textMuted;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
@@ -418,7 +377,7 @@ class _SeasonSummaryCard extends StatelessWidget {
     final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
     final upcomingCount = totalCount - completedCount - activeCount;
 
-    return _HomeCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -469,62 +428,46 @@ class _CalendarLinkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surfaceHigh,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(8),
+    return AppCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.red.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month_outlined,
+              color: AppColors.red,
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.red.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '전체 일정 보기',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.calendar_month_outlined,
-                  color: AppColors.red,
+                const SizedBox(height: 3),
+                Text(
+                  '24개 그랑프리 캘린더',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '전체 일정 보기',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '24개 그랑프리 캘린더',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.red,
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.red),
+        ],
       ),
     );
   }
@@ -538,7 +481,7 @@ class _EmptyHomeContent extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: _HomeCard(
+        child: AppCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,29 +508,6 @@ class _EmptyHomeContent extends StatelessWidget {
   }
 }
 
-class _HomeCard extends StatelessWidget {
-  const _HomeCard({required this.child, this.accent = false});
-
-  final Widget child;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        border: Border.all(
-          color: accent
-              ? AppColors.red.withValues(alpha: 0.7)
-              : AppColors.border,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
-    );
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.label, this.trailing});
 
@@ -607,58 +527,6 @@ class _SectionHeader extends StatelessWidget {
         ),
         if (trailing != null) ...[const Spacer(), trailing!],
       ],
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _statusColor(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        status,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaBadge extends StatelessWidget {
-  const _MetaBadge({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.black,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }
@@ -738,10 +606,27 @@ String _formatDateRange(String startDate, String endDate) {
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
-Color _statusColor(String status) {
+// 그랑프리 상태 → 웹 Chip variant 매핑 (진행중/취소=red, 예정=neutral, 종료=ended)
+AppChipVariant _raceStatusVariant(String status) {
   return switch (status) {
-    RaceStatus.inProgress || RaceStatus.cancelled => AppColors.red,
-    RaceStatus.scheduled => AppColors.white,
-    _ => AppColors.textMuted,
+    RaceStatus.inProgress || RaceStatus.cancelled => AppChipVariant.red,
+    RaceStatus.scheduled => AppChipVariant.neutral,
+    _ => AppChipVariant.ended,
+  };
+}
+
+AppChipVariant _sessionStatusVariant(SessionStatus status) {
+  return switch (status) {
+    SessionStatus.live => AppChipVariant.red,
+    SessionStatus.upcoming => AppChipVariant.neutral,
+    SessionStatus.ended => AppChipVariant.ended,
+  };
+}
+
+String _sessionStatusLabel(SessionStatus status) {
+  return switch (status) {
+    SessionStatus.upcoming => '예정',
+    SessionStatus.live => '진행중',
+    SessionStatus.ended => '종료',
   };
 }

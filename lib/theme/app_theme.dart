@@ -10,33 +10,29 @@ class AppTheme {
       seedColor: AppColors.red,
       brightness: Brightness.dark,
       primary: AppColors.red,
-      surface: AppColors.surface,
+      surface: AppColors.card,
     );
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.black,
+      scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.black,
+        backgroundColor: AppColors.background,
         foregroundColor: AppColors.white,
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.red,
-        unselectedItemColor: AppColors.textMuted,
-        type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
-      ),
+      // 하단 네비는 widgets/bottom_nav.dart 의 커스텀 위젯이 담당.
       cardTheme: const CardThemeData(
-        color: AppColors.surfaceHigh,
+        color: AppColors.card,
         elevation: 0,
+        // 웹 Card.tsx rounded-2xl + border-white/10
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          side: BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
       ),
       dividerTheme: const DividerThemeData(
