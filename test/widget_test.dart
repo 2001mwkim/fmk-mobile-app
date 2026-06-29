@@ -61,9 +61,14 @@ void main() {
     await tester.tap(find.text('직관'));
     await tester.pumpAndSettle();
     expect(find.text('직관 가이드'), findsWidgets);
+    expect(find.text('GUIDE IN PROGRESS'), findsOneWidget);
+    expect(find.text('아시아 그랑프리 직관 정보 준비 중'), findsOneWidget);
     expect(find.text('일본 그랑프리'), findsOneWidget);
     expect(find.text('중국 그랑프리'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('싱가포르 그랑프리'), 200);
     expect(find.text('싱가포르 그랑프리'), findsOneWidget);
+    expect(find.text('관련 그랑프리'), findsWidgets);
+    expect(find.text('직관 정보 준비 중'), findsWidgets);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
