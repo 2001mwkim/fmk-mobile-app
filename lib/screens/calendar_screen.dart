@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/race.dart';
-import 'race_detail_screen.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_chip.dart';
+import 'race_detail_screen.dart';
+
+// 웹 calendar 전용 색 (globals/CalendarClient 에서 사용하는 값).
+const Color _muted = Color(0xFF7880A0); // #7880a0
+const Color _nameMuted = Color(0xFFAAB0CC); // #aab0cc (비활성 카드 이름)
+const Color _endedSurface = Color(0xFF0E1018); // #0e1018 (비활성 카드 표면)
+const Color _hairline = Color(0x14FFFFFF); // white/8
+const Color _faintLine = Color(0x0FFFFFFF); // white/6
 
 enum _CalendarFilter {
   all('전체'),
@@ -29,177 +39,116 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final visibleRaces = _filteredRaces(_selectedFilter);
+    final nextRaceId = _nextRaceId();
+    // 활성 → 비활성 경계(첫 비활성 인덱스). 전체 탭에서만 0보다 커진다.
+    final firstInactiveIndex = visibleRaces.indexWhere(_isInactive);
+
+    final children = <Widget>[
+      const _CalendarHeader(),
+      const SizedBox(height: 16),
+      _FilterTabs(
+        selectedFilter: _selectedFilter,
+        onChanged: (filter) => setState(() => _selectedFilter = filter),
+      ),
+      const SizedBox(height: 14),
+      _SubHeader(filter: _selectedFilter, count: visibleRaces.length),
+      const SizedBox(height: 12),
+    ];
+
+    if (visibleRaces.isEmpty) {
+      children.add(const _EmptyState());
+    } else {
+      for (var i = 0; i < visibleRaces.length; i++) {
+        final race = visibleRaces[i];
+        final inactive = _isInactive(race);
+
+        if (firstInactiveIndex > 0 && i == firstInactiveIndex) {
+          children.add(const _InactiveDivider());
+        }
+
+        void openDetail() {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => RaceDetailScreen(race: race),
+            ),
+          );
+        }
+
+        if (inactive) {
+          children.add(_CompactRaceCard(race: race, onTap: openDetail));
+          children.add(const SizedBox(height: 10));
+        } else {
+          children.add(
+            _ActiveRaceCard(
+              race: race,
+              isNext: race.id == nextRaceId,
+              onTap: openDetail,
+            ),
+          );
+          children.add(const SizedBox(height: 12));
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('일정')),
       body: SafeArea(
-        child: ListView.separated(
+        child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: visibleRaces.isEmpty ? 3 : visibleRaces.length + 2,
-          separatorBuilder: (_, index) => index <= 1
-              ? const SizedBox(height: 12)
-              : const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return const _CalendarHeader();
-            }
-
-            if (index == 1) {
-              return _CalendarFilterTabs(
-                selectedFilter: _selectedFilter,
-                onChanged: (filter) {
-                  setState(() {
-                    _selectedFilter = filter;
-                  });
-                },
-              );
-            }
-
-            if (visibleRaces.isEmpty) {
-              return _EmptyCalendarFilter(filter: _selectedFilter);
-            }
-
-            final race = visibleRaces[index - 2];
-            return _RaceCard(
-              race: race,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => RaceDetailScreen(race: race),
-                  ),
-                );
-              },
-            );
-          },
+          children: children,
         ),
       ),
     );
+  }
+
+  // 종료(취소 포함) 그랑프리는 비활성 그룹.
+  bool _isInactive(Race race) =>
+      race.isCancelled || getRaceStatus(race) == RaceStatus.ended;
+
+  // 진행중 GP가 없을 때만 가장 가까운 예정 그랑프리를 NEXT로 강조.
+  String? _nextRaceId() {
+    final hasOngoing = races.any(
+      (race) =>
+          !race.isCancelled && getRaceStatus(race) == RaceStatus.inProgress,
+    );
+    if (hasOngoing) return null;
+
+    final upcoming =
+        races
+            .where(
+              (race) =>
+                  !race.isCancelled &&
+                  getRaceStatus(race) == RaceStatus.scheduled,
+            )
+            .toList()
+          ..sort(_byStartDateAsc);
+    return upcoming.isEmpty ? null : upcoming.first.id;
   }
 
   List<Race> _filteredRaces(_CalendarFilter filter) {
-    final sortedRaces = [...races];
-
     if (filter == _CalendarFilter.all) {
-      sortedRaces.sort((a, b) {
-        final groupCompare = _calendarGroup(a).compareTo(_calendarGroup(b));
-        if (groupCompare != 0) return groupCompare;
-        return a.round.compareTo(b.round);
-      });
-      return sortedRaces;
+      final active = races.where((race) => !_isInactive(race)).toList()
+        ..sort(_byStartDateAsc);
+      final inactive = races.where(_isInactive).toList()..sort(_byStartDateAsc);
+      return [...active, ...inactive];
     }
 
-    return sortedRaces.where((race) {
-      final status = getRaceStatus(race);
-      return switch (filter) {
-        _CalendarFilter.scheduled => status == RaceStatus.scheduled,
-        _CalendarFilter.inProgress => status == RaceStatus.inProgress,
-        _CalendarFilter.ended => status == RaceStatus.ended,
-        _CalendarFilter.all => true,
-      };
-    }).toList();
+    if (filter == _CalendarFilter.ended) {
+      return races.where(_isInactive).toList()..sort(_byStartDateAsc);
+    }
+
+    // 예정 / 진행중: 취소 건은 제외하고 가까운 일정 순으로.
+    return races
+        .where(
+          (race) => !race.isCancelled && getRaceStatus(race) == filter.label,
+        )
+        .toList()
+      ..sort(_byStartDateAsc);
   }
 }
 
-int _calendarGroup(Race race) {
-  final status = getRaceStatus(race);
-  return status == RaceStatus.ended ? 1 : 0;
-}
-
-class _CalendarFilterTabs extends StatelessWidget {
-  const _CalendarFilterTabs({
-    required this.selectedFilter,
-    required this.onChanged,
-  });
-
-  final _CalendarFilter selectedFilter;
-  final ValueChanged<_CalendarFilter> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final filter in _CalendarFilter.values) ...[
-            _FilterChipButton(
-              label: filter.label,
-              selected: filter == selectedFilter,
-              onTap: () => onChanged(filter),
-            ),
-            if (filter != _CalendarFilter.values.last) const SizedBox(width: 8),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterChipButton extends StatelessWidget {
-  const _FilterChipButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.red : AppColors.surfaceHigh,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: selected ? AppColors.red : AppColors.border,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyCalendarFilter extends StatelessWidget {
-  const _EmptyCalendarFilter({required this.filter});
-
-  final _CalendarFilter filter;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          '${filter.label} 상태의 그랑프리가 없습니다.',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-        ),
-      ),
-    );
-  }
-}
+// startDate(YYYY-MM-DD) 사전식 비교 = 날짜 오름차순.
+int _byStartDateAsc(Race a, Race b) => a.startDate.compareTo(b.startDate);
 
 class _CalendarHeader extends StatelessWidget {
   const _CalendarHeader();
@@ -207,7 +156,7 @@ class _CalendarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -231,90 +180,378 @@ class _CalendarHeader extends StatelessWidget {
   }
 }
 
-class _RaceCard extends StatelessWidget {
-  const _RaceCard({required this.race, required this.onTap});
+class _FilterTabs extends StatelessWidget {
+  const _FilterTabs({required this.selectedFilter, required this.onChanged});
+
+  final _CalendarFilter selectedFilter;
+  final ValueChanged<_CalendarFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final filter in _CalendarFilter.values) ...[
+          Expanded(
+            child: _FilterPill(
+              label: filter.label,
+              selected: filter == selectedFilter,
+              onTap: () => onChanged(filter),
+            ),
+          ),
+          if (filter != _CalendarFilter.values.last) const SizedBox(width: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.red : AppColors.card,
+            borderRadius: BorderRadius.circular(999),
+            border: selected ? null : Border.all(color: _hairline),
+            boxShadow: selected
+                ? const [
+                    BoxShadow(
+                      color: Color(0x59EF4444), // rgba(239,68,68,0.35)
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: selected ? AppColors.white : _muted,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubHeader extends StatelessWidget {
+  const _SubHeader({required this.filter, required this.count});
+
+  final _CalendarFilter filter;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = filter == _CalendarFilter.all
+        ? '다가오는 그랑프리'
+        : '${filter.label} 그랑프리';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            '$count',
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: _muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InactiveDivider extends StatelessWidget {
+  const _InactiveDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 2),
+      child: Row(
+        children: [
+          const Text(
+            '종료된 그랑프리',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textEnded,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Container(height: 1, color: _faintLine)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveRaceCard extends StatelessWidget {
+  const _ActiveRaceCard({
+    required this.race,
+    required this.isNext,
+    required this.onTap,
+  });
+
+  final Race race;
+  final bool isNext;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = _content(context);
+
+    if (!isNext) {
+      return AppCard(
+        padding: const EdgeInsets.all(18),
+        onTap: onTap,
+        child: content,
+      );
+    }
+
+    // NEXT — 레드 보더 + 은은한 그라데이션 + 리본.
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1C0F0E), Color(0xFF141828)],
+                ),
+              ),
+              foregroundDecoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Color(0x66EF4444)), // red-500/40
+                ),
+              ),
+              padding: const EdgeInsets.all(18),
+              child: content,
+            ),
+            const Positioned(top: -8, right: 18, child: _Ribbon()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    final status = getRaceStatus(race);
+    final statusVariant = (isNext || status == RaceStatus.inProgress)
+        ? AppChipVariant.red
+        : AppChipVariant.neutral;
+    final dateText =
+        '${_shortDate(race.startDate)} – ${_shortDate(race.endDate)}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
+                if (race.hasSprint) ...[
+                  const SizedBox(width: 6),
+                  const AppChip(label: '스프린트', variant: AppChipVariant.blue),
+                ],
+              ],
+            ),
+            AppChip(label: status, variant: statusVariant),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _Flag(race.countryKo, size: 22),
+            Expanded(
+              child: Text(
+                race.nameKo,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (isNext) ...[
+          const SizedBox(height: 10),
+          Text(
+            dateText,
+            style: const TextStyle(
+              fontSize: 15,
+              fontFamily: 'monospace',
+              color: AppColors.redSoft,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${race.circuitKo} · ${race.cityKo}',
+            style: const TextStyle(fontSize: 12, color: _muted),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: _hairline)),
+            ),
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  '상세 일정 보기',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.redSoft,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '→',
+                  style: TextStyle(fontSize: 14, color: AppColors.redSoft),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateText,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontFamily: 'monospace',
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${race.circuitKo} · ${race.cityKo}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: _muted),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CompactRaceCard extends StatelessWidget {
+  const _CompactRaceCard({required this.race, required this.onTap});
 
   final Race race;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final status = getRaceDisplayStatus(race);
-
-    return Material(
-      color: AppColors.surfaceHigh,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(color: _borderColor(status)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: IntrinsicHeight(
+    return Opacity(
+      opacity: 0.6,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: _endedSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _faintLine),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.red,
-                    borderRadius: BorderRadius.horizontal(
-                      left: Radius.circular(8),
-                    ),
-                  ),
-                ),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _RoundBadge(round: race.round),
-                            const Spacer(),
-                            _StatusBadge(status: status),
-                          ],
+                  child: Row(
+                    children: [
+                      Text(
+                        'R${race.round}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                          color: AppColors.textEnded,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          race.countryKo,
-                          style: textTheme.labelMedium?.copyWith(
-                            color: AppColors.red,
+                      ),
+                      const SizedBox(width: 10),
+                      _Flag(race.countryKo, size: 18),
+                      Expanded(
+                        child: Text(
+                          race.nameKo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: _nameMuted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          race.nameKo,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        _InfoLine(
-                          icon: Icons.route_outlined,
-                          text: race.circuitKo,
-                        ),
-                        const SizedBox(height: 7),
-                        _InfoLine(
-                          icon: Icons.calendar_today_outlined,
-                          text: _formatDateRange(race.startDate, race.endDate),
-                        ),
-                        if (race.hasSprint) ...[
-                          const SizedBox(height: 12),
-                          const _SprintBadge(),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(width: 8),
+                AppChip(
+                  label: race.isCancelled ? '취소' : '종료',
+                  variant: AppChipVariant.ended,
                 ),
               ],
             ),
@@ -325,136 +562,85 @@ class _RaceCard extends StatelessWidget {
   }
 }
 
-class _RoundBadge extends StatelessWidget {
-  const _RoundBadge({required this.round});
-
-  final int round;
+class _Ribbon extends StatelessWidget {
+  const _Ribbon();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.black,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '라운드 $round',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _statusColor(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        status,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 15, color: AppColors.textMuted),
-        const SizedBox(width: 7),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+        color: AppColors.red,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x80EF4444), // rgba(239,68,68,0.5)
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
+        ],
+      ),
+      child: const Text(
+        'NEXT',
+        style: TextStyle(
+          fontSize: 10,
+          color: AppColors.white,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
         ),
-      ],
+      ),
     );
   }
 }
 
-class _SprintBadge extends StatelessWidget {
-  const _SprintBadge();
+class _Flag extends StatelessWidget {
+  const _Flag(this.countryKo, {required this.size});
+
+  final String countryKo;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: AppColors.red.withValues(alpha: 0.45)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '스프린트 주말',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.white,
-          fontWeight: FontWeight.w700,
-        ),
+    final flag = getCountryFlag(countryKo);
+    if (flag.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Text(flag, style: TextStyle(fontSize: size, height: 1)),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Text(
+            '표시할 그랑프리가 없습니다.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '다른 필터를 선택해보세요.',
+            style: TextStyle(fontSize: 12, color: _muted),
+          ),
+        ],
       ),
     );
   }
 }
 
-String _formatDateRange(String startDate, String endDate) {
-  final start = DateTime.parse(startDate);
-  final end = DateTime.parse(endDate);
-
-  if (start.year == end.year && start.month == end.month) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.day)}';
-  }
-
-  if (start.year == end.year) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-  }
-
-  return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${end.year}.${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-}
-
-String _twoDigits(int value) => value.toString().padLeft(2, '0');
-
-Color _statusColor(String status) {
-  return switch (status) {
-    RaceStatus.inProgress || RaceStatus.cancelled => AppColors.red,
-    RaceStatus.scheduled => AppColors.white,
-    _ => AppColors.textMuted,
-  };
-}
-
-Color _borderColor(String status) {
-  return status == RaceStatus.inProgress
-      ? AppColors.red.withValues(alpha: 0.7)
-      : AppColors.border;
+// 웹 formatDate: "M.D" (앞자리 0 제거, 연도 없음).
+String _shortDate(String date) {
+  final parts = date.split('-');
+  final month = int.parse(parts[1]);
+  final day = int.parse(parts[2]);
+  return '$month.$day';
 }
