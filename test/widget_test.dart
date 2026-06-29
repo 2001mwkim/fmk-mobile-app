@@ -56,12 +56,12 @@ void main() {
 
     await tester.tap(find.text('순위'));
     await tester.pumpAndSettle();
-    expect(find.text('드라이버 순위'), findsOneWidget);
+    expect(find.text('챔피언십 순위'), findsOneWidget);
     expect(find.text('키미 안토넬리'), findsOneWidget);
     await tester.tap(find.text('컨스트럭터'));
     await tester.pumpAndSettle();
-    expect(find.text('컨스트럭터 순위'), findsOneWidget);
-    expect(find.text('메르세데스'), findsOneWidget);
+    expect(find.text('키미 안토넬리'), findsNothing);
+    expect(find.text('메르세데스'), findsWidgets);
 
     await tester.tap(find.text('직관'));
     await tester.pumpAndSettle();
