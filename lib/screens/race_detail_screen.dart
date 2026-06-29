@@ -34,7 +34,7 @@ class RaceDetailScreen extends StatelessWidget {
     final status = getRaceDisplayStatus(race);
     final circuitInfo = getCircuitInfo(race.id);
     final raceSession = _raceSessionOf(race);
-    // 종료(취소 제외) GP 면 결과 카드 노출 (포디움 없으면 placeholder).
+    // 종료(취소 제외) 그랑프리면 결과 카드 노출 (포디움 없으면 placeholder).
     final showResultCard =
         getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
     final top3 = showResultCard

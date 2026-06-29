@@ -157,22 +157,27 @@ class _CalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '2026 시즌 캘린더',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
+            '2026 SEASON',
+            style: TextStyle(
+              fontSize: 11,
+              color: _muted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.6,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 4),
           Text(
-            '${races.length}개 그랑프리',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+            '시즌 캘린더',
+            style: TextStyle(
+              fontSize: 26,
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+            ),
           ),
         ],
       ),

@@ -28,8 +28,8 @@ void main() {
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();
-    expect(find.text('2026 시즌 캘린더'), findsOneWidget);
-    expect(find.text('24개 그랑프리'), findsOneWidget);
+    expect(find.text('시즌 캘린더'), findsOneWidget);
+    expect(find.text('다가오는 그랑프리'), findsOneWidget);
     expect(find.text('전체'), findsOneWidget);
     expect(find.text('예정'), findsWidgets);
     expect(find.text('진행중'), findsWidgets);

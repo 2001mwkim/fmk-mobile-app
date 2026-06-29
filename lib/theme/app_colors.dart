@@ -24,14 +24,11 @@ class AppColors {
   // 웹 red-500 / red-400 (Tailwind)
   static const Color red = Color(0xFFEF4444);
   static const Color redSoft = Color(0xFFF87171);
-  // 웹 blue-500 / blue-400 (Tailwind)
-  static const Color blue = Color(0xFF3B82F6);
+  // 웹 blue-400 (Tailwind) — blue 칩 텍스트
   static const Color blueSoft = Color(0xFF60A5FA);
   // 웹 mono 칩 텍스트 (slate-300)
   static const Color slate300 = Color(0xFFCBD5E1);
 
-  // 기존 화면이 참조하던 이름 유지 (구조 변경 없이 웹 팔레트로 매핑)
+  // 일부 화면이 진한 배경(#090b12)을 참조할 때 쓰는 별칭.
   static const Color black = background;
-  static const Color surface = card;
-  static const Color surfaceHigh = card;
 }
