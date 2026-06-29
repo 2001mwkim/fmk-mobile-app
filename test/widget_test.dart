@@ -13,7 +13,12 @@ void main() {
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
     expect(find.text('직관'), findsOneWidget);
-    expect(find.text('다음 그랑프리'), findsOneWidget);
+    // 히어로 상태 칩은 시점에 따라 '다음 그랑프리' 또는 '진행중'으로 표시된다.
+    expect(
+      find.text('다음 그랑프리').evaluate().isNotEmpty ||
+          find.text('진행중').evaluate().isNotEmpty,
+      isTrue,
+    );
     expect(find.text('다음 세션'), findsOneWidget);
     expect(find.text('이번 주말 일정'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('시즌 진행 상황'), 200);

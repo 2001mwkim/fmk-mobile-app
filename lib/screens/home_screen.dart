@@ -9,6 +9,7 @@ import '../models/race_session.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../widgets/hero_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -107,17 +108,23 @@ class _NextRaceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = getRaceDisplayStatus(race, now);
+    // 웹 hero: 진행중이면 "진행중", 그 외에는 "다음 그랑프리"(취소는 별도 표기).
+    final statusLabel = race.isCancelled
+        ? '취소'
+        : status == RaceStatus.inProgress
+        ? '진행중'
+        : '다음 그랑프리';
 
-    return AppCard(
+    return HeroCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(
-            label: '다음 그랑프리',
-            trailing: AppChip(
-              label: status,
-              variant: _raceStatusVariant(status),
-            ),
+          Row(
+            children: [
+              AppChip(label: statusLabel, variant: AppChipVariant.red),
+              const SizedBox(width: 6),
+              AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
+            ],
           ),
           const SizedBox(height: 14),
           Text(
@@ -126,21 +133,20 @@ class _NextRaceCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: AppColors.white,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AppChip(label: '라운드 ${race.round}', variant: AppChipVariant.mono),
-              AppChip(label: '${race.countryKo} · ${race.cityKo}'),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+            // 웹 hero 서브텍스트 색 (#8088a8)
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF8088A8),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 14),
-          _InfoLine(icon: Icons.route_outlined, text: race.circuitKo),
-          const SizedBox(height: 8),
           _InfoLine(
             icon: Icons.calendar_today_outlined,
             text: _formatDateRange(race.startDate, race.endDate),
@@ -509,24 +515,18 @@ class _EmptyHomeContent extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, this.trailing});
+  const _SectionHeader({required this.label});
 
   final String label;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: AppColors.red,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        if (trailing != null) ...[const Spacer(), trailing!],
-      ],
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.red,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 }
@@ -605,15 +605,6 @@ String _formatDateRange(String startDate, String endDate) {
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
-
-// 그랑프리 상태 → 웹 Chip variant 매핑 (진행중/취소=red, 예정=neutral, 종료=ended)
-AppChipVariant _raceStatusVariant(String status) {
-  return switch (status) {
-    RaceStatus.inProgress || RaceStatus.cancelled => AppChipVariant.red,
-    RaceStatus.scheduled => AppChipVariant.neutral,
-    _ => AppChipVariant.ended,
-  };
-}
 
 AppChipVariant _sessionStatusVariant(SessionStatus status) {
   return switch (status) {
