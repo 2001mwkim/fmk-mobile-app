@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
 
 void main() {
-  testWidgets('bottom tabs and settings navigation work', (tester) async {
+  testWidgets('bottom tabs, race detail, and settings navigation work', (
+    tester,
+  ) async {
     await tester.pumpWidget(const FmkApp());
 
     expect(find.text('포매코'), findsOneWidget);
@@ -13,6 +15,8 @@ void main() {
     expect(find.text('직관'), findsOneWidget);
     expect(find.text('다음 그랑프리'), findsOneWidget);
     expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('이번 주말 일정'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('시즌 진행 상황'), 200);
     expect(find.text('시즌 진행 상황'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('전체 일정 보기'), 200);
     expect(find.text('전체 일정 보기'), findsOneWidget);
@@ -25,17 +29,23 @@ void main() {
     expect(find.text('예정'), findsWidgets);
     expect(find.text('진행중'), findsWidgets);
     expect(find.text('종료'), findsWidgets);
-    expect(find.text('오스트리아 그랑프리'), findsOneWidget);
+
     await tester.tap(find.text('종료'));
     await tester.pumpAndSettle();
-    expect(find.text('호주 그랑프리'), findsOneWidget);
     await tester.tap(find.text('호주 그랑프리'));
     await tester.pumpAndSettle();
+    expect(find.text('레이스 결과'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('레이스 시작'), 200);
+    expect(find.text('레이스 시작'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('세션 일정'), 200);
     expect(find.text('세션 일정'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('서킷 정보'), 200);
     expect(find.text('서킷 정보'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Top 3 결과'), 200);
-    expect(find.text('Top 3 결과'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Circuit layouts: F1DB (CC BY 4.0)'),
+      200,
+    );
+    expect(find.text('Circuit layouts: F1DB (CC BY 4.0)'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
 
@@ -75,7 +76,7 @@ class _CalendarSettingsSection extends StatelessWidget {
             description: '시즌 전체 일정과 레이스 일정을 캘린더에 추가하는 기능을 준비 중입니다.',
             badge: '준비 중',
             icon: Icons.calendar_month_outlined,
-            onTap: () => _showPreparingSnackBar(context, '캘린더 추가 기능은 준비 중입니다.'),
+            onTap: () => _showSnackBar(context, '캘린더 추가 기능은 준비 중입니다.'),
           ),
           _InsetNote(text: '추후 캘린더 구독 방식 또는 앱에서 직접 추가하는 방식으로 제공할 예정입니다.'),
         ],
@@ -96,7 +97,7 @@ class _NotificationSettingsSection extends StatelessWidget {
             description: '세션 시작 전 알림 기능은 추후 앱 버전에서 제공될 예정입니다.',
             badge: '앱 버전 예정',
             icon: Icons.notifications_none_outlined,
-            onTap: () => _showPreparingSnackBar(context, '알림 설정 기능은 준비 중입니다.'),
+            onTap: () => _showSnackBar(context, '알림 설정 기능은 준비 중입니다.'),
           ),
         ],
       ),
@@ -153,25 +154,32 @@ class _FmkSection extends StatelessWidget {
             _ActionRow(
               title: '인스타그램 보러가기',
               trailingColor: AppColors.red,
-              onTap: () => _showPreparingSnackBar(
-                context,
-                '외부 링크 열기는 준비 중입니다. $_instagramUrl',
-              ),
+              onTap: () {
+                _openExternalUri(context, Uri.parse(_instagramUrl));
+              },
             ),
             _ActionRow(
               title: '제휴 및 문의',
               subtitle: _contactEmail,
-              onTap: () => _showPreparingSnackBar(
-                context,
-                '메일 연결은 준비 중입니다. $_contactEmail',
-              ),
+              onTap: () {
+                _openExternalUri(
+                  context,
+                  Uri(scheme: 'mailto', path: _contactEmail),
+                );
+              },
             ),
             _ActionRow(
               title: '오류 제보 / 기능 제안',
-              onTap: () => _showPreparingSnackBar(
-                context,
-                '제보 메일 연결은 준비 중입니다. $_feedbackSubject',
-              ),
+              onTap: () {
+                _openExternalUri(
+                  context,
+                  Uri(
+                    scheme: 'mailto',
+                    path: _contactEmail,
+                    queryParameters: {'subject': _feedbackSubject},
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -228,8 +236,9 @@ class _AppInfoSection extends StatelessWidget {
           _InfoRow(
             label: '데이터 출처',
             value: 'F1DB · CC BY 4.0',
-            onTap: () =>
-                _showPreparingSnackBar(context, '외부 링크 열기는 준비 중입니다. $_f1dbUrl'),
+            onTap: () {
+              _openExternalUri(context, Uri.parse(_f1dbUrl));
+            },
           ),
           _InfoRow(label: '시간 기준', value: '한국시간 KST'),
           _InfoRow(label: '사용 분석', value: 'Vercel Analytics'),
@@ -487,6 +496,8 @@ class _InfoRow extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
+                decoration: onTap == null ? null : TextDecoration.underline,
+                decorationColor: AppColors.textMuted,
               ),
             ),
           ),
@@ -503,7 +514,20 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-void _showPreparingSnackBar(BuildContext context, String message) {
+Future<void> _openExternalUri(BuildContext context, Uri uri) async {
+  var opened = false;
+  try {
+    opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    opened = false;
+  }
+
+  if (opened || !context.mounted) return;
+
+  _showSnackBar(context, '외부 링크를 열 수 없습니다.');
+}
+
+void _showSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
   );

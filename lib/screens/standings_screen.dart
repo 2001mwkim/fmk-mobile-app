@@ -51,7 +51,7 @@ class _DriverStandingsList extends StatelessWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-      itemCount: standings.length + 1,
+      itemCount: standings.length + 2,
       separatorBuilder: (_, index) =>
           index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -60,6 +60,10 @@ class _DriverStandingsList extends StatelessWidget {
             title: '드라이버 순위',
             subtitle: '${standings.length}명 · 포인트 기준',
           );
+        }
+
+        if (index == standings.length + 1) {
+          return const _DataSourceFooter();
         }
 
         return _DriverStandingCard(standing: standings[index - 1]);
@@ -81,7 +85,7 @@ class _ConstructorStandingsList extends StatelessWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-      itemCount: standings.length + 1,
+      itemCount: standings.length + 2,
       separatorBuilder: (_, index) =>
           index == 0 ? const SizedBox(height: 12) : const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -90,6 +94,10 @@ class _ConstructorStandingsList extends StatelessWidget {
             title: '컨스트럭터 순위',
             subtitle: '${standings.length}팀 · 포인트 기준',
           );
+        }
+
+        if (index == standings.length + 1) {
+          return const _DataSourceFooter();
         }
 
         return _ConstructorStandingCard(standing: standings[index - 1]);
@@ -352,6 +360,25 @@ class _EmptyStandings extends StatelessWidget {
               ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DataSourceFooter extends StatelessWidget {
+  const _DataSourceFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+      child: Text(
+        '데이터 출처: F1DB (CC BY 4.0)',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: AppColors.textMuted,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

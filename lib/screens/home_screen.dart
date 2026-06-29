@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'calendar_screen.dart';
+import 'race_detail_screen.dart';
 import 'settings_screen.dart';
 import '../data/races.dart';
 import '../models/race.dart';
@@ -72,6 +73,8 @@ class _SeasonHomeContent extends StatelessWidget {
           _NextRaceCard(race: nextRace, now: now),
           const SizedBox(height: 12),
           _NextSessionCard(race: nextRace, session: nextSession),
+          const SizedBox(height: 12),
+          _WeekendScheduleCard(race: nextRace, now: now),
           const SizedBox(height: 12),
           _SeasonSummaryCard(
             completedCount: completedCount,
@@ -190,6 +193,208 @@ class _NextSessionCard extends StatelessWidget {
             _InfoLine(icon: Icons.schedule_outlined, text: session!.time),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _WeekendScheduleCard extends StatelessWidget {
+  const _WeekendScheduleCard({required this.race, required this.now});
+
+  final Race race;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => RaceDetailScreen(race: race),
+            ),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionHeader(label: '이번 주말 일정'),
+                          const SizedBox(height: 5),
+                          Text(
+                            '${race.nameKo} · 한국시간 기준',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 15,
+                      color: AppColors.red,
+                    ),
+                  ],
+                ),
+              ),
+              if (race.sessions.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Text(
+                    race.cancelNote ?? '세션 일정이 없습니다.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                  ),
+                )
+              else
+                ...race.sessions.map(
+                  (session) => _WeekendSessionRow(
+                    race: race,
+                    session: session,
+                    now: now,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekendSessionRow extends StatelessWidget {
+  const _WeekendSessionRow({
+    required this.race,
+    required this.session,
+    required this.now,
+  });
+
+  final Race race;
+  final RaceSession session;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = getSessionStatus(race, session, now);
+    final isRace = session.id == 'race';
+    final isLive = status == SessionStatus.live;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+        color: isLive ? AppColors.red.withValues(alpha: 0.08) : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: isRace || isLive ? AppColors.red : AppColors.textMuted,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  session.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isRace || isLive ? AppColors.red : AppColors.white,
+                    fontWeight: isRace || isLive
+                        ? FontWeight.w900
+                        : FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  session.fullLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _SessionStatusBadge(status: status),
+              const SizedBox(height: 5),
+              Text(
+                '${session.date} · ${session.time}',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionStatusBadge extends StatelessWidget {
+  const _SessionStatusBadge({required this.status});
+
+  final SessionStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (status) {
+      SessionStatus.upcoming => '예정',
+      SessionStatus.live => '진행중',
+      SessionStatus.ended => '종료',
+    };
+    final color = status == SessionStatus.live
+        ? AppColors.red
+        : status == SessionStatus.upcoming
+        ? AppColors.white
+        : AppColors.textMuted;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
