@@ -1,7 +1,8 @@
 import '../models/live_session.dart';
 
-/// 미리보기용 mock 스냅샷 (웹 lib/live/mockSnapshot.ts 대응).
-/// 실제 라이브 데이터 연결 전, 라이브 UI 시각 확인용으로만 쓴다.
+/// 미리보기/테스트용 mock 스냅샷 (웹 lib/live/mockSnapshot.ts 대응).
+/// 실제 라이브 데이터는 LiveSessionController/LiveSessionService(live.json)가 공급한다.
+/// 이 값은 라이브 위젯의 시각 확인 및 위젯 테스트에서만 사용한다.
 final LiveSessionSnapshot mockLiveSession = LiveSessionSnapshot(
   status: LiveSessionStatus.live,
   updatedAt: '2026-06-30T04:34:00.000Z', // KST 13:34
@@ -77,11 +78,3 @@ final LiveSessionSnapshot mockLiveSession = LiveSessionSnapshot(
     ),
   ],
 );
-
-/// 라이브 UI 미리보기 토글. 실데이터 연동 전에는 false 라서 화면에 노출되지 않는다.
-/// 실제 라이브 데이터(SignalR/live.json) 연결 시 [getLiveSession] 만 교체하면 된다.
-bool livePreviewEnabled = false;
-
-/// 현재 라이브 스냅샷. 실데이터 연결 전에는 null(미표시).
-LiveSessionSnapshot? getLiveSnapshot() =>
-    livePreviewEnabled ? mockLiveSession : null;
