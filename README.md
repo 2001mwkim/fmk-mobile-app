@@ -1,6 +1,15 @@
-# fmk_app
+# 포매코 Flutter 앱
 
-A new Flutter project.
+포매코 Flutter 앱입니다.
+
+## App Settings
+
+- App display name: `포매코`
+- Android package name: `kr.formulamagazine.fmk`
+- iOS bundle identifier: `kr.formulamagazine.fmk`
+- Android permission: `android.permission.INTERNET` is enabled for live JSON fetches.
+- App icon source path: place the final icon at `assets/icon/app_icon.png` before enabling launcher icon generation.
+- App icon colors: black / white / yellow. In-app UI colors stay black / white / red.
 
 ## Getting Started
 

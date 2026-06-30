@@ -1,4 +1,4 @@
-package com.example.fmk_app
+package kr.formulamagazine.fmk
 
 import io.flutter.embedding.android.FlutterActivity
 
