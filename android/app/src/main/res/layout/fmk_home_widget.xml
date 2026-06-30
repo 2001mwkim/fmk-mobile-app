@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="8dp"
+    android:background="@drawable/fmk_widget_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/widget_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/fmk_widget_badge_background"
+        android:ellipsize="end"
+        android:fontFamily="sans"
+        android:maxLines="1"
+        android:textColor="#FFFFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="LIVE" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:fontFamily="sans"
+        android:maxLines="1"
+        android:textColor="#FFFFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="호주 그랑프리" />
+
+    <TextView
+        android:id="@+id/widget_primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:fontFamily="sans"
+        android:maxLines="1"
+        android:textColor="#FFFFFFFF"
+        android:textSize="15sp"
+        tools:text="Lap 32 / 58" />
+
+    <TextView
+        android:id="@+id/widget_secondary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:fontFamily="sans"
+        android:maxLines="1"
+        android:textColor="#CCFFFFFF"
+        android:textSize="12sp"
+        tools:text="Top 3 NOR · PIA · VER" />
+
+    <TextView
+        android:id="@+id/widget_updated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:fontFamily="sans"
+        android:maxLines="1"
+        android:textColor="#99FFFFFF"
+        android:textSize="11sp"
+        tools:text="업데이트 22:31 KST" />
+</LinearLayout>

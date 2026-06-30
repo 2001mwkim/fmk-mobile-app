@@ -12,6 +12,14 @@
 - App icon generation: run `dart run flutter_launcher_icons` only after `assets/icon/app_icon.png` exists.
 - App icon colors: black / white / yellow. In-app UI colors stay black / white / red.
 
+## Android Home Widget
+
+- Package: `home_widget`
+- Provider: `kr.formulamagazine.fmk.FmkHomeWidgetProvider`
+- Layout: `android/app/src/main/res/layout/fmk_home_widget.xml`
+- Data bridge: `lib/services/fmk_home_widget_bridge.dart`
+- iOS WidgetKit is tracked as a follow-up in `docs/android-home-widget.md`.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
