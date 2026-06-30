@@ -5,6 +5,7 @@ import 'package:fmk_app/data/live_session_mock.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/race_detail_screen.dart';
+import 'package:fmk_app/services/live_session_controller.dart';
 import 'package:fmk_app/services/live_session_service.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/home_live_top_three_card.dart';
@@ -215,6 +216,100 @@ void main() {
     expect(liveCountryFlag(null), isNull);
   });
 
+  test('LiveSessionController updates snapshot on successful fetch', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final snapshot = _liveSnapshot();
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(snapshot)]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+
+    expect(controller.snapshot, same(snapshot));
+    expect(controller.isStale, isFalse);
+    expect(controller.lastFetchedAt, now);
+    expect(controller.lastSuccessAt, now);
+  });
+
+  test(
+    'LiveSessionController keeps last snapshot briefly on fetch failure',
+    () async {
+      var now = DateTime(2026, 6, 30, 12);
+      final snapshot = _liveSnapshot();
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([
+          LiveSessionFetchResult.success(snapshot),
+          const LiveSessionFetchResult.failed(),
+          const LiveSessionFetchResult.failed(),
+        ]),
+        now: () => now,
+        staleSnapshotTtl: const Duration(seconds: 75),
+      );
+
+      await controller.refresh();
+      now = now.add(const Duration(seconds: 60));
+      await controller.refresh();
+
+      expect(controller.snapshot, same(snapshot));
+      expect(controller.isStale, isTrue);
+      expect(controller.lastFetchedAt, now);
+
+      now = now.add(const Duration(seconds: 20));
+      await controller.refresh();
+
+      expect(controller.snapshot, isNull);
+      expect(controller.isStale, isFalse);
+    },
+  );
+
+  test(
+    'LiveSessionController keeps null when fetch fails without snapshot',
+    () async {
+      final now = DateTime(2026, 6, 30, 12);
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([const LiveSessionFetchResult.failed()]),
+        now: () => now,
+      );
+
+      await controller.refresh();
+
+      expect(controller.snapshot, isNull);
+      expect(controller.isStale, isFalse);
+      expect(controller.lastFetchedAt, now);
+      expect(controller.lastSuccessAt, isNull);
+    },
+  );
+
+  test(
+    'LiveSessionController clears expired snapshots instead of retaining',
+    () async {
+      final now = DateTime(2026, 6, 30, 12);
+      final live = _liveSnapshot();
+      final expired = LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '2026-06-30T04:34:00.000Z',
+        visibleUntil: DateTime.now().subtract(const Duration(minutes: 1)),
+        topThree: live.topThree,
+        classification: live.classification,
+      );
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([
+          LiveSessionFetchResult.success(live),
+          LiveSessionFetchResult.success(expired),
+        ]),
+        now: () => now,
+      );
+
+      await controller.refresh();
+      expect(controller.snapshot, same(live));
+
+      await controller.refresh();
+      expect(controller.snapshot, isNull);
+      expect(controller.isStale, isFalse);
+    },
+  );
+
   testWidgets('home live card tap navigates to the matching race detail', (
     tester,
   ) async {
@@ -246,4 +341,55 @@ void main() {
     // 상세 화면 진입 확인(앱바/히어로에 그랑프리명 노출)
     expect(find.text('일본 그랑프리'), findsWidgets);
   });
+}
+
+LiveSessionSnapshot _liveSnapshot() {
+  return const LiveSessionSnapshot(
+    status: LiveSessionStatus.live,
+    updatedAt: '2026-06-30T04:34:00.000Z',
+    raceId: 'spain',
+    raceName: '스페인 그랑프리',
+    sessionType: 'Race',
+    sessionName: '레이스',
+    currentLap: 42,
+    totalLaps: 66,
+    topThree: [
+      LiveDriverPosition(position: 1, code: 'NOR', displayName: '랜도 노리스'),
+      LiveDriverPosition(
+        position: 2,
+        code: 'PIA',
+        displayName: '오스카 피아스트리',
+        interval: '+2.341',
+      ),
+      LiveDriverPosition(
+        position: 3,
+        code: 'LEC',
+        displayName: '샤를 르클레르',
+        interval: '+5.118',
+      ),
+    ],
+    classification: [
+      LiveDriverPosition(position: 1, code: 'NOR', displayName: '랜도 노리스'),
+      LiveDriverPosition(
+        position: 2,
+        code: 'PIA',
+        displayName: '오스카 피아스트리',
+        interval: '+2.341',
+      ),
+    ],
+  );
+}
+
+class _FakeLiveSessionService extends LiveSessionService {
+  _FakeLiveSessionService(this.results) : super(url: 'test://live');
+
+  final List<LiveSessionFetchResult> results;
+  int _calls = 0;
+
+  @override
+  Future<LiveSessionFetchResult> fetchResult() async {
+    final index = _calls++;
+    if (index >= results.length) return const LiveSessionFetchResult.failed();
+    return results[index];
+  }
 }

@@ -36,20 +36,43 @@ class LiveSessionService {
 
   /// 성공 시 스냅샷, 네트워크/파싱 실패 시 null. 예외를 던지지 않는다(앱 크래시 방지).
   Future<LiveSessionSnapshot?> fetch() async {
+    return (await fetchResult()).snapshot;
+  }
+
+  /// fetch 성공 여부와 파싱된 스냅샷을 함께 반환한다.
+  ///
+  /// `succeeded == false` 는 네트워크/타임아웃/HTTP 오류처럼 collector 에 접근하지
+  /// 못한 경우다. `succeeded == true && snapshot == null` 은 응답은 받았지만
+  /// 표시할 스냅샷이 없는 경우로 취급한다.
+  Future<LiveSessionFetchResult> fetchResult() async {
     final httpClient = client ?? http.Client();
     try {
       final response = await httpClient
           .get(Uri.parse(url))
           .timeout(kLiveFetchTimeout);
-      if (response.statusCode != 200) return null;
-      return parseLiveJson(response.body);
+      if (response.statusCode != 200) {
+        return const LiveSessionFetchResult.failed();
+      }
+      return LiveSessionFetchResult.success(parseLiveJson(response.body));
     } catch (_) {
       // 네트워크 오류/타임아웃/파싱 오류 모두 무시하고 null(라이브 UI 숨김).
-      return null;
+      return const LiveSessionFetchResult.failed();
     } finally {
       if (client == null) httpClient.close();
     }
   }
+}
+
+class LiveSessionFetchResult {
+  const LiveSessionFetchResult._({required this.succeeded, this.snapshot});
+
+  const LiveSessionFetchResult.success(LiveSessionSnapshot? snapshot)
+    : this._(succeeded: true, snapshot: snapshot);
+
+  const LiveSessionFetchResult.failed() : this._(succeeded: false);
+
+  final bool succeeded;
+  final LiveSessionSnapshot? snapshot;
 }
 
 /// live.json 본문을 파싱. 형식은 `{ "snapshot": {...}, "collector": {...} }`.
