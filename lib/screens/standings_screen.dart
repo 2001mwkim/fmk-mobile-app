@@ -336,7 +336,7 @@ class _RankBadge extends StatelessWidget {
         '$position',
         style: TextStyle(
           fontSize: 13,
-          fontFamily: 'monospace',
+          fontFamily: 'Pretendard',
           color: spec.foreground,
           fontWeight: FontWeight.w800,
         ),
@@ -360,7 +360,7 @@ class _PointsLabel extends StatelessWidget {
           _formatPoints(points),
           style: const TextStyle(
             fontSize: 18,
-            fontFamily: 'monospace',
+            fontFamily: 'Pretendard',
             color: AppColors.white,
             fontWeight: FontWeight.w800,
           ),

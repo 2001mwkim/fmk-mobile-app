@@ -16,8 +16,9 @@
 
 - Package: `home_widget`
 - Provider: `kr.formulamagazine.fmk.FmkHomeWidgetProvider`
-- Layout: `android/app/src/main/res/layout/fmk_home_widget.xml`
+- Layouts: `android/app/src/main/res/layout/widget_fmk_default.xml`, `android/app/src/main/res/layout/widget_fmk_live.xml`
 - Data bridge: `lib/services/fmk_home_widget_bridge.dart`
+- Display: default Grand Prix session list or live lap/Top 3 state
 - iOS WidgetKit is tracked as a follow-up in `docs/android-home-widget.md`.
 
 ## Getting Started

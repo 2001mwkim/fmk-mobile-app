@@ -239,7 +239,7 @@ class _HeroSessionBox extends StatelessWidget {
                 s.date,
                 style: const TextStyle(
                   fontSize: 12,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: Color(0xFF7880A0),
                   fontWeight: FontWeight.w600,
                 ),
@@ -249,7 +249,7 @@ class _HeroSessionBox extends StatelessWidget {
                 s.time,
                 style: TextStyle(
                   fontSize: 20,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   height: 1.1,
                   color: isLive ? AppColors.redSoft : AppColors.white,
                   fontWeight: FontWeight.w800,

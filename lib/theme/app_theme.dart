@@ -5,6 +5,8 @@ import 'app_colors.dart';
 class AppTheme {
   const AppTheme._();
 
+  static const String fontFamily = 'Pretendard';
+
   static ThemeData dark() {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.red,
@@ -16,6 +18,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(

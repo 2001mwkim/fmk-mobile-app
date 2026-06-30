@@ -425,7 +425,7 @@ class _AppInfoCard extends StatelessWidget {
                         'v0.1.0',
                         style: TextStyle(
                           fontSize: 11,
-                          fontFamily: 'monospace',
+                          fontFamily: 'Pretendard',
                           color: _muted,
                           fontWeight: FontWeight.w700,
                         ),

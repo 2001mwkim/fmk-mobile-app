@@ -289,7 +289,7 @@ class _SubHeader extends StatelessWidget {
             '$count',
             style: const TextStyle(
               fontSize: 12,
-              fontFamily: 'monospace',
+              fontFamily: 'Pretendard',
               color: _muted,
               fontWeight: FontWeight.w700,
             ),
@@ -434,7 +434,7 @@ class _ActiveRaceCard extends StatelessWidget {
             dateText,
             style: const TextStyle(
               fontSize: 15,
-              fontFamily: 'monospace',
+              fontFamily: 'Pretendard',
               color: AppColors.redSoft,
               fontWeight: FontWeight.w800,
             ),
@@ -477,7 +477,7 @@ class _ActiveRaceCard extends StatelessWidget {
                 dateText,
                 style: const TextStyle(
                   fontSize: 15,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: AppColors.white,
                   fontWeight: FontWeight.w800,
                 ),
@@ -531,7 +531,7 @@ class _CompactRaceCard extends StatelessWidget {
                         'R${race.round}',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontFamily: 'monospace',
+                          fontFamily: 'Pretendard',
                           color: AppColors.textEnded,
                           fontWeight: FontWeight.w700,
                         ),

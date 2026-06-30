@@ -160,7 +160,7 @@ class _HeroCard extends StatelessWidget {
                     '${race.startDate} – ${race.endDate}',
                     style: const TextStyle(
                       fontSize: 14,
-                      fontFamily: 'monospace',
+                      fontFamily: 'Pretendard',
                       color: AppColors.redSoft,
                       fontWeight: FontWeight.w800,
                     ),
@@ -245,7 +245,7 @@ class _RoundPill extends StatelessWidget {
         'ROUND $round',
         style: const TextStyle(
           fontSize: 11,
-          fontFamily: 'monospace',
+          fontFamily: 'Pretendard',
           color: AppColors.slate300,
           fontWeight: FontWeight.w700,
         ),
@@ -314,7 +314,7 @@ class _TrackMapPlaceholder extends StatelessWidget {
                 'TRACK MAP',
                 style: TextStyle(
                   fontSize: 13,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: Color(0xFF6B7090),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 2.5,
@@ -406,7 +406,7 @@ class _RaceStartCard extends StatelessWidget {
                 session.date,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: _muted,
                   fontWeight: FontWeight.w600,
                 ),
@@ -416,7 +416,7 @@ class _RaceStartCard extends StatelessWidget {
                 session.time,
                 style: const TextStyle(
                   fontSize: 27,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   height: 1,
                   color: AppColors.redSoft,
                   fontWeight: FontWeight.w800,
@@ -488,7 +488,7 @@ class _SessionTimeline extends StatelessWidget {
             group.date,
             style: const TextStyle(
               fontSize: 11,
-              fontFamily: 'monospace',
+              fontFamily: 'Pretendard',
               color: _muted,
               fontWeight: FontWeight.w700,
             ),
@@ -540,7 +540,7 @@ class _SessionTimelineRow extends StatelessWidget {
     );
     final timeStyle = TextStyle(
       fontSize: emphasize ? 17 : 15,
-      fontFamily: 'monospace',
+      fontFamily: 'Pretendard',
       color: emphasize ? AppColors.redSoft : _nameMuted,
       fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
     );
@@ -771,7 +771,7 @@ class _Top3ResultsCard extends StatelessWidget {
                 'TOP 3',
                 style: TextStyle(
                   fontSize: 10,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: AppColors.redSoft,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 2,
@@ -875,7 +875,7 @@ class _ResultRow extends StatelessWidget {
               '${result.position}',
               style: TextStyle(
                 fontSize: 14,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: badge.foreground,
                 fontWeight: FontWeight.w800,
               ),
@@ -942,7 +942,7 @@ class _ResultRow extends StatelessWidget {
                 resultTime,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: _nameMuted,
                   fontWeight: FontWeight.w700,
                 ),
@@ -952,7 +952,7 @@ class _ResultRow extends StatelessWidget {
                 '+${_formatPoints(result.points)} PTS',
                 style: const TextStyle(
                   fontSize: 11,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: AppColors.textEnded,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1037,7 +1037,7 @@ class _MetricTile extends StatelessWidget {
             value,
             style: const TextStyle(
               fontSize: 19,
-              fontFamily: 'monospace',
+              fontFamily: 'Pretendard',
               color: AppColors.white,
               fontWeight: FontWeight.w800,
             ),

@@ -168,7 +168,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               lapText,
               style: const TextStyle(
                 fontSize: 11,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
               ),
@@ -311,7 +311,7 @@ class _LiveClock extends StatelessWidget {
           label!,
           style: const TextStyle(
             fontSize: 11,
-            fontFamily: 'monospace',
+            fontFamily: 'Pretendard',
             color: Color(0xFF8088A8),
             fontWeight: FontWeight.w700,
           ),
@@ -365,7 +365,7 @@ class _TopThreeRow extends StatelessWidget {
               driver.code,
               style: const TextStyle(
                 fontSize: 14,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: Color(0xFFE8EDF6),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
@@ -390,7 +390,7 @@ class _TopThreeRow extends StatelessWidget {
             gap,
             style: TextStyle(
               fontSize: 12,
-              fontFamily: 'monospace',
+              fontFamily: 'Pretendard',
               color: gap == '—'
                   ? const Color(0xFF5B6178)
                   : const Color(0xFFAAB0CC),
@@ -428,7 +428,7 @@ class _RankBadge extends StatelessWidget {
         '$position',
         style: TextStyle(
           fontSize: 12,
-          fontFamily: 'monospace',
+          fontFamily: 'Pretendard',
           color: podium.foreground,
           fontWeight: FontWeight.w800,
         ),

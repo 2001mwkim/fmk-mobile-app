@@ -39,7 +39,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/fmk_home_widget_info" />
+                android:resource="@xml/fmk_widget_info" />
         </receiver>
 
         <!-- Don't delete the meta-data below.

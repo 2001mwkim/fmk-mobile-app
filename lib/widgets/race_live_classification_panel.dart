@@ -142,7 +142,7 @@ class _RaceLiveClassificationPanelState
                 '${s.classification.length} DRIVERS',
                 style: const TextStyle(
                   fontSize: 10,
-                  fontFamily: 'monospace',
+                  fontFamily: 'Pretendard',
                   color: _faint,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -158,7 +158,7 @@ class _RaceLiveClassificationPanelState
   Widget _columnHeader(LiveSessionSnapshot s) {
     const style = TextStyle(
       fontSize: 9,
-      fontFamily: 'monospace',
+      fontFamily: 'Pretendard',
       color: _faint,
       fontWeight: FontWeight.w800,
       letterSpacing: 0.8,
@@ -221,7 +221,7 @@ class _RaceLiveClassificationPanelState
                         _expanded ? '$start-$end위' : '+ ${remaining.length}명 더',
                         style: const TextStyle(
                           fontSize: 10,
-                          fontFamily: 'monospace',
+                          fontFamily: 'Pretendard',
                           color: _muted,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
@@ -284,7 +284,7 @@ class _ClassificationRow extends StatelessWidget {
               '${driver.position}',
               style: TextStyle(
                 fontSize: 12,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: podium.foreground,
                 fontWeight: FontWeight.w800,
               ),
@@ -306,7 +306,7 @@ class _ClassificationRow extends StatelessWidget {
               driver.code,
               style: TextStyle(
                 fontSize: 13,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: isTopThree
                     ? const Color(0xFFE8EDF6)
                     : const Color(0xFFCBD5E1),
@@ -352,7 +352,7 @@ class _ClassificationRow extends StatelessWidget {
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 12,
-                fontFamily: 'monospace',
+                fontFamily: 'Pretendard',
                 color: gap == '—'
                     ? const Color(0xFF5B6178)
                     : (isTopThree
@@ -425,7 +425,7 @@ class _LapChip extends StatelessWidget {
         text,
         style: const TextStyle(
           fontSize: 11,
-          fontFamily: 'monospace',
+          fontFamily: 'Pretendard',
           color: AppColors.white,
           fontWeight: FontWeight.w800,
         ),
@@ -459,7 +459,7 @@ class _LiveClock extends StatelessWidget {
           label!,
           style: const TextStyle(
             fontSize: 11,
-            fontFamily: 'monospace',
+            fontFamily: 'Pretendard',
             color: Color(0xFF8088A8),
             fontWeight: FontWeight.w700,
           ),

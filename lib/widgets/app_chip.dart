@@ -14,7 +14,7 @@ enum AppChipVariant { red, blue, neutral, mono, ended }
 ///   red     rounded-full bg-red-500/15  text-red-400
 ///   blue    rounded-full bg-blue-500/15 text-blue-400
 ///   neutral rounded-full bg-white/[0.06] text-[#959bb6]
-///   mono    rounded-md   bg-white/[0.07] text-slate-300 font-mono
+///   mono    rounded-md   bg-white/[0.07] text-slate-300
 ///   ended   rounded-full bg-white/[0.04] text-[#5b6178]
 class AppChip extends StatelessWidget {
   const AppChip({
@@ -43,7 +43,7 @@ class AppChip extends StatelessWidget {
           height: 1, // leading-none
           fontWeight: FontWeight.bold,
           color: spec.foreground,
-          fontFamily: spec.mono ? 'monospace' : null,
+          fontFamily: 'Pretendard',
         ),
       ),
     );
@@ -71,7 +71,6 @@ class AppChip extends StatelessWidget {
           background: Color(0x12FFFFFF), // white / 7%
           foreground: AppColors.slate300,
           isPill: false,
-          mono: true,
         );
       case AppChipVariant.ended:
         return const _ChipSpec(
@@ -87,11 +86,9 @@ class _ChipSpec {
     required this.background,
     required this.foreground,
     this.isPill = true,
-    this.mono = false,
   });
 
   final Color background;
   final Color foreground;
   final bool isPill;
-  final bool mono;
 }

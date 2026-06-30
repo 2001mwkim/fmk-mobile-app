@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fmk_red">#EF4444</color>
+    <color name="fmk_white">#FAFAFA</color>
+    <color name="fmk_text">#D4D4D8</color>
+    <color name="fmk_dim">#A1A1AA</color>
+    <color name="fmk_faint">#71717A</color>
+    <color name="fmk_ghost">#52525B</color>
+    <color name="fmk_divider">#14FFFFFF</color>
+    <color name="fmk_bg_top">#161618</color>
+    <color name="fmk_bg_bottom">#0E0E10</color>
+    <color name="fmk_stroke">#12FFFFFF</color>
+    <color name="fmk_track">#14FFFFFF</color>
+    <color name="fmk_card">#0AFFFFFF</color>
+    <color name="fmk_p1">#EF4444</color>
+    <color name="fmk_p2">#A1A1AA</color>
+    <color name="fmk_p3">#71717A</color>
+</resources>

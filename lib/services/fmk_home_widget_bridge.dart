@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
+import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
@@ -12,26 +13,43 @@ import 'live_session_controller.dart';
 const String fmkHomeWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkHomeWidgetProvider';
 
-const String _badgeKey = 'fmk_widget_badge';
-const String _titleKey = 'fmk_widget_title';
-const String _primaryKey = 'fmk_widget_primary';
-const String _secondaryKey = 'fmk_widget_secondary';
-const String _updatedKey = 'fmk_widget_updated';
+const String _modeDefault = 'default';
+const String _modeLive = 'live';
 
 class FmkHomeWidgetPayload {
   const FmkHomeWidgetPayload({
-    required this.badge,
-    required this.title,
-    required this.primary,
-    required this.secondary,
-    required this.updated,
+    required this.mode,
+    required this.gpFlag,
+    required this.gpName,
+    required this.sessions,
+    required this.liveBadge,
+    required this.lapCurrent,
+    required this.lapTotal,
+    required this.topThree,
   });
 
-  final String badge;
-  final String title;
-  final String primary;
-  final String secondary;
-  final String updated;
+  final String mode;
+  final String gpFlag;
+  final String gpName;
+  final List<FmkHomeWidgetSessionRow> sessions;
+  final String liveBadge;
+  final int lapCurrent;
+  final int lapTotal;
+  final List<String> topThree;
+
+  bool get isLive => mode == _modeLive;
+}
+
+class FmkHomeWidgetSessionRow {
+  const FmkHomeWidgetSessionRow({
+    required this.name,
+    required this.date,
+    required this.time,
+  });
+
+  final String name;
+  final String date;
+  final String time;
 }
 
 class FmkHomeWidgetBridge {
@@ -56,13 +74,7 @@ class FmkHomeWidgetBridge {
     final payload = buildFmkHomeWidgetPayload(snapshot: snapshot, now: now);
 
     try {
-      await Future.wait([
-        HomeWidget.saveWidgetData<String>(_badgeKey, payload.badge),
-        HomeWidget.saveWidgetData<String>(_titleKey, payload.title),
-        HomeWidget.saveWidgetData<String>(_primaryKey, payload.primary),
-        HomeWidget.saveWidgetData<String>(_secondaryKey, payload.secondary),
-        HomeWidget.saveWidgetData<String>(_updatedKey, payload.updated),
-      ]);
+      await _savePayload(payload);
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
       );
@@ -71,6 +83,51 @@ class FmkHomeWidgetBridge {
       debugPrintStack(stackTrace: stackTrace);
     }
   }
+
+  static Future<void> _savePayload(FmkHomeWidgetPayload payload) async {
+    final writes = <Future<bool?>>[
+      HomeWidget.saveWidgetData<String>('mode', payload.mode),
+      HomeWidget.saveWidgetData<String>('gpFlag', payload.gpFlag),
+      HomeWidget.saveWidgetData<String>('gpName', payload.gpName),
+      HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
+      HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
+      HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
+    ];
+
+    for (var i = 0; i < 5; i++) {
+      final session = i < payload.sessions.length ? payload.sessions[i] : null;
+      final index = i + 1;
+      writes.addAll([
+        HomeWidget.saveWidgetData<String>(
+          'session${index}Name',
+          session?.name ?? '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'session${index}Date',
+          session?.date ?? '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'session${index}Time',
+          session?.time ?? '',
+        ),
+        HomeWidget.saveWidgetData<int>(
+          'session${index}Visible',
+          session == null ? 0 : 1,
+        ),
+      ]);
+    }
+
+    for (var i = 0; i < 3; i++) {
+      writes.add(
+        HomeWidget.saveWidgetData<String>(
+          'p${i + 1}Code',
+          i < payload.topThree.length ? payload.topThree[i] : '',
+        ),
+      );
+    }
+
+    await Future.wait(writes);
+  }
 }
 
 FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
@@ -78,15 +135,34 @@ FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
-  final displayableSnapshot = snapshot != null && snapshot.isDisplayable
-      ? snapshot
-      : null;
-
-  if (displayableSnapshot != null) {
-    return _buildLivePayload(displayableSnapshot, currentTime);
+  final displayable = snapshot != null && snapshot.isDisplayable;
+  if (displayable) {
+    return _buildLivePayload(snapshot, currentTime);
   }
+  return _buildDefaultPayload(currentTime);
+}
 
-  return _buildNextSessionPayload(currentTime);
+FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
+  final race = getNextRace(now);
+  final sessions = race.sessions.take(5).map((session) {
+    final start = getSessionDate(race, session);
+    return FmkHomeWidgetSessionRow(
+      name: _sessionName(session),
+      date: _formatDateKst(start),
+      time: _formatTimeKst(start),
+    );
+  }).toList();
+
+  return FmkHomeWidgetPayload(
+    mode: _modeDefault,
+    gpFlag: _flagForRace(race),
+    gpName: race.nameKo,
+    sessions: sessions,
+    liveBadge: 'LIVE',
+    lapCurrent: 0,
+    lapTotal: 0,
+    topThree: const [],
+  );
 }
 
 FmkHomeWidgetPayload _buildLivePayload(
@@ -94,92 +170,56 @@ FmkHomeWidgetPayload _buildLivePayload(
   DateTime now,
 ) {
   final race = getRaceById(snapshot.raceId);
-  final title = _firstNonEmpty([snapshot.raceName, race?.nameKo, '포매코 라이브']);
-  final topThree = _topThreeCodes(snapshot);
-  final updated = _liveUpdatedLabel(snapshot, now);
-
-  if (snapshot.isEnded) {
-    return FmkHomeWidgetPayload(
-      badge: '최종 결과',
-      title: title,
-      primary: topThree,
-      secondary: snapshot.sessionTitle,
-      updated: updated,
-    );
-  }
-
-  return FmkHomeWidgetPayload(
-    badge: 'LIVE',
-    title: title,
-    primary: _lapLabel(snapshot),
-    secondary: topThree,
-    updated: updated,
-  );
-}
-
-FmkHomeWidgetPayload _buildNextSessionPayload(DateTime now) {
-  final race = getNextRace(now);
-  final session = getNextSession(race, now);
-  final sessionStart = session == null ? null : getSessionDate(race, session);
-  final isStartingSoon =
-      sessionStart != null &&
-      sessionStart.isAfter(now) &&
-      sessionStart.difference(now) <= const Duration(minutes: 30);
-
-  return FmkHomeWidgetPayload(
-    badge: isStartingSoon ? '곧 시작' : '다음 세션',
-    title: race.nameKo,
-    primary: session?.fullLabel ?? '세션 일정 준비 중',
-    secondary: _nextSessionSecondary(race, session, sessionStart),
-    updated: _updatedLabel(now),
-  );
-}
-
-String _nextSessionSecondary(
-  Race race,
-  RaceSession? session,
-  DateTime? sessionStart,
-) {
-  final location = _firstNonEmpty([race.circuitKo, race.countryKo]);
-  if (session == null || sessionStart == null) return location;
-  return '한국시간 ${_formatDateTimeKst(sessionStart)} · $location';
-}
-
-String _lapLabel(LiveSessionSnapshot snapshot) {
-  if (snapshot.currentLap != null && snapshot.totalLaps != null) {
-    return 'Lap ${snapshot.currentLap} / ${snapshot.totalLaps}';
-  }
-  return snapshot.sessionTitle;
-}
-
-String _topThreeCodes(LiveSessionSnapshot snapshot) {
-  final codes = snapshot.topThree
+  final topThree = snapshot.topThree
       .take(3)
-      .map((driver) => driver.code.trim())
+      .map((driver) => driver.code.trim().toUpperCase())
       .where((code) => code.isNotEmpty)
       .toList();
-  if (codes.isEmpty) return 'Top 3 집계 중';
-  return 'Top 3 ${codes.join(' · ')}';
+  final lapTotal = snapshot.totalLaps ?? 0;
+  final lapCurrent = snapshot.currentLap ?? 0;
+
+  return FmkHomeWidgetPayload(
+    mode: _modeLive,
+    gpFlag: _firstNonEmpty([
+      snapshot.countryFlag,
+      liveCountryFlag(snapshot.raceId),
+      if (race != null) _flagForRace(race),
+    ]),
+    gpName: _firstNonEmpty([snapshot.raceName, race?.nameKo, '포매코 라이브']),
+    sessions: const [],
+    liveBadge: snapshot.isEnded ? 'RESULT' : 'LIVE',
+    lapCurrent: lapCurrent < 0 ? 0 : lapCurrent,
+    lapTotal: lapTotal < 0 ? 0 : lapTotal,
+    topThree: topThree,
+  );
 }
 
-String _liveUpdatedLabel(LiveSessionSnapshot snapshot, DateTime fallback) {
-  final parsed = DateTime.tryParse(snapshot.updatedAt);
-  return _updatedLabel(parsed ?? fallback);
+String _sessionName(RaceSession session) {
+  final fullLabel = session.fullLabel.trim();
+  if (fullLabel.isNotEmpty) return fullLabel;
+  return session.label.trim().isEmpty ? '세션' : session.label.trim();
 }
 
-String _updatedLabel(DateTime value) {
+String _flagForRace(Race race) => getCountryFlag(race.countryKo);
+
+String _formatDateKst(DateTime value) {
   final kst = _toKst(value);
-  return '업데이트 ${_two(kst.hour)}:${_two(kst.minute)} KST';
+  return '${kst.month}.${kst.day} ${_weekdayKo(kst.weekday)}';
 }
 
-String _formatDateTimeKst(DateTime value) {
+String _formatTimeKst(DateTime value) {
   final kst = _toKst(value);
-  return '${kst.month}.${kst.day} ${_two(kst.hour)}:${_two(kst.minute)} KST';
+  return '${_two(kst.hour)}:${_two(kst.minute)}';
 }
 
 DateTime _toKst(DateTime value) => value.toUtc().add(const Duration(hours: 9));
 
 String _two(int value) => value.toString().padLeft(2, '0');
+
+String _weekdayKo(int weekday) {
+  const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  return labels[weekday - 1];
+}
 
 String _firstNonEmpty(List<String?> values) {
   for (final value in values) {
