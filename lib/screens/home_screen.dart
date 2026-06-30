@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'calendar_screen.dart';
 import 'race_detail_screen.dart';
 import 'settings_screen.dart';
 import '../data/races.dart';
@@ -48,13 +47,6 @@ class _SeasonHomeContent extends StatelessWidget {
     final now = DateTime.now();
     final nextRace = getNextRace(now);
     final nextSession = getNextSession(nextRace, now);
-    final completedCount = races
-        .where((race) => getRaceStatus(race, now) == RaceStatus.ended)
-        .length;
-    final cancelledCount = races.where((race) => race.isCancelled).length;
-    final activeCount = races
-        .where((race) => getRaceStatus(race, now) == RaceStatus.inProgress)
-        .length;
 
     return SafeArea(
       child: ListView(
@@ -82,26 +74,10 @@ class _SeasonHomeContent extends StatelessWidget {
             ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
           ),
           const SizedBox(height: 16),
-          _NextRaceCard(race: nextRace, now: now),
-          const SizedBox(height: 12),
-          _NextSessionCard(race: nextRace, session: nextSession),
+          // 다음 그랑프리 히어로 — 다음 세션 정보를 내부에 포함
+          _NextRaceCard(race: nextRace, session: nextSession, now: now),
           const SizedBox(height: 12),
           _WeekendScheduleCard(race: nextRace, now: now),
-          const SizedBox(height: 12),
-          _SeasonSummaryCard(
-            completedCount: completedCount,
-            activeCount: activeCount,
-            cancelledCount: cancelledCount,
-            totalCount: races.length,
-          ),
-          const SizedBox(height: 12),
-          _CalendarLinkCard(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const CalendarScreen()),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -109,9 +85,14 @@ class _SeasonHomeContent extends StatelessWidget {
 }
 
 class _NextRaceCard extends StatelessWidget {
-  const _NextRaceCard({required this.race, required this.now});
+  const _NextRaceCard({
+    required this.race,
+    required this.session,
+    required this.now,
+  });
 
   final Race race;
+  final RaceSession? session;
   final DateTime now;
 
   @override
@@ -125,6 +106,9 @@ class _NextRaceCard extends StatelessWidget {
         : '다음 그랑프리';
 
     return HeroCard(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -155,64 +139,139 @@ class _NextRaceCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 14),
-          _InfoLine(
-            icon: Icons.calendar_today_outlined,
-            text: _formatDateRange(race.startDate, race.endDate),
-          ),
+          const SizedBox(height: 16),
+          // 다음/진행 중/최근 세션 정보를 히어로 내부 박스로 표시(웹 hero 의 세션 박스)
+          _HeroSessionBox(race: race, session: session, now: now),
         ],
       ),
     );
   }
 }
 
-class _NextSessionCard extends StatelessWidget {
-  const _NextSessionCard({required this.race, required this.session});
+class _HeroSessionBox extends StatelessWidget {
+  const _HeroSessionBox({
+    required this.race,
+    required this.session,
+    required this.now,
+  });
 
   final Race race;
   final RaceSession? session;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
+    final s = session;
+    if (s == null) {
+      return _box(
+        child: Text(
+          race.cancelNote ?? '세션 정보가 아직 준비되지 않았습니다.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    final status = getSessionStatus(race, s, now);
+    final isLive = status == SessionStatus.live;
+    final raceEnded = getRaceStatus(race, now) == RaceStatus.ended;
+    final label = isLive
+        ? '진행 중인 세션'
+        : raceEnded
+        ? '최근 세션'
+        : '다음 세션';
+    final accent = isLive ? AppColors.redSoft : AppColors.blueSoft;
+
+    return _box(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(label: '다음 세션'),
-          const SizedBox(height: 12),
-          if (session == null) ...[
-            Text(
-              '세션 일정이 없습니다.',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    if (isLive) ...[
+                      const SizedBox(width: 8),
+                      const AppChip(label: 'LIVE', variant: AppChipVariant.red),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s.fullLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                s.date,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  color: Color(0xFF7880A0),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              race.cancelNote ?? '이 그랑프리의 세션 정보가 아직 준비되지 않았습니다.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-            ),
-          ] else ...[
-            Text(
-              session!.fullLabel,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 2),
+              Text(
+                s.time,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'monospace',
+                  height: 1.1,
+                  color: isLive ? AppColors.redSoft : AppColors.white,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            _InfoLine(
-              icon: Icons.event_available_outlined,
-              text: session!.fullDateTime,
-            ),
-            const SizedBox(height: 8),
-            _InfoLine(icon: Icons.schedule_outlined, text: session!.time),
-          ],
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _box({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0x40000000), // black/25
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0x12FFFFFF)), // white/7
+      ),
+      child: child,
     );
   }
 }
@@ -374,120 +433,6 @@ class _WeekendSessionRow extends StatelessWidget {
   }
 }
 
-class _SeasonSummaryCard extends StatelessWidget {
-  const _SeasonSummaryCard({
-    required this.completedCount,
-    required this.activeCount,
-    required this.cancelledCount,
-    required this.totalCount,
-  });
-
-  final int completedCount;
-  final int activeCount;
-  final int cancelledCount;
-  final int totalCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
-    final upcomingCount = totalCount - completedCount - activeCount;
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _SectionHeader(label: '시즌 진행 상황'),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
-              minHeight: 7,
-              backgroundColor: AppColors.black,
-              color: AppColors.red,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryMetric(label: '종료', value: '$completedCount'),
-              ),
-              Expanded(
-                child: _SummaryMetric(label: '진행중', value: '$activeCount'),
-              ),
-              Expanded(
-                child: _SummaryMetric(label: '예정', value: '$upcomingCount'),
-              ),
-            ],
-          ),
-          if (cancelledCount > 0) ...[
-            const SizedBox(height: 12),
-            Text(
-              '취소된 그랑프리 $cancelledCount개 포함',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _CalendarLinkCard extends StatelessWidget {
-  const _CalendarLinkCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.red.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.calendar_month_outlined,
-              color: AppColors.red,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '전체 일정 보기',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '24개 그랑프리 캘린더',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.red),
-        ],
-      ),
-    );
-  }
-}
-
 class _EmptyHomeContent extends StatelessWidget {
   const _EmptyHomeContent();
 
@@ -539,81 +484,6 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(color: AppColors.textMuted),
-        ),
-      ],
-    );
-  }
-}
-
-String _formatDateRange(String startDate, String endDate) {
-  final start = DateTime.parse(startDate);
-  final end = DateTime.parse(endDate);
-
-  if (start.year == end.year && start.month == end.month) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.day)}';
-  }
-
-  if (start.year == end.year) {
-    return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-  }
-
-  return '${start.year}.${_twoDigits(start.month)}.${_twoDigits(start.day)} - ${end.year}.${_twoDigits(end.month)}.${_twoDigits(end.day)}';
-}
-
-String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 // 라이브 카드 탭 → raceId 로 Race 를 찾아 상세로 이동. 못 찾으면 SnackBar 안내.
 void _openLiveRace(BuildContext context, String? raceId) {

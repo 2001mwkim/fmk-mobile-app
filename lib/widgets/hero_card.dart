@@ -16,10 +16,14 @@ class HeroCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
+    this.onTap,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+
+  /// 탭 시 동작(예: 상세 이동). null 이면 비탭(시각 변화 없음).
+  final VoidCallback? onTap;
 
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(24));
 
@@ -64,7 +68,13 @@ class HeroCard extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(padding: padding, child: child),
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onTap,
+                child: Padding(padding: padding, child: child),
+              ),
+            ),
           ],
         ),
       ),
