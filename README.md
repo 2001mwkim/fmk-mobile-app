@@ -8,7 +8,8 @@
 - Android package name: `kr.formulamagazine.fmk`
 - iOS bundle identifier: `kr.formulamagazine.fmk`
 - Android permission: `android.permission.INTERNET` is enabled for live JSON fetches.
-- App icon source path: place the final icon at `assets/icon/app_icon.png` before enabling launcher icon generation.
+- App icon source path: `assets/icon/app_icon.png`
+- App icon generation: run `dart run flutter_launcher_icons` only after `assets/icon/app_icon.png` exists.
 - App icon colors: black / white / yellow. In-app UI colors stay black / white / red.
 
 ## Getting Started
