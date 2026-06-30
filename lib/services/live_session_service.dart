@@ -5,11 +5,21 @@ import 'package:http/http.dart' as http;
 import '../models/live_session.dart';
 
 /// 개발용 live.json endpoint (기존 SignalR collector 가 제공).
-/// endpoint 는 이 한 곳에서만 바꾼다.
 ///
-/// Android 에뮬레이터에서는 localhost 가 기기 내부를 가리키므로 아래 값으로 교체:
-///   const String kLiveJsonUrl = 'http://10.0.2.2:8787/live.json';
-const String kLiveJsonUrl = 'http://localhost:8787/live.json';
+/// 값은 빌드 시 `--dart-define=LIVE_JSON_URL=...` 로 주입할 수 있고,
+/// 주입이 없으면 기본값(`http://localhost:8787/live.json`)을 사용한다.
+/// `String.fromEnvironment` 는 const 이고 dart:io 에 의존하지 않아
+/// Web / Windows / Android 어디서든 빌드가 깨지지 않는다.
+///
+/// 실행 환경별 예시:
+///   - Windows desktop : http://localhost:8787/live.json   (기본값, 주입 불필요)
+///   - Android emulator: flutter run --dart-define=LIVE_JSON_URL=http://10.0.2.2:8787/live.json
+///   - physical device : flutter run --dart-define=LIVE_JSON_URL=`http://PC-LAN-IP:8787/live.json`
+///                       (예: http://192.168.0.10:8787/live.json — PC 와 기기가 같은 네트워크)
+const String kLiveJsonUrl = String.fromEnvironment(
+  'LIVE_JSON_URL',
+  defaultValue: 'http://localhost:8787/live.json',
+);
 
 /// 요청 타임아웃(폴링 주기보다 짧게).
 const Duration kLiveFetchTimeout = Duration(seconds: 8);
