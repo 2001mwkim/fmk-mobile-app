@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
 import 'package:fmk_app/data/live_session_mock.dart';
+import 'package:fmk_app/models/live_session.dart';
+import 'package:fmk_app/services/live_session_service.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/home_live_top_three_card.dart';
 import 'package:fmk_app/widgets/race_live_classification_panel.dart';
@@ -124,5 +126,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('순위 접기'), findsOneWidget);
     expect(find.text('막스 베르스타펜'), findsWidgets);
+  });
+
+  test('parseLiveJson maps collector live.json into a snapshot', () {
+    const body = '''
+{
+  "snapshot": {
+    "status": "live",
+    "mode": "live-candidate",
+    "raceId": "spain",
+    "raceName": "스페인 그랑프리",
+    "sessionType": "Race",
+    "sessionName": "레이스",
+    "currentLap": 42,
+    "totalLaps": 66,
+    "updatedAt": "2026-06-30T13:34:56.000Z",
+    "topThree": [
+      {"position": 1, "racingNumber": "4", "code": "NOR", "displayName": "랜도 노리스", "source": "top-three"},
+      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "source": "top-three"},
+      {"position": 3, "racingNumber": "16", "code": "LEC", "displayName": "샤를 르클레르", "interval": "+5.118", "source": "top-three"}
+    ],
+    "classification": [
+      {"position": 1, "racingNumber": "4", "code": "NOR", "displayName": "랜도 노리스", "gapToLeader": null, "source": "timing-data"},
+      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "source": "timing-data"}
+    ]
+  },
+  "collector": {"feedUpdates": 10}
+}
+''';
+
+    final snapshot = parseLiveJson(body);
+    expect(snapshot, isNotNull);
+    expect(snapshot!.status, LiveSessionStatus.live);
+    expect(snapshot.raceId, 'spain');
+    expect(snapshot.currentLap, 42);
+    expect(snapshot.totalLaps, 66);
+    expect(snapshot.isRaceOrSprint, isTrue);
+    expect(snapshot.topThree.length, 3);
+    expect(snapshot.topThree.first.code, 'NOR');
+    expect(snapshot.classification.length, 2);
+    // interval 우선(race) 갭 규칙
+    expect(snapshot.topThree[1].gap(raceLike: true), '+2.341');
+
+    // 잘못된 본문은 null (앱 크래시 방지)
+    expect(parseLiveJson('not json'), isNull);
+    expect(parseLiveJson('{"snapshot": 123}'), isNull);
   });
 }

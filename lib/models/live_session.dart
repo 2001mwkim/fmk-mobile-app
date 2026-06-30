@@ -44,6 +44,8 @@ class LiveSessionSnapshot {
     this.topThree = const [],
     this.classification = const [],
     this.countryFlag,
+    this.endedAt,
+    this.visibleUntil,
   });
 
   final LiveSessionStatus status;
@@ -60,11 +62,25 @@ class LiveSessionSnapshot {
   final List<LiveDriverPosition> classification;
   final String? countryFlag;
 
+  /// 세션이 종료된 시각(ISO). 웹 collector 의 snapshot.endedAt 대응.
+  final DateTime? endedAt;
+
+  /// 종료 후 최종 결과를 노출하는 마감 시각(endedAt + 30분). 웹 visibleUntil 대응.
+  final DateTime? visibleUntil;
+
   bool get isEnded => status == LiveSessionStatus.ended;
 
-  /// live 이거나 종료 직후(최종 결과 노출)면 화면에 표시.
-  bool get isDisplayable =>
-      status == LiveSessionStatus.live || status == LiveSessionStatus.ended;
+  /// 종료됐지만 visibleUntil 이전이라 '최종 결과'로 노출 가능한 상태인가.
+  /// visibleUntil 이 아직 없으면(필드 미제공) status 만으로 판단(노출 안 함).
+  bool get isRecentlyEnded {
+    if (status != LiveSessionStatus.ended) return false;
+    final until = visibleUntil;
+    if (until == null) return false;
+    return DateTime.now().isBefore(until);
+  }
+
+  /// live 이거나 종료 후 30분 이내면 화면에 표시(웹 isDisplayableSnapshot 대응).
+  bool get isDisplayable => status == LiveSessionStatus.live || isRecentlyEnded;
 
   /// practice/qualifying/shootout 이 아니고 race/sprint 면 true.
   bool get isRaceOrSprint {

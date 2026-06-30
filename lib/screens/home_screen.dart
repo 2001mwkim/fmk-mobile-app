@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'calendar_screen.dart';
 import 'race_detail_screen.dart';
 import 'settings_screen.dart';
-import '../data/live_session_mock.dart';
 import '../data/races.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
@@ -12,6 +11,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/home_live_top_three_card.dart';
+import '../widgets/live_session_builder.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -61,7 +61,9 @@ class _SeasonHomeContent extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
         children: [
           // 라이브 Top 3 카드 (실데이터 없으면 렌더되지 않음)
-          HomeLiveTopThreeCard(snapshot: getLiveSnapshot()),
+          LiveSessionBuilder(
+            builder: (_, snapshot) => HomeLiveTopThreeCard(snapshot: snapshot),
+          ),
           Text(
             '2026 시즌',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(

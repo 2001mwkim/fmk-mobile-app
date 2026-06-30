@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 
 import '../data/circuit_info.dart';
 import '../data/country_flags.dart';
-import '../data/live_session_mock.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
 import '../data/team_colors.dart';
@@ -16,6 +15,7 @@ import '../models/race_session.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../widgets/live_session_builder.dart';
 import '../widgets/race_live_classification_panel.dart';
 
 // 웹 상세 페이지 전용 색 (page.tsx / globals 에서 사용하는 값).
@@ -63,9 +63,11 @@ class RaceDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             // 라이브 순위 패널 (실데이터 없으면 렌더되지 않음)
-            RaceLiveClassificationPanel(
-              snapshot: getLiveSnapshot(),
-              raceId: race.id,
+            LiveSessionBuilder(
+              builder: (_, snapshot) => RaceLiveClassificationPanel(
+                snapshot: snapshot,
+                raceId: race.id,
+              ),
             ),
             _HeroCard(race: race, status: status),
             if (showResultCard) ...[
