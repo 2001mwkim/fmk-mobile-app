@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
+import 'package:fmk_app/data/live_session_mock.dart';
+import 'package:fmk_app/theme/app_theme.dart';
+import 'package:fmk_app/widgets/home_live_top_three_card.dart';
+import 'package:fmk_app/widgets/race_live_classification_panel.dart';
 
 void main() {
   testWidgets('bottom tabs, race detail, and settings navigation work', (
@@ -87,5 +91,38 @@ void main() {
     expect(find.text('인스타그램 보러가기'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('F1DB · CC BY 4.0'), 200);
     expect(find.text('F1DB · CC BY 4.0'), findsOneWidget);
+  });
+
+  testWidgets('live widgets render and expand with mock snapshot', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(
+          body: ListView(
+            children: [
+              HomeLiveTopThreeCard(snapshot: mockLiveSession),
+              RaceLiveClassificationPanel(
+                snapshot: mockLiveSession,
+                raceId: 'spain',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('LIVE'), findsWidgets);
+    expect(find.text('스페인 그랑프리'), findsOneWidget);
+    expect(find.text('전체 순위 보기'), findsOneWidget);
+    expect(find.text('현재 레이스 순위'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('4위 이하 순위 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('4위 이하 순위 보기'));
+    await tester.pumpAndSettle();
+    expect(find.text('순위 접기'), findsOneWidget);
+    expect(find.text('막스 베르스타펜'), findsWidgets);
   });
 }
