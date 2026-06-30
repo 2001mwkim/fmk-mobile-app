@@ -18,20 +18,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('포매코'),
-        actions: [
-          IconButton(
-            tooltip: '설정',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-              );
-            },
-          ),
-        ],
-      ),
       body: races.isEmpty
           ? const _EmptyHomeContent()
           : const _SeasonHomeContent(),
@@ -52,6 +38,15 @@ class _SeasonHomeContent extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _HomeHeader()),
+              const SizedBox(width: 12),
+              const _HomeSettingsButton(),
+            ],
+          ),
+          const SizedBox(height: 16),
           // 라이브 Top 3 카드 (실데이터 없으면 렌더되지 않음)
           LiveSessionBuilder(
             builder: (builderContext, snapshot) => HomeLiveTopThreeCard(
@@ -59,26 +54,73 @@ class _SeasonHomeContent extends StatelessWidget {
               onTap: () => _openLiveRace(builderContext, snapshot?.raceId),
             ),
           ),
-          Text(
-            '2026 시즌',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '다가오는 그랑프리와 세션을 확인하세요.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // 다음 그랑프리 히어로 — 다음 세션 정보를 내부에 포함
           _NextRaceCard(race: nextRace, session: nextSession, now: now),
           const SizedBox(height: 12),
           _WeekendScheduleCard(race: nextRace, now: now),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '2026 시즌',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: AppColors.white,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '다가오는 그랑프리와 세션을 확인하세요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeSettingsButton extends StatelessWidget {
+  const _HomeSettingsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+          );
+        },
+        child: Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: const Icon(
+            Icons.settings_outlined,
+            size: 20,
+            color: AppColors.white,
+          ),
+        ),
       ),
     );
   }
@@ -300,22 +342,7 @@ class _WeekendScheduleCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionHeader(label: '이번 주말 일정'),
-                        const SizedBox(height: 5),
-                        Text(
-                          '${race.nameKo} · 한국시간 기준',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const Expanded(child: _SectionHeader(label: '이번 주말 일정')),
                   const SizedBox(width: 8),
                   const Icon(
                     Icons.arrow_forward_ios,
@@ -396,16 +423,6 @@ class _WeekendSessionRow extends StatelessWidget {
                         : FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  session.fullLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ],
             ),
           ),
@@ -419,10 +436,15 @@ class _WeekendSessionRow extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                '${session.date} · ${session.time}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w700,
+                '${session.date} / ${session.time} KST',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isRace || isLive
+                      ? AppColors.white
+                      : AppColors.textMuted,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -441,27 +463,36 @@ class _EmptyHomeContent extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: AppCard(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '시즌 데이터가 없습니다.',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+        child: Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerRight,
+              child: _HomeSettingsButton(),
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '시즌 데이터가 없습니다.',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '그랑프리 일정 데이터가 준비되면 홈 화면에 표시됩니다.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                '그랑프리 일정 데이터가 준비되면 홈 화면에 표시됩니다.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

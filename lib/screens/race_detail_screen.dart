@@ -44,11 +44,12 @@ class RaceDetailScreen extends StatelessWidget {
         : const <RaceResultEntry>[];
 
     return Scaffold(
-      appBar: AppBar(title: Text(race.nameKo)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
+            const _DetailBackButton(),
+            const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
@@ -85,6 +86,48 @@ class RaceDetailScreen extends StatelessWidget {
               _CircuitInfoCard(race: race, info: circuitInfo),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailBackButton extends StatelessWidget {
+  const _DetailBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => Navigator.of(context).maybePop(),
+          child: Container(
+            padding: const EdgeInsets.only(left: 10, right: 14),
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.chevron_left, size: 22, color: AppColors.white),
+                SizedBox(width: 2),
+                Text(
+                  '일정으로',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -598,7 +641,7 @@ class _SessionTimelineRow extends StatelessWidget {
         SizedBox(
           width: 24,
           child: Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 13),
             child: Center(
               child: _TimelineDot(status: status, isRace: isRace),
             ),

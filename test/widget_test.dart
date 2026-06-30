@@ -17,7 +17,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const FmkApp());
 
-    expect(find.text('포매코'), findsOneWidget);
+    expect(find.text('2026 시즌'), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
@@ -45,6 +46,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('호주 그랑프리'));
     await tester.pumpAndSettle();
+    expect(find.text('일정으로'), findsOneWidget);
     expect(find.text('레이스 결과'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('레이스 시작'), 200);
     expect(find.text('레이스 시작'), findsOneWidget);
@@ -57,7 +59,7 @@ void main() {
       200,
     );
     expect(find.text('Circuit layouts: F1DB (CC BY 4.0)'), findsOneWidget);
-    await tester.pageBack();
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('순위'));
@@ -83,11 +85,13 @@ void main() {
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
+    await tester.fling(find.byType(ListView).first, const Offset(0, 800), 1000);
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
     expect(find.text('설정'), findsWidgets);
-    expect(find.text('일정 관리'), findsOneWidget);
-    expect(find.text('캘린더에 추가'), findsOneWidget);
+    expect(find.text('일정 관리'), findsNothing);
+    expect(find.text('캘린더에 추가'), findsNothing);
     expect(find.text('알림 설정'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('인스타그램 보러가기'), 200);
     expect(find.text('인스타그램 보러가기'), findsOneWidget);

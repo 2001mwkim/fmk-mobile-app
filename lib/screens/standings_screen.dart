@@ -30,7 +30,6 @@ class _StandingsScreenState extends State<StandingsScreen> {
     final isDrivers = _tab == _StandingsTab.drivers;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('순위')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

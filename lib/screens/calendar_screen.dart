@@ -91,7 +91,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('일정')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

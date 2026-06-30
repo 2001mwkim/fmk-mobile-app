@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../services/notification_settings_controller.dart';
+import '../services/notification_service.dart';
 
 const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
@@ -24,14 +26,13 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('설정')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: const [
+            _BackButtonRow(),
+            SizedBox(height: 14),
             _Header(),
-            SizedBox(height: 20),
-            _Section(title: '일정 관리', child: _CalendarCard()),
             SizedBox(height: 20),
             _Section(title: '알림', child: _NotificationCard()),
             SizedBox(height: 20),
@@ -39,6 +40,39 @@ class SettingsScreen extends StatelessWidget {
             SizedBox(height: 20),
             _Section(title: '앱 정보', child: _AppInfoCard()),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BackButtonRow extends StatelessWidget {
+  const _BackButtonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => Navigator.of(context).maybePop(),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Icon(
+              Icons.chevron_left,
+              size: 24,
+              color: AppColors.white,
+            ),
+          ),
         ),
       ),
     );
@@ -108,42 +142,166 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _CalendarCard extends StatelessWidget {
-  const _CalendarCard();
+class _NotificationCard extends StatefulWidget {
+  const _NotificationCard();
+
+  @override
+  State<_NotificationCard> createState() => _NotificationCardState();
+}
+
+class _NotificationCardState extends State<_NotificationCard> {
+  NotificationPreferences _preferences = const NotificationPreferences();
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final preferences = await notificationSettingsController.load();
+    if (!mounted) return;
+    setState(() {
+      _preferences = preferences;
+      _loading = false;
+    });
+  }
+
+  Future<void> _update({bool? allSessions30m, bool? raceOnly30m}) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
+    NotificationSettingsUpdateResult result;
+    try {
+      result = await notificationSettingsController.update(
+        allSessions30m: allSessions30m,
+        raceOnly30m: raceOnly30m,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      _showSnackBar(context, '알림 설정을 저장하지 못했습니다.');
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _preferences = result.preferences;
+      _saving = false;
+    });
+
+    if (result.permissionDenied) {
+      _showSnackBar(context, '알림 권한이 꺼져 있어 알림을 켤 수 없습니다.');
+    } else if (result.preferences.hasAnyEnabled) {
+      _showSnackBar(context, '알림 예약을 업데이트했습니다.');
+    } else {
+      _showSnackBar(context, '예약된 세션 알림을 취소했습니다.');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.all(18),
-      onTap: () => _showSnackBar(context, '캘린더 추가 기능은 준비 중입니다.'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          _CardHeaderRow(
-            title: '캘린더에 추가',
-            description: '시즌 전체 일정과 레이스 일정을 캘린더에 추가하는 기능을 준비 중입니다.',
-            badge: '준비 중',
-          ),
-          SizedBox(height: 16),
-          _InsetNote('추후 캘린더 구독 방식 또는 앱에서 직접 추가하는 방식으로 제공할 예정입니다.'),
-        ],
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 14),
+              child: _CardHeaderRow(
+                title: '알림 설정',
+                description: '한국시간 기준 세션 시작 30분 전에 로컬 알림을 보냅니다.',
+                badge: '로컬 알림',
+              ),
+            ),
+            const _RowDivider(),
+            _NotificationToggleRow(
+              title: '전체 세션 30분 전 알림',
+              description: 'FP1, FP2, FP3, 스프린트, 퀄리파잉, 레이스 전에 알림',
+              value: _preferences.allSessions30m,
+              enabled: !_loading && !_saving,
+              onChanged: (value) => _update(allSessions30m: value),
+            ),
+            const _RowDivider(),
+            _NotificationToggleRow(
+              title: '레이스 30분 전 알림',
+              description: '레이스 세션만 시작 30분 전에 알림',
+              value: _preferences.raceOnly30m,
+              enabled: !_loading && !_saving,
+              onChanged: (value) => _update(raceOnly30m: value),
+            ),
+            const _RowDivider(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 16),
+              child: _InsetNote(
+                '두 옵션을 모두 켜면 전체 세션 알림 기준으로만 예약되어 레이스 알림은 중복되지 않습니다.',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _NotificationCard extends StatelessWidget {
-  const _NotificationCard();
+class _NotificationToggleRow extends StatelessWidget {
+  const _NotificationToggleRow({
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String description;
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      onTap: () => _showSnackBar(context, '알림 설정 기능은 준비 중입니다.'),
-      child: const _CardHeaderRow(
-        title: '알림 설정',
-        description: '세션 시작 전 알림 기능은 추후 앱 버전에서 제공될 예정입니다.',
-        badge: '앱 버전 예정',
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: _muted,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch.adaptive(
+            value: value,
+            activeThumbColor: AppColors.red,
+            inactiveThumbColor: _nameMuted,
+            inactiveTrackColor: _tileSurface,
+            onChanged: enabled ? onChanged : null,
+          ),
+        ],
       ),
     );
   }
