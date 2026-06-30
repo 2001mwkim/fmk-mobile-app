@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/races.dart';
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
 
@@ -84,6 +85,8 @@ class HomeLiveTopThreeCard extends StatelessWidget {
 
   Widget _topContent(BuildContext context, LiveSessionSnapshot s, bool ended) {
     final raceLike = s.isRaceOrSprint;
+    // raceId → races.dart 의 Race → 국기. 실패하면 snapshot.countryFlag, 그것도 없으면 null.
+    final flag = liveCountryFlag(s.raceId) ?? s.countryFlag;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,17 +114,14 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            _LiveClock(updatedAt: s.updatedAt, ended: ended),
+            _LiveClock(label: s.updatedAtLabel, ended: ended),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            if (s.countryFlag != null) ...[
-              Text(
-                s.countryFlag!,
-                style: const TextStyle(fontSize: 18, height: 1),
-              ),
+            if (flag != null) ...[
+              Text(flag, style: const TextStyle(fontSize: 18, height: 1)),
               const SizedBox(width: 8),
             ],
             Flexible(
@@ -287,13 +287,14 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _LiveClock extends StatelessWidget {
-  const _LiveClock({required this.updatedAt, required this.ended});
+  const _LiveClock({required this.label, required this.ended});
 
-  final String updatedAt;
+  final String? label;
   final bool ended;
 
   @override
   Widget build(BuildContext context) {
+    if (label == null) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -307,7 +308,7 @@ class _LiveClock extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         Text(
-          updatedAt,
+          label!,
           style: const TextStyle(
             fontSize: 11,
             fontFamily: 'monospace',

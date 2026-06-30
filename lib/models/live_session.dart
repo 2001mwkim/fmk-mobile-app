@@ -97,6 +97,18 @@ class LiveSessionSnapshot {
 
   String get sessionTitle => sessionName ?? sessionType ?? 'Session';
 
+  /// 갱신 시각을 KST 기준으로 표시(예: '업데이트 13:42 KST').
+  /// updatedAt 이 ISO 면 KST(UTC+9)로 변환, 비어있으면 null(표시 생략),
+  /// 파싱 불가하면 원문을 그대로 보여준다(웹 formatLiveUpdatedAt 의 안전 대체).
+  String? get updatedAtLabel {
+    if (updatedAt.isEmpty) return null;
+    final parsed = DateTime.tryParse(updatedAt);
+    if (parsed == null) return updatedAt;
+    final kst = parsed.toUtc().add(const Duration(hours: 9));
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '업데이트 ${two(kst.hour)}:${two(kst.minute)} KST';
+  }
+
   String get summary {
     if (isRaceOrSprint && currentLap != null && totalLaps != null) {
       return 'Lap $currentLap / $totalLaps · 현재 Top 3';

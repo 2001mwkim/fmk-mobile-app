@@ -1,5 +1,6 @@
 import '../models/race.dart';
 import '../models/race_session.dart';
+import 'country_flags.dart';
 
 const String _kstOffset = '+09:00';
 const Duration _defaultSessionDuration = Duration(minutes: 60);
@@ -1383,6 +1384,23 @@ Race getNextRace([DateTime? now]) {
   }
 
   return races.last;
+}
+
+/// raceId 로 Race 를 찾는다. 없거나 id 가 null 이면 null(라이브 카드 탭/국기용).
+Race? getRaceById(String? id) {
+  if (id == null) return null;
+  for (final race in races) {
+    if (race.id == id) return race;
+  }
+  return null;
+}
+
+/// 라이브 스냅샷 raceId 로 홈 라이브 카드 국기를 구한다. 매핑 실패 시 null.
+String? liveCountryFlag(String? raceId) {
+  final race = getRaceById(raceId);
+  if (race == null) return null;
+  final flag = getCountryFlag(race.countryKo);
+  return flag.isEmpty ? null : flag;
 }
 
 RaceSession? getNextSession(Race race, [DateTime? now]) {

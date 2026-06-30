@@ -4,7 +4,7 @@ import '../models/live_session.dart';
 /// 실제 라이브 데이터 연결 전, 라이브 UI 시각 확인용으로만 쓴다.
 final LiveSessionSnapshot mockLiveSession = LiveSessionSnapshot(
   status: LiveSessionStatus.live,
-  updatedAt: '22:34',
+  updatedAt: '2026-06-30T04:34:00.000Z', // KST 13:34
   raceId: 'spain',
   raceName: '스페인 그랑프리',
   sessionType: 'race',

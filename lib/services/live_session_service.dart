@@ -56,7 +56,8 @@ LiveSessionSnapshot? parseLiveJson(String body) {
 
     return LiveSessionSnapshot(
       status: _parseStatus(map['status']),
-      updatedAt: _formatUpdatedAt(_string(map['updatedAt'])),
+      // 원문(ISO) 보존 — KST 표시는 LiveSessionSnapshot.updatedAtLabel 에서 처리.
+      updatedAt: _string(map['updatedAt']) ?? '',
       raceId: _string(map['raceId']),
       raceName: _string(map['raceName']),
       sessionType: _string(map['sessionType']),
@@ -104,17 +105,6 @@ LiveSessionStatus _parseStatus(dynamic value) {
     default:
       return LiveSessionStatus.inactive;
   }
-}
-
-/// ISO 문자열을 'HH:mm:ss'(기기 로컬, 보통 KST)로 표시. 파싱 실패 시 원문 유지.
-/// TODO: 실데이터 연결 시 명시적 Asia/Seoul 타임존 포맷 적용.
-String _formatUpdatedAt(String? value) {
-  if (value == null || value.isEmpty) return '';
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) return value;
-  final local = parsed.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
 }
 
 String? _string(dynamic value) {

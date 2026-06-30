@@ -119,7 +119,7 @@ class _RaceLiveClassificationPanelState
                 ),
               ),
               const SizedBox(width: 10),
-              _LiveClock(updatedAt: s.updatedAt, ended: ended),
+              _LiveClock(label: s.updatedAtLabel, ended: ended),
             ],
           ),
           const SizedBox(height: 12),
@@ -435,13 +435,14 @@ class _LapChip extends StatelessWidget {
 }
 
 class _LiveClock extends StatelessWidget {
-  const _LiveClock({required this.updatedAt, required this.ended});
+  const _LiveClock({required this.label, required this.ended});
 
-  final String updatedAt;
+  final String? label;
   final bool ended;
 
   @override
   Widget build(BuildContext context) {
+    if (label == null) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -455,7 +456,7 @@ class _LiveClock extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         Text(
-          updatedAt,
+          label!,
           style: const TextStyle(
             fontSize: 11,
             fontFamily: 'monospace',

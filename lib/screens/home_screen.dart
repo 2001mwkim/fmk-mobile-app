@@ -62,7 +62,10 @@ class _SeasonHomeContent extends StatelessWidget {
         children: [
           // 라이브 Top 3 카드 (실데이터 없으면 렌더되지 않음)
           LiveSessionBuilder(
-            builder: (_, snapshot) => HomeLiveTopThreeCard(snapshot: snapshot),
+            builder: (builderContext, snapshot) => HomeLiveTopThreeCard(
+              snapshot: snapshot,
+              onTap: () => _openLiveRace(builderContext, snapshot?.raceId),
+            ),
           ),
           Text(
             '2026 시즌',
@@ -611,6 +614,23 @@ String _formatDateRange(String startDate, String endDate) {
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+// 라이브 카드 탭 → raceId 로 Race 를 찾아 상세로 이동. 못 찾으면 SnackBar 안내.
+void _openLiveRace(BuildContext context, String? raceId) {
+  final race = getRaceById(raceId);
+  if (race == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('해당 그랑프리 정보를 찾을 수 없습니다.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)));
+}
 
 AppChipVariant _sessionStatusVariant(SessionStatus status) {
   return switch (status) {

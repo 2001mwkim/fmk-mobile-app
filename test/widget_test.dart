@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
 import 'package:fmk_app/data/live_session_mock.dart';
+import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
+import 'package:fmk_app/screens/race_detail_screen.dart';
 import 'package:fmk_app/services/live_session_service.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/home_live_top_three_card.dart';
@@ -171,5 +173,80 @@ void main() {
     // 잘못된 본문은 null (앱 크래시 방지)
     expect(parseLiveJson('not json'), isNull);
     expect(parseLiveJson('{"snapshot": 123}'), isNull);
+  });
+
+  test('ended within 30min is displayable, expired is hidden', () {
+    final now = DateTime.now();
+    LiveSessionSnapshot ended(DateTime visibleUntil) => LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '',
+      visibleUntil: visibleUntil,
+    );
+
+    expect(ended(now.add(const Duration(minutes: 25))).isDisplayable, isTrue);
+    expect(
+      ended(now.subtract(const Duration(minutes: 10))).isDisplayable,
+      isFalse,
+    );
+    // visibleUntil 이 없으면 미표시
+    expect(
+      const LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '',
+      ).isDisplayable,
+      isFalse,
+    );
+  });
+
+  test('updatedAtLabel formats KST (UTC+9)', () {
+    const live = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-06-30T04:34:00.000Z',
+    );
+    expect(live.updatedAtLabel, '업데이트 13:34 KST');
+
+    const empty = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '',
+    );
+    expect(empty.updatedAtLabel, isNull);
+  });
+
+  test('liveCountryFlag maps raceId to a flag, safe on miss', () {
+    expect(liveCountryFlag('japan-2026'), '🇯🇵');
+    expect(liveCountryFlag('does-not-exist'), isNull);
+    expect(liveCountryFlag(null), isNull);
+  });
+
+  testWidgets('home live card tap navigates to the matching race detail', (
+    tester,
+  ) async {
+    final race = getRaceById('japan-2026')!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ListView(
+              children: [
+                HomeLiveTopThreeCard(
+                  snapshot: mockLiveSession,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => RaceDetailScreen(race: race),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('전체 순위 보기'));
+    await tester.pumpAndSettle();
+    // 상세 화면 진입 확인(앱바/히어로에 그랑프리명 노출)
+    expect(find.text('일본 그랑프리'), findsWidgets);
   });
 }
