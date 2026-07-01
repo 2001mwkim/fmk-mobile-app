@@ -392,7 +392,7 @@ class _WeekendSessionRow extends StatelessWidget {
     final isLive = status == SessionStatus.live;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border)),
         color: isLive ? AppColors.red.withValues(alpha: 0.08) : null,
@@ -437,7 +437,7 @@ class _WeekendSessionRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '${session.date} / ${session.time} KST',
+            '${session.date} / ${session.time}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
