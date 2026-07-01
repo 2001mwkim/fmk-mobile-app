@@ -15,18 +15,9 @@ class VisitScreen extends StatelessWidget {
   const VisitScreen({super.key});
 
   static const List<_VisitGuide> _guides = [
-    _VisitGuide(
-      title: '일본 그랑프리',
-      description: '스즈카와 일본 여행을 함께 즐길 수 있는 가장 현실적인 첫 F1 직관지',
-    ),
-    _VisitGuide(
-      title: '중국 그랑프리',
-      description: '상하이 여행과 서킷 방문을 함께 고려할 수 있는 가까운 아시아 그랑프리',
-    ),
-    _VisitGuide(
-      title: '싱가포르 그랑프리',
-      description: '야경, 공연, 레이스가 어우러지는 프리미엄 도심형 나이트 그랑프리',
-    ),
+    _VisitGuide(title: '일본 그랑프리', description: '근본 넘치는 스즈카 서킷에서 펼쳐지는 그랑프리'),
+    _VisitGuide(title: '중국 그랑프리', description: '상하이 여행을 함께 즐길 수 있는 그랑프리'),
+    _VisitGuide(title: '싱가포르 그랑프리', description: '야경과 공연을 함께 즐기는 나이트 그랑프리'),
   ];
 
   @override
@@ -175,36 +166,33 @@ class _VisitGuideCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      guide.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      guide.description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: _descMuted,
-                        height: 1.45,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  guide.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               const AppChip(label: '가이드 준비 중', variant: AppChipVariant.neutral),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            guide.description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              color: _descMuted,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 16),
           const _RelatedGrandPrixRow(),

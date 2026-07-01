@@ -398,6 +398,7 @@ class _WeekendSessionRow extends StatelessWidget {
         color: isLive ? AppColors.red.withValues(alpha: 0.08) : null,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 7,
@@ -409,45 +410,43 @@ class _WeekendSessionRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  session.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isRace || isLive ? AppColors.red : AppColors.white,
-                    fontWeight: isRace || isLive
-                        ? FontWeight.w900
-                        : FontWeight.w700,
+                Flexible(
+                  child: Text(
+                    session.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 14.5,
+                      height: 1.2,
+                      color: isRace || isLive ? AppColors.red : AppColors.white,
+                      fontWeight: isRace || isLive
+                          ? FontWeight.w900
+                          : FontWeight.w700,
+                    ),
                   ),
                 ),
+                if (isLive) ...[
+                  const SizedBox(width: 8),
+                  const AppChip(label: 'LIVE', variant: AppChipVariant.red),
+                ],
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              AppChip(
-                label: _sessionStatusLabel(status),
-                variant: _sessionStatusVariant(status),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                '${session.date} / ${session.time} KST',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isRace || isLive
-                      ? AppColors.white
-                      : AppColors.textMuted,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+          const SizedBox(width: 12),
+          Text(
+            '${session.date} / ${session.time} KST',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 13.5,
+              height: 1.2,
+              color: isRace || isLive ? AppColors.white : AppColors.textMuted,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -531,20 +530,4 @@ void _openLiveRace(BuildContext context, String? raceId) {
   Navigator.of(
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)));
-}
-
-AppChipVariant _sessionStatusVariant(SessionStatus status) {
-  return switch (status) {
-    SessionStatus.live => AppChipVariant.red,
-    SessionStatus.upcoming => AppChipVariant.neutral,
-    SessionStatus.ended => AppChipVariant.ended,
-  };
-}
-
-String _sessionStatusLabel(SessionStatus status) {
-  return switch (status) {
-    SessionStatus.upcoming => '예정',
-    SessionStatus.live => '진행중',
-    SessionStatus.ended => '종료',
-  };
 }

@@ -429,19 +429,16 @@ class _ActiveRaceCard extends StatelessWidget {
         ),
         if (isNext) ...[
           const SizedBox(height: 10),
-          Text(
-            dateText,
-            style: const TextStyle(
+          _RaceInfoLine(
+            dateText: dateText,
+            venueText: '${race.circuitKo} · ${race.cityKo}',
+            dateStyle: const TextStyle(
               fontSize: 15,
               fontFamily: 'Pretendard',
               color: AppColors.redSoft,
               fontWeight: FontWeight.w800,
+              height: 1.2,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${race.circuitKo} · ${race.cityKo}',
-            style: const TextStyle(fontSize: 12, color: _muted),
           ),
           const SizedBox(height: 14),
           Container(
@@ -480,10 +477,15 @@ class _ActiveRaceCard extends StatelessWidget {
 }
 
 class _RaceInfoLine extends StatelessWidget {
-  const _RaceInfoLine({required this.dateText, required this.venueText});
+  const _RaceInfoLine({
+    required this.dateText,
+    required this.venueText,
+    this.dateStyle,
+  });
 
   final String dateText;
   final String venueText;
+  final TextStyle? dateStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -493,13 +495,15 @@ class _RaceInfoLine extends StatelessWidget {
       children: [
         Text(
           dateText,
-          style: const TextStyle(
-            fontSize: 15,
-            fontFamily: 'Pretendard',
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
-          ),
+          style:
+              dateStyle ??
+              const TextStyle(
+                fontSize: 15,
+                fontFamily: 'Pretendard',
+                color: AppColors.white,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+              ),
         ),
         const SizedBox(width: 9),
         Expanded(
