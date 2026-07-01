@@ -469,30 +469,47 @@ class _ActiveRaceCard extends StatelessWidget {
           ),
         ] else ...[
           const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dateText,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontFamily: 'Pretendard',
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${race.circuitKo} · ${race.cityKo}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: _muted),
-                ),
-              ),
-            ],
+          _RaceInfoLine(
+            dateText: dateText,
+            venueText: '${race.circuitKo} · ${race.cityKo}',
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _RaceInfoLine extends StatelessWidget {
+  const _RaceInfoLine({required this.dateText, required this.venueText});
+
+  final String dateText;
+  final String venueText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          dateText,
+          style: const TextStyle(
+            fontSize: 15,
+            fontFamily: 'Pretendard',
+            color: AppColors.white,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            venueText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: _muted, height: 1.2),
+          ),
+        ),
       ],
     );
   }
