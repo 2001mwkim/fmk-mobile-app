@@ -26,6 +26,7 @@ class FmkHomeWidgetPayload {
     required this.lapCurrent,
     required this.lapTotal,
     required this.topThree,
+    required this.topThreeColors,
   });
 
   final String mode;
@@ -36,6 +37,7 @@ class FmkHomeWidgetPayload {
   final int lapCurrent;
   final int lapTotal;
   final List<String> topThree;
+  final List<int> topThreeColors;
 
   bool get isLive => mode == _modeLive;
 }
@@ -118,12 +120,18 @@ class FmkHomeWidgetBridge {
     }
 
     for (var i = 0; i < 3; i++) {
-      writes.add(
+      writes.addAll([
         HomeWidget.saveWidgetData<String>(
           'p${i + 1}Code',
           i < payload.topThree.length ? payload.topThree[i] : '',
         ),
-      );
+        HomeWidget.saveWidgetData<int>(
+          'p${i + 1}Color',
+          i < payload.topThreeColors.length
+              ? payload.topThreeColors[i]
+              : _androidColorInt(0xFFEF4444),
+        ),
+      ]);
     }
 
     await Future.wait(writes);
@@ -162,6 +170,7 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     lapCurrent: 0,
     lapTotal: 0,
     topThree: const [],
+    topThreeColors: const [],
   );
 }
 
@@ -170,10 +179,17 @@ FmkHomeWidgetPayload _buildLivePayload(
   DateTime now,
 ) {
   final race = getRaceById(snapshot.raceId);
-  final topThree = snapshot.topThree
+  final topDrivers = snapshot.topThree
       .take(3)
+      .where((driver) => driver.code.trim().isNotEmpty)
+      .toList();
+  final topThree = topDrivers
       .map((driver) => driver.code.trim().toUpperCase())
-      .where((code) => code.isNotEmpty)
+      .toList();
+  final topThreeColors = topDrivers
+      .map(
+        (driver) => _androidColorInt(liveDriverAccent(driver.code).toARGB32()),
+      )
       .toList();
   final lapTotal = snapshot.totalLaps ?? 0;
   final lapCurrent = snapshot.currentLap ?? 0;
@@ -191,7 +207,13 @@ FmkHomeWidgetPayload _buildLivePayload(
     lapCurrent: lapCurrent < 0 ? 0 : lapCurrent,
     lapTotal: lapTotal < 0 ? 0 : lapTotal,
     topThree: topThree,
+    topThreeColors: topThreeColors,
   );
+}
+
+int _androidColorInt(int argb) {
+  final value = argb & 0xFFFFFFFF;
+  return value >= 0x80000000 ? value - 0x100000000 : value;
 }
 
 String _sessionName(RaceSession session) {

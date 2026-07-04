@@ -44,6 +44,7 @@ void main() {
     expect(payload.lapCurrent, 12);
     expect(payload.lapTotal, 58);
     expect(payload.topThree, ['NOR', 'PIA', 'VER']);
+    expect(payload.topThreeColors, [-30976, -30976, -14794241]);
   });
 
   test('home widget ended payload uses result badge while displayable', () {
@@ -65,6 +66,7 @@ void main() {
     expect(payload.mode, 'live');
     expect(payload.liveBadge, 'RESULT');
     expect(payload.topThree, ['LEC']);
+    expect(payload.topThreeColors, [-1572832]);
   });
 
   test('home widget expired live payload falls back to default', () {

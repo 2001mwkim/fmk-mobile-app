@@ -4,6 +4,7 @@ import 'package:fmk_app/app.dart';
 import 'package:fmk_app/data/live_session_mock.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
+import 'package:fmk_app/screens/home_screen.dart';
 import 'package:fmk_app/screens/race_detail_screen.dart';
 import 'package:fmk_app/services/live_session_controller.dart';
 import 'package:fmk_app/services/live_session_service.dart';
@@ -130,6 +131,92 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('순위 접기'), findsOneWidget);
     expect(find.text('막스 베르스타펜'), findsWidgets);
+  });
+
+  testWidgets('home hero session box uses matching live snapshot', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      now: _beforeBritishSprint,
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.live,
+        raceId: 'great-britain-2026',
+      ),
+    );
+
+    expect(find.text('진행중인 세션'), findsOneWidget);
+    expect(find.text('LIVE'), findsWidgets);
+    expect(find.text('42 / 53 LAP'), findsOneWidget);
+  });
+
+  testWidgets('home hero ignores live snapshot for another race', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      now: _beforeBritishSprint,
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.live,
+        raceId: 'spain',
+      ),
+    );
+
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('진행중인 세션'), findsNothing);
+  });
+
+  testWidgets('home hero shows recent state for matching ended snapshot', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      now: _beforeBritishSprint,
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'great-britain-2026',
+        visibleUntil: DateTime.now().add(const Duration(minutes: 25)),
+      ),
+    );
+
+    expect(find.text('최근 종료된 세션'), findsOneWidget);
+    expect(find.text('RESULT'), findsOneWidget);
+    expect(find.text('종료'), findsOneWidget);
+  });
+
+  testWidgets('home hero falls back to next session for expired snapshot', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      now: _beforeBritishSprint,
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'great-britain-2026',
+        visibleUntil: DateTime.now().subtract(const Duration(minutes: 1)),
+      ),
+    );
+
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('최근 종료된 세션'), findsNothing);
+  });
+
+  testWidgets('home hero falls back to next session without live snapshot', (
+    tester,
+  ) async {
+    await _pumpHome(tester, now: _beforeBritishSprint);
+
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('진행중인 세션'), findsNothing);
+  });
+
+  testWidgets('home hero uses schedule live status when snapshot is absent', (
+    tester,
+  ) async {
+    await _pumpHome(tester, now: _duringBritishSprint);
+
+    expect(find.text('진행중인 세션'), findsOneWidget);
+    expect(find.text('LIVE'), findsWidgets);
   });
 
   test('parseLiveJson maps collector live.json into a snapshot', () {
@@ -380,6 +467,50 @@ LiveSessionSnapshot _liveSnapshot() {
         displayName: '오스카 피아스트리',
         interval: '+2.341',
       ),
+    ],
+  );
+}
+
+final DateTime _beforeBritishSprint = DateTime.parse(
+  '2026-07-04T12:00:00+09:00',
+);
+final DateTime _duringBritishSprint = DateTime.parse(
+  '2026-07-04T20:30:00+09:00',
+);
+
+Future<void> _pumpHome(
+  WidgetTester tester, {
+  required DateTime now,
+  LiveSessionSnapshot? snapshot,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.dark(),
+      home: HomeScreen(nowOverride: now, liveSnapshotOverride: snapshot),
+    ),
+  );
+  await tester.pump();
+}
+
+LiveSessionSnapshot _homeHeroSnapshot({
+  required LiveSessionStatus status,
+  required String raceId,
+  DateTime? visibleUntil,
+}) {
+  return LiveSessionSnapshot(
+    status: status,
+    updatedAt: '2026-07-04T11:30:00.000Z',
+    raceId: raceId,
+    raceName: '영국 그랑프리',
+    sessionType: 'Race',
+    sessionName: '레이스',
+    currentLap: 42,
+    totalLaps: 53,
+    visibleUntil: visibleUntil,
+    topThree: const [
+      LiveDriverPosition(position: 1, code: 'NOR', displayName: '랜도 노리스'),
+      LiveDriverPosition(position: 2, code: 'PIA', displayName: '오스카 피아스트리'),
+      LiveDriverPosition(position: 3, code: 'LEC', displayName: '샤를 르클레르'),
     ],
   );
 }

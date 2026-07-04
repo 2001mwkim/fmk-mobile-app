@@ -98,11 +98,18 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       setTextViewText(R.id.tv_p1_code, data.getString("p1Code", "").dashIfBlank())
       setTextViewText(R.id.tv_p2_code, data.getString("p2Code", "").dashIfBlank())
       setTextViewText(R.id.tv_p3_code, data.getString("p3Code", "").dashIfBlank())
+      setInt(R.id.view_p1_accent, "setBackgroundColor", data.getInt("p1Color", FMK_RED))
+      setInt(R.id.view_p2_accent, "setBackgroundColor", data.getInt("p2Color", FMK_RED))
+      setInt(R.id.view_p3_accent, "setBackgroundColor", data.getInt("p3Color", FMK_RED))
     }
   }
 
   private fun String?.dashIfBlank(): String {
     val value = this?.trim().orEmpty()
     return if (value.isEmpty()) "---" else value
+  }
+
+  companion object {
+    private const val FMK_RED = -1095588 // 0xFFEF4444
   }
 }

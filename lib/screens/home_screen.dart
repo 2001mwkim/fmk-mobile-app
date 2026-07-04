@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'race_detail_screen.dart';
 import 'settings_screen.dart';
 import '../data/races.dart';
+import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../theme/app_colors.dart';
@@ -13,24 +14,33 @@ import '../widgets/home_live_top_three_card.dart';
 import '../widgets/live_session_builder.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.nowOverride, this.liveSnapshotOverride});
+
+  final DateTime? nowOverride;
+  final LiveSessionSnapshot? liveSnapshotOverride;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: races.isEmpty
           ? const _EmptyHomeContent()
-          : const _SeasonHomeContent(),
+          : _SeasonHomeContent(
+              nowOverride: nowOverride,
+              liveSnapshotOverride: liveSnapshotOverride,
+            ),
     );
   }
 }
 
 class _SeasonHomeContent extends StatelessWidget {
-  const _SeasonHomeContent();
+  const _SeasonHomeContent({this.nowOverride, this.liveSnapshotOverride});
+
+  final DateTime? nowOverride;
+  final LiveSessionSnapshot? liveSnapshotOverride;
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = nowOverride ?? DateTime.now();
     final nextRace = getNextRace(now);
     final nextSession = getNextSession(nextRace, now);
 
@@ -47,16 +57,29 @@ class _SeasonHomeContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // 라이브 Top 3 카드 (실데이터 없으면 렌더되지 않음)
+          // 라이브 Top 3 카드와 히어로 세션 박스는 같은 스냅샷을 본다.
           LiveSessionBuilder(
-            builder: (builderContext, snapshot) => HomeLiveTopThreeCard(
-              snapshot: snapshot,
-              onTap: () => _openLiveRace(builderContext, snapshot?.raceId),
-            ),
+            builder: (builderContext, snapshot) {
+              final liveSnapshot = liveSnapshotOverride ?? snapshot;
+              return Column(
+                children: [
+                  HomeLiveTopThreeCard(
+                    snapshot: liveSnapshot,
+                    onTap: () =>
+                        _openLiveRace(builderContext, liveSnapshot?.raceId),
+                  ),
+                  const SizedBox(height: 12),
+                  // 다음 그랑프리 히어로 — 다음 세션 정보를 내부에 포함
+                  _NextRaceCard(
+                    race: nextRace,
+                    session: nextSession,
+                    now: now,
+                    liveSnapshot: liveSnapshot,
+                  ),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          // 다음 그랑프리 히어로 — 다음 세션 정보를 내부에 포함
-          _NextRaceCard(race: nextRace, session: nextSession, now: now),
           const SizedBox(height: 12),
           _WeekendScheduleCard(race: nextRace, now: now),
         ],
@@ -131,11 +154,13 @@ class _NextRaceCard extends StatelessWidget {
     required this.race,
     required this.session,
     required this.now,
+    required this.liveSnapshot,
   });
 
   final Race race;
   final RaceSession? session;
   final DateTime now;
+  final LiveSessionSnapshot? liveSnapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +208,12 @@ class _NextRaceCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // 다음/진행 중/최근 세션 정보를 히어로 내부 박스로 표시(웹 hero 의 세션 박스)
-          _HeroSessionBox(race: race, session: session, now: now),
+          _HeroSessionBox(
+            race: race,
+            session: session,
+            now: now,
+            liveSnapshot: liveSnapshot,
+          ),
         ],
       ),
     );
@@ -195,15 +225,44 @@ class _HeroSessionBox extends StatelessWidget {
     required this.race,
     required this.session,
     required this.now,
+    required this.liveSnapshot,
   });
 
   final Race race;
   final RaceSession? session;
   final DateTime now;
+  final LiveSessionSnapshot? liveSnapshot;
 
   @override
   Widget build(BuildContext context) {
     final s = session;
+    final snapshot = _matchingDisplayableSnapshot(liveSnapshot, race);
+    if (snapshot != null) {
+      final isLive = snapshot.status == LiveSessionStatus.live;
+      final mappedSession = _sessionForLiveSnapshot(race, snapshot) ?? s;
+      final accent = isLive ? AppColors.redSoft : const Color(0xFFAAB0CC);
+      final label = isLive ? '진행중인 세션' : '최근 종료된 세션';
+      final badgeLabel = isLive ? 'LIVE' : 'RESULT';
+      final badgeVariant = isLive ? AppChipVariant.red : AppChipVariant.mono;
+      final sessionTitle = _snapshotSessionTitle(snapshot, mappedSession);
+      final value = isLive ? _liveValue(snapshot) : '종료';
+      final meta = isLive
+          ? (snapshot.updatedAtLabel ?? 'LIVE')
+          : (mappedSession?.date ?? snapshot.updatedAtLabel ?? '');
+
+      return _sessionBox(
+        label: label,
+        accent: accent,
+        sessionTitle: sessionTitle,
+        meta: meta,
+        value: value,
+        valueColor: isLive ? AppColors.redSoft : AppColors.slate300,
+        badgeLabel: badgeLabel,
+        badgeVariant: badgeVariant,
+        isLive: isLive,
+      );
+    }
+
     if (s == null) {
       return _box(
         child: Text(
@@ -219,13 +278,38 @@ class _HeroSessionBox extends StatelessWidget {
     final isLive = status == SessionStatus.live;
     final raceEnded = getRaceStatus(race, now) == RaceStatus.ended;
     final label = isLive
-        ? '진행 중인 세션'
+        ? '진행중인 세션'
         : raceEnded
         ? '최근 세션'
         : '다음 세션';
     final accent = isLive ? AppColors.redSoft : AppColors.blueSoft;
 
+    return _sessionBox(
+      label: label,
+      accent: accent,
+      sessionTitle: s.fullLabel,
+      meta: s.date,
+      value: isLive ? 'LIVE' : s.time,
+      valueColor: isLive ? AppColors.redSoft : AppColors.white,
+      badgeLabel: isLive ? 'LIVE' : null,
+      badgeVariant: AppChipVariant.red,
+      isLive: isLive,
+    );
+  }
+
+  Widget _sessionBox({
+    required String label,
+    required Color accent,
+    required String sessionTitle,
+    required String meta,
+    required String value,
+    required Color valueColor,
+    required String? badgeLabel,
+    required AppChipVariant badgeVariant,
+    required bool isLive,
+  }) {
     return _box(
+      isLive: isLive,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -253,15 +337,15 @@ class _HeroSessionBox extends StatelessWidget {
                         letterSpacing: 0.3,
                       ),
                     ),
-                    if (isLive) ...[
+                    if (badgeLabel != null) ...[
                       const SizedBox(width: 8),
-                      const AppChip(label: 'LIVE', variant: AppChipVariant.red),
+                      AppChip(label: badgeLabel, variant: badgeVariant),
                     ],
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  s.fullLabel,
+                  sessionTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -278,7 +362,9 @@ class _HeroSessionBox extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                s.date,
+                meta,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 12,
                   fontFamily: 'Pretendard',
@@ -288,12 +374,12 @@ class _HeroSessionBox extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                s.time,
+                value,
                 style: TextStyle(
                   fontSize: 20,
                   fontFamily: 'Pretendard',
                   height: 1.1,
-                  color: isLive ? AppColors.redSoft : AppColors.white,
+                  color: valueColor,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -304,18 +390,99 @@ class _HeroSessionBox extends StatelessWidget {
     );
   }
 
-  Widget _box({required Widget child}) {
+  Widget _box({required Widget child, bool isLive = false}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0x40000000), // black/25
+        color: isLive ? null : const Color(0x40000000), // black/25
+        gradient: isLive
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0x1AEF4444), Color(0x40000000)],
+              )
+            : null,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0x12FFFFFF)), // white/7
+        border: Border.all(
+          color: isLive ? const Color(0x66EF4444) : const Color(0x12FFFFFF),
+        ),
       ),
       child: child,
     );
   }
+}
+
+LiveSessionSnapshot? _matchingDisplayableSnapshot(
+  LiveSessionSnapshot? snapshot,
+  Race race,
+) {
+  if (snapshot == null || !snapshot.isDisplayable) return null;
+  return snapshot.raceId == race.id ? snapshot : null;
+}
+
+String _snapshotSessionTitle(
+  LiveSessionSnapshot snapshot,
+  RaceSession? mappedSession,
+) {
+  final sessionName = snapshot.sessionName?.trim();
+  if (sessionName != null && sessionName.isNotEmpty) return sessionName;
+
+  final sessionType = snapshot.sessionType?.trim();
+  if (sessionType != null && sessionType.isNotEmpty) {
+    return mappedSession?.fullLabel ?? sessionType;
+  }
+
+  return mappedSession?.fullLabel ?? '세션';
+}
+
+String _liveValue(LiveSessionSnapshot snapshot) {
+  final currentLap = snapshot.currentLap;
+  final totalLaps = snapshot.totalLaps;
+  if (currentLap != null && totalLaps != null) {
+    return '$currentLap / $totalLaps LAP';
+  }
+  return 'LIVE';
+}
+
+RaceSession? _sessionForLiveSnapshot(Race race, LiveSessionSnapshot snapshot) {
+  final text = '${snapshot.sessionType ?? ''} ${snapshot.sessionName ?? ''}'
+      .toLowerCase();
+
+  String? sessionId;
+  if (text.contains('practice 1') ||
+      text.contains('free practice 1') ||
+      text.contains('fp1') ||
+      text.contains('프랙티스 1')) {
+    sessionId = 'fp1';
+  } else if (text.contains('practice 2') ||
+      text.contains('free practice 2') ||
+      text.contains('fp2') ||
+      text.contains('프랙티스 2')) {
+    sessionId = 'fp2';
+  } else if (text.contains('practice 3') ||
+      text.contains('free practice 3') ||
+      text.contains('fp3') ||
+      text.contains('프랙티스 3')) {
+    sessionId = 'fp3';
+  } else if ((text.contains('sprint') || text.contains('스프린트')) &&
+      (text.contains('qualifying') ||
+          text.contains('shootout') ||
+          text.contains('퀄리'))) {
+    sessionId = 'sprint_qualifying';
+  } else if (text.contains('sprint') || text.contains('스프린트')) {
+    sessionId = 'sprint';
+  } else if (text.contains('qualifying') || text.contains('퀄리')) {
+    sessionId = 'qualifying';
+  } else if (text.contains('race') || text.contains('레이스')) {
+    sessionId = 'race';
+  }
+
+  if (sessionId == null) return null;
+  for (final session in race.sessions) {
+    if (session.id == sessionId) return session;
+  }
+  return null;
 }
 
 class _WeekendScheduleCard extends StatelessWidget {
