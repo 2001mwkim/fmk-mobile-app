@@ -72,48 +72,62 @@
             android:textSize="12sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/btn_widget_toggle_live"
+        <LinearLayout
+            android:id="@+id/toggle_group_live"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:background="@drawable/widget_toggle_bg"
-            android:fontFamily="sans-serif-medium"
-            android:includeFontPadding="false"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="일정"
-            android:textColor="@color/fmk_white"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            android:orientation="horizontal"
+            android:padding="2dp">
 
-    <ProgressBar
-        android:id="@+id/pb_lap"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:layout_marginTop="8dp"
-        android:progressDrawable="@drawable/progress_lap" />
+            <TextView
+                android:id="@+id/btn_toggle_schedule_live"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="일정"
+                android:textColor="@color/fmk_dim"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btn_toggle_live_live"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_toggle_active_bg"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="결과"
+                android:textColor="@color/fmk_white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="10dp"
         android:layout_weight="1"
+        android:gravity="center_vertical"
         android:orientation="vertical">
 
         <LinearLayout
             android:id="@+id/row_p1"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
-            android:layout_weight="1"
             android:background="@drawable/card_live_top"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="10dp"
-            android:paddingVertical="6dp">
+            android:paddingVertical="5dp">
 
             <TextView
                 android:id="@+id/tv_p1_pos"
@@ -164,14 +178,13 @@
         <LinearLayout
             android:id="@+id/row_p2"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
-            android:layout_weight="1"
             android:background="@drawable/card_live_top"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="10dp"
-            android:paddingVertical="6dp">
+            android:paddingVertical="5dp">
 
             <TextView
                 android:id="@+id/tv_p2_pos"
@@ -222,13 +235,12 @@
         <LinearLayout
             android:id="@+id/row_p3"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:background="@drawable/card_live_top"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="10dp"
-            android:paddingVertical="6dp">
+            android:paddingVertical="5dp">
 
             <TextView
                 android:id="@+id/tv_p3_pos"

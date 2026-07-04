@@ -30,28 +30,31 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     }
   }
 
-  /** 위젯 우상단 토글 버튼: 라이브 ↔ 일정 화면 전환 브로드캐스트 처리. */
+  /** 위젯 우상단 토글: 일정/결과(라이브) 화면 전환 브로드캐스트 처리. */
   override fun onReceive(context: Context, intent: Intent) {
-    if (intent.action == ACTION_TOGGLE_VIEW) {
-      try {
-        val state = widgetState(context)
-        val next = !state.getBoolean(KEY_SHOW_SCHEDULE, false)
-        state.edit().putBoolean(KEY_SHOW_SCHEDULE, next).apply()
-
-        val manager = AppWidgetManager.getInstance(context)
-        val ids =
-            manager.getAppWidgetIds(
-                ComponentName(context, FmkHomeWidgetProvider::class.java)
-            )
-        if (ids != null && ids.isNotEmpty()) {
-          onUpdate(context, manager, ids, HomeWidgetPlugin.getData(context))
-        }
-      } catch (error: Throwable) {
-        Log.e(TAG, "toggle view failed", error)
+    val showSchedule = when (intent.action) {
+      ACTION_SHOW_SCHEDULE -> true
+      ACTION_SHOW_LIVE -> false
+      else -> {
+        super.onReceive(context, intent)
+        return
       }
-      return
     }
-    super.onReceive(context, intent)
+
+    try {
+      widgetState(context).edit().putBoolean(KEY_SHOW_SCHEDULE, showSchedule).apply()
+
+      val manager = AppWidgetManager.getInstance(context)
+      val ids =
+          manager.getAppWidgetIds(
+              ComponentName(context, FmkHomeWidgetProvider::class.java)
+          )
+      if (ids != null && ids.isNotEmpty()) {
+        onUpdate(context, manager, ids, HomeWidgetPlugin.getData(context))
+      }
+    } catch (error: Throwable) {
+      Log.e(TAG, "toggle view failed", error)
+    }
   }
 
   /**
@@ -118,15 +121,49 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
   private fun widgetState(context: Context): SharedPreferences =
       context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
 
-  private fun togglePendingIntent(context: Context): PendingIntent {
-    val intent =
-        Intent(context, FmkHomeWidgetProvider::class.java).setAction(ACTION_TOGGLE_VIEW)
+  private fun togglePendingIntent(context: Context, action: String): PendingIntent {
+    val intent = Intent(context, FmkHomeWidgetProvider::class.java).setAction(action)
     return PendingIntent.getBroadcast(
         context,
-        0,
+        if (action == ACTION_SHOW_SCHEDULE) 1 else 2,
         intent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+  }
+
+  /** 오른쪽 칸 라벨: 라이브 진행 중이면 LIVE, 종료 후 결과 표시 중이면 결과. */
+  private fun liveSideLabel(data: SharedPreferences): String =
+      if (data.getString("liveBadge", "LIVE") == "RESULT") "결과" else "LIVE"
+
+  /**
+   * 세그먼트 토글(일정 | 결과)의 활성/비활성 상태와 클릭 액션을 바인딩한다.
+   * 활성 칸: 빨간 배경 + 흰 글자, 비활성 칸: 배경 없음 + 회색 글자.
+   */
+  private fun RemoteViews.bindToggleGroup(
+      context: Context,
+      data: SharedPreferences,
+      scheduleId: Int,
+      liveId: Int,
+      scheduleActive: Boolean,
+  ) {
+    setTextViewText(liveId, liveSideLabel(data))
+
+    setInt(
+        scheduleId,
+        "setBackgroundResource",
+        if (scheduleActive) R.drawable.widget_toggle_active_bg else 0,
+    )
+    setTextColor(scheduleId, if (scheduleActive) COLOR_WHITE else COLOR_DIM)
+
+    setInt(
+        liveId,
+        "setBackgroundResource",
+        if (scheduleActive) 0 else R.drawable.widget_toggle_active_bg,
+    )
+    setTextColor(liveId, if (scheduleActive) COLOR_DIM else COLOR_WHITE)
+
+    setOnClickPendingIntent(scheduleId, togglePendingIntent(context, ACTION_SHOW_SCHEDULE))
+    setOnClickPendingIntent(liveId, togglePendingIntent(context, ACTION_SHOW_LIVE))
   }
 
   /** Pure inflate of the default layout with no dynamic mutation — cannot fail on data. */
@@ -153,16 +190,16 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       setTextViewText(R.id.tv_gp_name, name)
 
       if (showLiveToggle) {
-        val label =
-            if (data.getString("liveBadge", "LIVE") == "RESULT") "결과" else "LIVE"
-        setViewVisibility(R.id.btn_widget_toggle_default, View.VISIBLE)
-        setTextViewText(R.id.btn_widget_toggle_default, label)
-        setOnClickPendingIntent(
-            R.id.btn_widget_toggle_default,
-            togglePendingIntent(context),
+        setViewVisibility(R.id.toggle_group_default, View.VISIBLE)
+        bindToggleGroup(
+            context,
+            data,
+            R.id.btn_toggle_schedule_default,
+            R.id.btn_toggle_live_default,
+            scheduleActive = true,
         )
       } else {
-        setViewVisibility(R.id.btn_widget_toggle_default, View.GONE)
+        setViewVisibility(R.id.toggle_group_default, View.GONE)
       }
 
       val rowIds =
@@ -206,8 +243,6 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
   private fun buildLive(context: Context, data: SharedPreferences): RemoteViews {
     val lapTotal = data.getInt("lapTotal", 0).coerceAtLeast(0)
     val lapCurrent = data.getInt("lapCurrent", 0).coerceIn(0, lapTotal.takeIf { it > 0 } ?: 0)
-    val progressMax = if (lapTotal > 0) lapTotal else 1
-    val progressCurrent = if (lapTotal > 0) lapCurrent else 0
     val flag = data.getString("gpFlag", "").orEmpty()
     val gpName = data.getString("gpName", "포매코").orEmpty()
 
@@ -217,16 +252,18 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
           HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
       )
 
-      setOnClickPendingIntent(
-          R.id.btn_widget_toggle_live,
-          togglePendingIntent(context),
+      bindToggleGroup(
+          context,
+          data,
+          R.id.btn_toggle_schedule_live,
+          R.id.btn_toggle_live_live,
+          scheduleActive = false,
       )
 
       setTextViewText(R.id.tv_live_badge, data.getString("liveBadge", "LIVE"))
       setTextViewText(R.id.tv_gp_name_live, listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "))
       setTextViewText(R.id.tv_lap_cur, if (lapTotal > 0) lapCurrent.toString() else "-")
       setTextViewText(R.id.tv_lap_total, if (lapTotal > 0) "/ $lapTotal" else "/ -")
-      setProgressBar(R.id.pb_lap, progressMax, progressCurrent, false)
 
       bindDriverRow(data, 1, R.id.row_p1, R.id.tv_p1_pos, R.id.tv_p1_name, R.id.tv_p1_time)
       bindDriverRow(data, 2, R.id.row_p2, R.id.tv_p2_pos, R.id.tv_p2_name, R.id.tv_p2_time)
@@ -276,6 +313,10 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     private const val STATE_PREFS = "FmkWidgetState"
     private const val KEY_SHOW_SCHEDULE = "showSchedule"
     private const val KEY_LAST_MODE = "lastSeenMode"
-    private const val ACTION_TOGGLE_VIEW = "kr.formulamagazine.fmk.widget.TOGGLE_VIEW"
+    private const val ACTION_SHOW_SCHEDULE = "kr.formulamagazine.fmk.widget.SHOW_SCHEDULE"
+    private const val ACTION_SHOW_LIVE = "kr.formulamagazine.fmk.widget.SHOW_LIVE"
+
+    private const val COLOR_WHITE = -328966 // 0xFFFAFAFA (@color/fmk_white)
+    private const val COLOR_DIM = -6184534 // 0xFFA1A1AA (@color/fmk_dim)
   }
 }
