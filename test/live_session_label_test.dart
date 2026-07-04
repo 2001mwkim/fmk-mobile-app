@@ -136,6 +136,54 @@ void main() {
         );
       },
     );
+
+    test(
+      'ended snapshot without endedAt falls back to scheduled session end',
+      () {
+        // collector 가 퀄리 종료 후 재시작된 경우: status=ended, endedAt 없음.
+        final snapshot = LiveSessionSnapshot(
+          status: LiveSessionStatus.ended,
+          updatedAt: '',
+          raceId: 'great-britain-2026',
+          raceName: 'British Grand Prix',
+          sessionType: 'Qualifying',
+          sessionName: 'Qualifying',
+        );
+
+        // 스케줄상 퀄리 종료(07-04 16:00Z) 뒤, 레이스(07-05 14:00Z) 30분 전까지 노출.
+        expect(
+          isLiveSnapshotDisplayable(
+            snapshot,
+            DateTime.parse('2026-07-04T17:00:00Z'),
+          ),
+          isTrue,
+        );
+        // 레이스 시작 30분 전 이후에는 숨김.
+        expect(
+          isLiveSnapshotDisplayable(
+            snapshot,
+            DateTime.parse('2026-07-05T13:45:00Z'),
+          ),
+          isFalse,
+        );
+
+        // 레이스/세션 매칭이 안 되면 기존 규칙(visibleUntil 없음 → 숨김) 유지.
+        final unresolvable = LiveSessionSnapshot(
+          status: LiveSessionStatus.ended,
+          updatedAt: '',
+          raceId: 'nope',
+          raceName: 'Not A Real GP',
+          sessionType: 'Qualifying',
+        );
+        expect(
+          isLiveSnapshotDisplayable(
+            unresolvable,
+            DateTime.parse('2026-07-04T17:00:00Z'),
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 
   test('Audi drivers use the standings dark-grey accent', () {

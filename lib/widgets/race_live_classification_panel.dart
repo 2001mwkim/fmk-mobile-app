@@ -327,31 +327,17 @@ class _ClassificationRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  driver.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isTopThree
-                        ? AppColors.white
-                        : const Color(0xFFAAB0CC),
-                    fontWeight: isTopThree ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-                if (driver.racingNumber != null)
-                  Text(
-                    'No. ${driver.racingNumber}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF5B6178),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
+            child: Text(
+              driver.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: isTopThree
+                    ? AppColors.white
+                    : const Color(0xFFAAB0CC),
+                fontWeight: isTopThree ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 10),

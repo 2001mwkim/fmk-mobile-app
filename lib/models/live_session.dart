@@ -197,19 +197,42 @@ String? liveQualifyingSegment(String? sessionName, String? sessionType) {
 /// - live: 항상 노출.
 /// - ended: 같은 그랑프리 주말의 다음 세션 시작 30분 전까지(마지막 레이스는 종료
 ///   1시간 후까지) 결과를 계속 노출한다. 예) 레이스 날에도 직전 퀄리파잉 결과 유지.
+///   endedAt 이 없으면(collector 가 세션 종료 후 재시작해 live 를 관측 못 한 경우)
+///   앱 스케줄상의 세션 종료 시각으로 대체해 같은 규칙을 적용한다.
 ///   스케줄 매칭에 실패하면 기존 [LiveSessionSnapshot.isDisplayable](종료+30분) 규칙으로
 ///   안전하게 fallback 한다.
 bool isLiveSnapshotDisplayable(LiveSessionSnapshot snapshot, [DateTime? now]) {
   if (isLiveSnapshotSessionActive(snapshot, now)) return true;
   if (snapshot.status != LiveSessionStatus.ended) return false;
 
+  // 스케줄 폴백은 collector 가 lifecycle 정보를 아예 못 준 경우
+  // (endedAt/visibleUntil 둘 다 없음)에만 적용한다. visibleUntil 이 명시돼
+  // 있으면(만료 포함) collector 의 판단을 그대로 따른다.
+  final endedAt = snapshot.endedAt ??
+      (snapshot.visibleUntil == null ? scheduledLiveSessionEnd(snapshot) : null);
   final until = liveEndedResultVisibleUntil(
     raceId: snapshot.raceId,
     raceName: snapshot.raceName,
-    endedAt: snapshot.endedAt,
+    endedAt: endedAt,
   );
   if (until == null) return snapshot.isDisplayable;
   return (now ?? DateTime.now()).isBefore(until);
+}
+
+/// 스냅샷 세션의 스케줄상 종료 시각.
+///
+/// collector 는 live 상태를 직접 관측한 세션에만 endedAt 을 기록한다. 세션 종료
+/// 후 collector 를 재시작하면 ended 스냅샷에 endedAt 이 없어서, 그대로면
+/// '다음 세션 30분 전까지 결과 유지' 규칙이 무력화되고 결과가 즉시 숨겨진다.
+/// 이때 races.dart 스케줄에서 해당 세션의 종료 시각을 구해 endedAt 대용으로
+/// 쓴다. 지난 주말의 stale 세션이면 이 시각 기준 노출 기한도 이미 지났으므로
+/// 잘못 노출될 위험이 없다. 레이스/세션 매칭 실패 시 null.
+DateTime? scheduledLiveSessionEnd(LiveSessionSnapshot snapshot) {
+  final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
+  if (race == null) return null;
+  final session = liveRaceSessionForSnapshot(snapshot, race);
+  if (session == null) return null;
+  return getSessionEndDate(race, session);
 }
 
 /// collector 가 Q1/Q2 같은 하위 구간 종료를 `ended` 로 보내도, 앱의 스케줄상
