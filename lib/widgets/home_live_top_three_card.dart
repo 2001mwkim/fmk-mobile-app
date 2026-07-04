@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
@@ -85,8 +86,13 @@ class HomeLiveTopThreeCard extends StatelessWidget {
 
   Widget _topContent(BuildContext context, LiveSessionSnapshot s, bool ended) {
     final raceLike = s.isRaceOrSprint;
-    // raceId → races.dart 의 Race → 국기. 실패하면 snapshot.countryFlag, 그것도 없으면 null.
-    final flag = liveCountryFlag(s.raceId) ?? s.countryFlag;
+    // raceId/raceName → races.dart 의 Race. 국기/한글 GP 이름을 여기서 함께 구한다.
+    final race = resolveLiveRace(s.raceId, s.raceName);
+    final flag =
+        (race != null ? getCountryFlag(race.countryKo) : null) ??
+        liveCountryFlag(s.raceId) ??
+        s.countryFlag;
+    final raceNameKo = race?.nameKo ?? s.raceName ?? 'Live Session';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +106,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
-                      s.sessionTitle,
+                      s.sessionTitleKo,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -126,7 +132,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
             ],
             Flexible(
               child: Text(
-                s.raceName ?? 'Live Session',
+                raceNameKo,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

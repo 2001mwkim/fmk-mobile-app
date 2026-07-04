@@ -96,11 +96,12 @@
             android:background="@drawable/card_live_top"
             android:orientation="vertical">
 
-            <View
+            <ImageView
                 android:id="@+id/view_p1_accent"
                 android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:background="@color/fmk_red" />
+                android:layout_height="2dp"
+                android:background="@color/fmk_red"
+                android:contentDescription="@null" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -146,11 +147,12 @@
             android:background="@drawable/card_live_top"
             android:orientation="vertical">
 
-            <View
+            <ImageView
                 android:id="@+id/view_p2_accent"
                 android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:background="@color/fmk_dim" />
+                android:layout_height="2dp"
+                android:background="@color/fmk_dim"
+                android:contentDescription="@null" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -195,11 +197,12 @@
             android:background="@drawable/card_live_top"
             android:orientation="vertical">
 
-            <View
+            <ImageView
                 android:id="@+id/view_p3_accent"
                 android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:background="@color/fmk_faint" />
+                android:layout_height="2dp"
+                android:background="@color/fmk_faint"
+                android:contentDescription="@null" />
 
             <LinearLayout
                 android:layout_width="match_parent"

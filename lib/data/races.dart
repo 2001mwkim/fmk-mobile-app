@@ -1395,6 +1395,32 @@ Race? getRaceById(String? id) {
   return null;
 }
 
+/// 라이브 스냅샷의 raceId/raceName 으로 Race 를 최대한 찾는다.
+///
+/// live.json 의 raceId 는 'spain' 처럼 연도 접미사가 없을 수 있고, raceName 은
+/// 'Spanish Grand Prix' 처럼 영문일 수 있다. id 정확 매칭 → id 접두 매칭 →
+/// 영문/한글 이름 매칭 순으로 시도하고, 실패하면 null 을 돌려준다.
+Race? resolveLiveRace(String? raceId, String? raceName) {
+  final byId = getRaceById(raceId);
+  if (byId != null) return byId;
+
+  final id = raceId?.trim();
+  if (id != null && id.isNotEmpty) {
+    for (final race in races) {
+      if (race.id.startsWith('$id-')) return race;
+    }
+  }
+
+  final name = raceName?.trim();
+  if (name != null && name.isNotEmpty) {
+    for (final race in races) {
+      if (race.nameEn == name || race.nameKo == name) return race;
+    }
+  }
+
+  return null;
+}
+
 /// 라이브 스냅샷 raceId 로 홈 라이브 카드 국기를 구한다. 매핑 실패 시 null.
 String? liveCountryFlag(String? raceId) {
   final race = getRaceById(raceId);

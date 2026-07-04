@@ -97,6 +97,9 @@ class LiveSessionSnapshot {
 
   String get sessionTitle => sessionName ?? sessionType ?? 'Session';
 
+  /// 화면 표시용 한글 세션 이름(영문 live.json 안전 변환).
+  String get sessionTitleKo => liveSessionLabelKo(sessionName, sessionType);
+
   /// 갱신 시각을 KST 기준으로 표시(예: '업데이트 13:42 KST').
   /// updatedAt 이 ISO 면 KST(UTC+9)로 변환, 비어있으면 null(표시 생략),
   /// 파싱 불가하면 원문을 그대로 보여준다(웹 formatLiveUpdatedAt 의 안전 대체).
@@ -152,11 +155,43 @@ const Map<String, int> _driverAccent = {
   'BEA': 0xFFF4F4F4,
   'HAD': 0xFF6CC3FF,
   'LAW': 0xFF6CC3FF,
-  'HUL': 0xFF52E252,
-  'BOR': 0xFF52E252,
+  'HUL': 0xFF4B5563, // 아우디(2026) — 순위 페이지와 동일한 짙은 회색
+  'BOR': 0xFF4B5563,
 };
 
 Color liveDriverAccent(String code) => Color(_driverAccent[code] ?? 0xFF7880A0);
+
+/// 라이브 세션 이름(영문 live.json)을 한글 표기로 변환한다.
+///
+/// 실데이터의 [sessionName]/[sessionType] 은 'Race', 'Qualifying', 'Practice 1',
+/// 'Sprint', 'Sprint Qualifying' 처럼 영어로 들어올 수 있다. 알 수 없는 값이나
+/// 이미 한글인 값은 원문을 그대로 돌려준다(안전한 fallback).
+String liveSessionLabelKo(String? sessionName, String? sessionType) {
+  final named = sessionName?.trim() ?? '';
+  final raw = named.isNotEmpty ? named : (sessionType?.trim() ?? '');
+  if (raw.isEmpty) return '세션';
+
+  final lower = raw.toLowerCase();
+  final isSprint = lower.contains('sprint');
+  final isQualifying =
+      lower.contains('qualifying') ||
+      lower.contains('qualy') ||
+      lower.contains('shootout');
+
+  if (isSprint && isQualifying) return '스프린트 퀄리파잉';
+  if (isSprint) return '스프린트';
+  if (isQualifying) return '퀄리파잉';
+
+  if (lower.contains('practice') || RegExp(r'\bfp\s*\d').hasMatch(lower)) {
+    final number = RegExp(r'\d').firstMatch(raw)?.group(0);
+    return number == null ? '프랙티스' : '프리 프랙티스 $number';
+  }
+
+  if (lower.contains('race')) return '레이스';
+
+  // 이미 한글이거나 매핑되지 않는 값은 원문 유지.
+  return raw;
+}
 
 /// 포디움(1~3위) 배지 색. 웹은 1위에 노란색을 쓰지만 앱 규칙상 레드로 대체.
 ({Color background, Color foreground}) livePodiumColors(int position) {

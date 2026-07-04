@@ -178,7 +178,7 @@ FmkHomeWidgetPayload _buildLivePayload(
   LiveSessionSnapshot snapshot,
   DateTime now,
 ) {
-  final race = getRaceById(snapshot.raceId);
+  final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
   final topDrivers = snapshot.topThree
       .take(3)
       .where((driver) => driver.code.trim().isNotEmpty)
@@ -201,7 +201,7 @@ FmkHomeWidgetPayload _buildLivePayload(
       liveCountryFlag(snapshot.raceId),
       if (race != null) _flagForRace(race),
     ]),
-    gpName: _firstNonEmpty([snapshot.raceName, race?.nameKo, '포매코 라이브']),
+    gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '포매코 라이브']),
     sessions: const [],
     liveBadge: snapshot.isEnded ? 'RESULT' : 'LIVE',
     lapCurrent: lapCurrent < 0 ? 0 : lapCurrent,
