@@ -262,8 +262,15 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
 
       setTextViewText(R.id.tv_live_badge, data.getString("liveBadge", "LIVE"))
       setTextViewText(R.id.tv_gp_name_live, listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "))
-      setTextViewText(R.id.tv_lap_cur, if (lapTotal > 0) lapCurrent.toString() else "-")
-      setTextViewText(R.id.tv_lap_total, if (lapTotal > 0) "/ $lapTotal" else "/ -")
+
+      // 랩 데이터가 있을 때(레이스/스프린트)만 "12 / 53 LAP" 노출.
+      // 프랙티스/퀄리파잉(totalLaps 없음/0)에서는 영역 전체를 숨긴다.
+      val hasLap = lapTotal > 0
+      setViewVisibility(R.id.lap_group, if (hasLap) View.VISIBLE else View.GONE)
+      if (hasLap) {
+        setTextViewText(R.id.tv_lap_cur, lapCurrent.toString())
+        setTextViewText(R.id.tv_lap_total, "/ $lapTotal")
+      }
 
       bindDriverRow(data, 1, R.id.row_p1, R.id.tv_p1_pos, R.id.tv_p1_name, R.id.tv_p1_time)
       bindDriverRow(data, 2, R.id.row_p2, R.id.tv_p2_pos, R.id.tv_p2_name, R.id.tv_p2_time)
