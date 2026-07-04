@@ -125,6 +125,7 @@ void main() {
     expect(find.text('스페인 그랑프리'), findsOneWidget);
     expect(find.text('전체 순위 보기'), findsOneWidget);
     expect(find.text('현재 레이스 순위'), findsOneWidget);
+    expect(find.text('+2.341'), findsWidgets);
 
     await tester.ensureVisible(find.text('4위 이하 순위 보기'));
     await tester.pumpAndSettle();
@@ -132,6 +133,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('순위 접기'), findsOneWidget);
     expect(find.text('막스 베르스타펜'), findsWidgets);
+  });
+
+  testWidgets('practice and qualifying live widgets show lap times', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(
+          body: ListView(
+            children: [
+              HomeLiveTopThreeCard(snapshot: mockQualifyingLiveSession),
+              RaceLiveClassificationPanel(
+                snapshot: mockQualifyingLiveSession,
+                raceId: 'spain',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('LAP'), findsOneWidget);
+    expect(find.text('1:28.493'), findsWidgets);
+    expect(find.text('1:28.626'), findsWidgets);
+    expect(find.text('+2.341'), findsNothing);
   });
 
   testWidgets('home hero session box uses matching live snapshot', (
@@ -261,7 +288,7 @@ void main() {
     ],
     "classification": [
       {"position": 1, "racingNumber": "4", "code": "NOR", "displayName": "랜도 노리스", "gapToLeader": null, "source": "timing-data"},
-      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "source": "timing-data"}
+      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "lapTime": "1:28.626", "displayTime": "1:28.626", "lastLapTime": "1:28.801", "bestLapTime": "1:28.626", "personalBestLapTime": "1:28.626", "source": "timing-data"}
     ]
   },
   "collector": {"feedUpdates": 10}
@@ -280,6 +307,8 @@ void main() {
     expect(snapshot.classification.length, 2);
     // interval 우선(race) 갭 규칙
     expect(snapshot.topThree[1].gap(raceLike: true), '+2.341');
+    expect(snapshot.classification[1].displayTime, '1:28.626');
+    expect(snapshot.classification[1].time(raceLike: false), '1:28.626');
 
     // 잘못된 본문은 null (앱 크래시 방지)
     expect(parseLiveJson('not json'), isNull);

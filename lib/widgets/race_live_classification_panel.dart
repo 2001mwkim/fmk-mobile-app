@@ -267,7 +267,7 @@ class _ClassificationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTopThree = driver.position <= 3;
     final podium = livePodiumColors(driver.position);
-    final gap = driver.gap(raceLike: raceLike);
+    final gap = driver.time(raceLike: raceLike);
 
     return Container(
       decoration: BoxDecoration(

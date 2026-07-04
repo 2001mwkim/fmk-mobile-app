@@ -294,7 +294,7 @@ String _driverDisplayNameKo(LiveDriverPosition driver) {
 }
 
 String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
-  final value = driver.gap(raceLike: raceLike).trim();
+  final value = driver.time(raceLike: raceLike).trim();
   return value.isEmpty ? '—' : value;
 }
 

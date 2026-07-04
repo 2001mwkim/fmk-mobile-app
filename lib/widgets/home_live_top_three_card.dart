@@ -377,7 +377,7 @@ class _TopThreeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final podium = livePodiumColors(driver.position);
-    final gap = driver.gap(raceLike: raceLike);
+    final gap = driver.time(raceLike: raceLike);
 
     return Container(
       decoration: BoxDecoration(

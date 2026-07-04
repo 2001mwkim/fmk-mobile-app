@@ -123,6 +123,11 @@ List<LiveDriverPosition> _parseDrivers(dynamic value) {
         racingNumber: _string(m['racingNumber']),
         gapToLeader: _string(m['gapToLeader']),
         interval: _string(m['interval']),
+        lapTime: _string(m['lapTime']),
+        displayTime: _string(m['displayTime']),
+        lastLapTime: _string(m['lastLapTime']),
+        bestLapTime: _string(m['bestLapTime']),
+        personalBestLapTime: _string(m['personalBestLapTime']),
       ),
     );
   }

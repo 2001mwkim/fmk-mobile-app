@@ -17,6 +17,11 @@ class LiveDriverPosition {
     this.racingNumber,
     this.gapToLeader,
     this.interval,
+    this.lapTime,
+    this.displayTime,
+    this.lastLapTime,
+    this.bestLapTime,
+    this.personalBestLapTime,
   });
 
   final int position;
@@ -25,12 +30,23 @@ class LiveDriverPosition {
   final String? racingNumber;
   final String? gapToLeader;
   final String? interval;
+  final String? lapTime;
+  final String? displayTime;
+  final String? lastLapTime;
+  final String? bestLapTime;
+  final String? personalBestLapTime;
 
   /// 웹과 동일한 갭 선택 규칙.
   /// race/sprint: interval 우선, 그 외: gapToLeader 우선. 둘 다 없으면 '—'.
   String gap({required bool raceLike}) {
     if (raceLike) return interval ?? gapToLeader ?? '—';
     return gapToLeader ?? interval ?? '—';
+  }
+
+  /// UI에 표시할 시간. Race/Sprint는 기존 gap/interval, Practice/Qualifying은 랩타임 우선.
+  String time({required bool raceLike}) {
+    if (raceLike) return gap(raceLike: true);
+    return displayTime ?? lapTime ?? gap(raceLike: false);
   }
 }
 
@@ -132,7 +148,7 @@ class LiveSessionSnapshot {
     return isRaceOrSprint ? '현재 레이스 순위' : '세션 순위';
   }
 
-  String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'GAP';
+  String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'LAP';
 }
 
 /// 퀄리파잉 세그먼트(Q1/Q2/Q3)를 sessionName/sessionType 에서 뽑아낸다.
