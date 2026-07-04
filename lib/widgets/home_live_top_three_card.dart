@@ -17,6 +17,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
     required this.snapshot,
     this.onTap,
     this.isStale = false,
+    this.now,
   });
 
   final LiveSessionSnapshot? snapshot;
@@ -24,6 +25,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
 
   /// 데이터 연결이 잠깐 흔들려 마지막 순위를 유지 중인 상태(3분 초과).
   final bool isStale;
+  final DateTime? now;
 
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(20));
 
@@ -41,7 +43,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
   }
 
   Widget _card(BuildContext context, LiveSessionSnapshot s) {
-    final ended = s.isEnded;
+    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
 
     final surface = Container(
       decoration: BoxDecoration(

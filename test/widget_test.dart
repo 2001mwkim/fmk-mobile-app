@@ -185,6 +185,27 @@ void main() {
     expect(find.text('종료'), findsOneWidget);
   });
 
+  testWidgets('home hero keeps qualifying live between Q segments', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      now: DateTime.parse('2026-07-05T00:20:00+09:00'),
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'great-britain-2026',
+        sessionType: 'Qualifying',
+        sessionName: 'Qualifying',
+        endedAt: DateTime.parse('2026-07-04T15:18:00Z'),
+      ),
+    );
+
+    expect(find.text('진행중인 세션'), findsOneWidget);
+    expect(find.text('LIVE'), findsWidgets);
+    expect(find.text('최근 종료된 세션'), findsNothing);
+    expect(find.text('RESULT'), findsNothing);
+  });
+
   testWidgets('home hero falls back to next session for expired snapshot', (
     tester,
   ) async {
@@ -646,16 +667,20 @@ LiveSessionSnapshot _homeHeroSnapshot({
   required LiveSessionStatus status,
   required String raceId,
   DateTime? visibleUntil,
+  DateTime? endedAt,
+  String sessionType = 'Race',
+  String sessionName = '레이스',
 }) {
   return LiveSessionSnapshot(
     status: status,
     updatedAt: '2026-07-04T11:30:00.000Z',
     raceId: raceId,
     raceName: '영국 그랑프리',
-    sessionType: 'Race',
-    sessionName: '레이스',
+    sessionType: sessionType,
+    sessionName: sessionName,
     currentLap: 42,
     totalLaps: 53,
+    endedAt: endedAt,
     visibleUntil: visibleUntil,
     topThree: const [
       LiveDriverPosition(position: 1, code: 'NOR', displayName: '랜도 노리스'),

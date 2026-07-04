@@ -107,6 +107,35 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'ended qualifying segment is treated as live during session window',
+      () {
+        final snapshot = LiveSessionSnapshot(
+          status: LiveSessionStatus.ended,
+          updatedAt: '',
+          raceId: 'great-britain-2026',
+          raceName: 'British Grand Prix',
+          sessionType: 'Qualifying',
+          sessionName: 'Qualifying',
+          endedAt: DateTime.parse('2026-07-04T15:18:00Z'),
+        );
+
+        final duringQ2 = DateTime.parse('2026-07-04T15:20:00Z');
+        expect(isLiveSnapshotSessionActive(snapshot, duringQ2), isTrue);
+        expect(isLiveSnapshotDisplayable(snapshot, duringQ2), isTrue);
+
+        final afterQualifyingWindow = DateTime.parse('2026-07-04T16:01:00Z');
+        expect(
+          isLiveSnapshotSessionActive(snapshot, afterQualifyingWindow),
+          isFalse,
+        );
+        expect(
+          isLiveSnapshotDisplayable(snapshot, afterQualifyingWindow),
+          isTrue,
+        );
+      },
+    );
   });
 
   test('Audi drivers use the standings dark-grey accent', () {

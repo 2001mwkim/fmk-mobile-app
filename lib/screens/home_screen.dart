@@ -67,6 +67,7 @@ class _SeasonHomeContent extends StatelessWidget {
                   HomeLiveTopThreeCard(
                     snapshot: liveSnapshot,
                     isStale: liveStale,
+                    now: now,
                     onTap: () =>
                         _openLiveRace(builderContext, liveSnapshot?.raceId),
                   ),
@@ -238,10 +239,10 @@ class _HeroSessionBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = session;
-    final snapshot = _matchingDisplayableSnapshot(liveSnapshot, race);
+    final snapshot = _matchingDisplayableSnapshot(liveSnapshot, race, now);
     if (snapshot != null) {
-      final isLive = snapshot.status == LiveSessionStatus.live;
-      final mappedSession = _sessionForLiveSnapshot(race, snapshot) ?? s;
+      final isLive = isLiveSnapshotSessionActive(snapshot, now);
+      final mappedSession = liveRaceSessionForSnapshot(snapshot, race) ?? s;
       final accent = isLive ? AppColors.redSoft : const Color(0xFFAAB0CC);
       final label = isLive ? '진행중인 세션' : '최근 종료된 세션';
       final badgeLabel = isLive ? 'LIVE' : 'RESULT';
@@ -418,8 +419,11 @@ class _HeroSessionBox extends StatelessWidget {
 LiveSessionSnapshot? _matchingDisplayableSnapshot(
   LiveSessionSnapshot? snapshot,
   Race race,
+  DateTime now,
 ) {
-  if (snapshot == null || !snapshot.isDisplayable) return null;
+  if (snapshot == null || !isLiveSnapshotDisplayable(snapshot, now)) {
+    return null;
+  }
   return snapshot.raceId == race.id ? snapshot : null;
 }
 
@@ -443,46 +447,6 @@ String _liveValue(LiveSessionSnapshot snapshot) {
     return '$currentLap / $totalLaps LAP';
   }
   return 'LIVE';
-}
-
-RaceSession? _sessionForLiveSnapshot(Race race, LiveSessionSnapshot snapshot) {
-  final text = '${snapshot.sessionType ?? ''} ${snapshot.sessionName ?? ''}'
-      .toLowerCase();
-
-  String? sessionId;
-  if (text.contains('practice 1') ||
-      text.contains('free practice 1') ||
-      text.contains('fp1') ||
-      text.contains('프랙티스 1')) {
-    sessionId = 'fp1';
-  } else if (text.contains('practice 2') ||
-      text.contains('free practice 2') ||
-      text.contains('fp2') ||
-      text.contains('프랙티스 2')) {
-    sessionId = 'fp2';
-  } else if (text.contains('practice 3') ||
-      text.contains('free practice 3') ||
-      text.contains('fp3') ||
-      text.contains('프랙티스 3')) {
-    sessionId = 'fp3';
-  } else if ((text.contains('sprint') || text.contains('스프린트')) &&
-      (text.contains('qualifying') ||
-          text.contains('shootout') ||
-          text.contains('퀄리'))) {
-    sessionId = 'sprint_qualifying';
-  } else if (text.contains('sprint') || text.contains('스프린트')) {
-    sessionId = 'sprint';
-  } else if (text.contains('qualifying') || text.contains('퀄리')) {
-    sessionId = 'qualifying';
-  } else if (text.contains('race') || text.contains('레이스')) {
-    sessionId = 'race';
-  }
-
-  if (sessionId == null) return null;
-  for (final session in race.sessions) {
-    if (session.id == sessionId) return session;
-  }
-  return null;
 }
 
 class _WeekendScheduleCard extends StatelessWidget {

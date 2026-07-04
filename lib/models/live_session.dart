@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/races.dart';
+import 'race.dart';
+import 'race_session.dart';
 
 /// 웹 lib/live/types.ts 의 라이브 세션 타입을 Flutter로 옮긴 모델.
 /// 실제 데이터(SignalR/live.json) 연결 전까지 UI 구조만 정의한다.
@@ -133,6 +135,34 @@ class LiveSessionSnapshot {
   String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'GAP';
 }
 
+/// 퀄리파잉 세그먼트(Q1/Q2/Q3)를 sessionName/sessionType 에서 뽑아낸다.
+///
+/// collector 가 sessionName 에 세그먼트를 넣어주면(예: 'Qualifying 2', 'Q3',
+/// 'Sprint Qualifying 1') 이를 'Q2'/'Q3'/'SQ1' 로 반환한다. 세그먼트 정보가
+/// 없으면(현재의 'Qualifying' 처럼) null 을 돌려주고, 호출부는 세션 라벨로 대체한다.
+/// 퀄리파잉 계열이 아니면(레이스/프랙티스) 항상 null.
+String? liveQualifyingSegment(String? sessionName, String? sessionType) {
+  final raw = '${sessionName ?? ''} ${sessionType ?? ''}'.trim();
+  if (raw.isEmpty) return null;
+
+  final lower = raw.toLowerCase();
+  final isQualifying =
+      lower.contains('qualifying') ||
+      lower.contains('qualy') ||
+      lower.contains('shootout') ||
+      lower.contains('퀄리');
+  if (!isQualifying) return null;
+
+  final digit = RegExp(r'[123]').firstMatch(raw)?.group(0);
+  if (digit == null) return null;
+
+  final isSprint =
+      lower.contains('sprint') ||
+      lower.contains('스프린트') ||
+      lower.contains('shootout');
+  return isSprint ? 'SQ$digit' : 'Q$digit';
+}
+
 /// 스케줄을 반영한 라이브 박스 노출 여부.
 ///
 /// - live: 항상 노출.
@@ -141,7 +171,7 @@ class LiveSessionSnapshot {
 ///   스케줄 매칭에 실패하면 기존 [LiveSessionSnapshot.isDisplayable](종료+30분) 규칙으로
 ///   안전하게 fallback 한다.
 bool isLiveSnapshotDisplayable(LiveSessionSnapshot snapshot, [DateTime? now]) {
-  if (snapshot.status == LiveSessionStatus.live) return true;
+  if (isLiveSnapshotSessionActive(snapshot, now)) return true;
   if (snapshot.status != LiveSessionStatus.ended) return false;
 
   final until = liveEndedResultVisibleUntil(
@@ -151,6 +181,72 @@ bool isLiveSnapshotDisplayable(LiveSessionSnapshot snapshot, [DateTime? now]) {
   );
   if (until == null) return snapshot.isDisplayable;
   return (now ?? DateTime.now()).isBefore(until);
+}
+
+/// collector 가 Q1/Q2 같은 하위 구간 종료를 `ended` 로 보내도, 앱의 스케줄상
+/// 상위 세션(퀄리파잉/스프린트 퀄리파잉)이 아직 진행 중이면 LIVE 로 취급한다.
+bool isLiveSnapshotSessionActive(
+  LiveSessionSnapshot snapshot, [
+  DateTime? now,
+]) {
+  if (snapshot.status == LiveSessionStatus.live) return true;
+  if (snapshot.status != LiveSessionStatus.ended) return false;
+
+  final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
+  final session = liveRaceSessionForSnapshot(snapshot, race);
+  if (race == null || session == null) return false;
+
+  final currentTime = now ?? DateTime.now();
+  final start = getSessionDate(race, session);
+  final end = getSessionEndDate(race, session);
+  return !currentTime.isBefore(start) && currentTime.isBefore(end);
+}
+
+RaceSession? liveRaceSessionForSnapshot(
+  LiveSessionSnapshot snapshot, [
+  Race? resolvedRace,
+]) {
+  final race =
+      resolvedRace ?? resolveLiveRace(snapshot.raceId, snapshot.raceName);
+  if (race == null) return null;
+
+  final text = '${snapshot.sessionType ?? ''} ${snapshot.sessionName ?? ''}'
+      .toLowerCase();
+
+  String? sessionId;
+  if (text.contains('practice 1') ||
+      text.contains('free practice 1') ||
+      text.contains('fp1') ||
+      text.contains('프랙티스 1')) {
+    sessionId = 'fp1';
+  } else if (text.contains('practice 2') ||
+      text.contains('free practice 2') ||
+      text.contains('fp2') ||
+      text.contains('프랙티스 2')) {
+    sessionId = 'fp2';
+  } else if (text.contains('practice 3') ||
+      text.contains('free practice 3') ||
+      text.contains('fp3') ||
+      text.contains('프랙티스 3')) {
+    sessionId = 'fp3';
+  } else if ((text.contains('sprint') || text.contains('스프린트')) &&
+      (text.contains('qualifying') ||
+          text.contains('shootout') ||
+          text.contains('퀄리'))) {
+    sessionId = 'sprint_qualifying';
+  } else if (text.contains('sprint') || text.contains('스프린트')) {
+    sessionId = 'sprint';
+  } else if (text.contains('qualifying') || text.contains('퀄리')) {
+    sessionId = 'qualifying';
+  } else if (text.contains('race') || text.contains('레이스')) {
+    sessionId = 'race';
+  }
+
+  if (sessionId == null) return null;
+  for (final session in race.sessions) {
+    if (session.id == sessionId) return session;
+  }
+  return null;
 }
 
 /// 종료 후 노출 라벨(웹 LIVE_ENDED_HOME_LABEL / LIVE_ENDED_PANEL_LABEL).

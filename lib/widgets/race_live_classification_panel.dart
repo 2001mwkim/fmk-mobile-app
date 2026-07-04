@@ -13,6 +13,7 @@ class RaceLiveClassificationPanel extends StatefulWidget {
     required this.snapshot,
     required this.raceId,
     this.isStale = false,
+    this.now,
   });
 
   final LiveSessionSnapshot? snapshot;
@@ -20,6 +21,7 @@ class RaceLiveClassificationPanel extends StatefulWidget {
 
   /// 데이터 연결이 잠깐 흔들려 마지막 순위표를 유지 중인 상태(3분 초과).
   final bool isStale;
+  final DateTime? now;
 
   @override
   State<RaceLiveClassificationPanel> createState() =>
@@ -39,13 +41,13 @@ class _RaceLiveClassificationPanelState
   Widget build(BuildContext context) {
     final s = widget.snapshot;
     if (s == null ||
-        !s.isDisplayable ||
+        !isLiveSnapshotDisplayable(s, widget.now) ||
         s.raceId != widget.raceId ||
         s.classification.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final ended = s.isEnded;
+    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, widget.now);
     final raceLike = s.isRaceOrSprint;
     final topThree = s.classification.take(3).toList();
     final remaining = s.classification.skip(3).toList();

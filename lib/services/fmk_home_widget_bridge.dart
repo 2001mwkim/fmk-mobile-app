@@ -26,6 +26,9 @@ class FmkHomeWidgetPayload {
     required this.lapCurrent,
     required this.lapTotal,
     required this.topThree,
+    required this.topThreePositions,
+    required this.topThreeNames,
+    required this.topThreeTimes,
     required this.topThreeColors,
   });
 
@@ -37,6 +40,9 @@ class FmkHomeWidgetPayload {
   final int lapCurrent;
   final int lapTotal;
   final List<String> topThree;
+  final List<int> topThreePositions;
+  final List<String> topThreeNames;
+  final List<String> topThreeTimes;
   final List<int> topThreeColors;
 
   bool get isLive => mode == _modeLive;
@@ -126,6 +132,20 @@ class FmkHomeWidgetBridge {
           i < payload.topThree.length ? payload.topThree[i] : '',
         ),
         HomeWidget.saveWidgetData<int>(
+          'p${i + 1}Position',
+          i < payload.topThreePositions.length
+              ? payload.topThreePositions[i]
+              : i + 1,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'p${i + 1}Name',
+          i < payload.topThreeNames.length ? payload.topThreeNames[i] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'p${i + 1}Time',
+          i < payload.topThreeTimes.length ? payload.topThreeTimes[i] : '',
+        ),
+        HomeWidget.saveWidgetData<int>(
           'p${i + 1}Color',
           i < payload.topThreeColors.length
               ? payload.topThreeColors[i]
@@ -171,6 +191,9 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     lapCurrent: 0,
     lapTotal: 0,
     topThree: const [],
+    topThreePositions: const [],
+    topThreeNames: const [],
+    topThreeTimes: const [],
     topThreeColors: const [],
   );
 }
@@ -186,6 +209,14 @@ FmkHomeWidgetPayload _buildLivePayload(
       .toList();
   final topThree = topDrivers
       .map((driver) => driver.code.trim().toUpperCase())
+      .toList();
+  final topThreePositions = topDrivers
+      .map((driver) => driver.position)
+      .toList();
+  final topThreeNames = topDrivers.map(_driverDisplayNameKo).toList();
+  final raceLike = snapshot.isRaceOrSprint;
+  final topThreeTimes = topDrivers
+      .map((driver) => _driverTime(driver, raceLike: raceLike))
       .toList();
   final topThreeColors = topDrivers
       .map(
@@ -204,10 +235,15 @@ FmkHomeWidgetPayload _buildLivePayload(
     ]),
     gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '포매코 라이브']),
     sessions: const [],
-    liveBadge: snapshot.isEnded ? 'RESULT' : 'LIVE',
+    liveBadge: snapshot.isEnded && !isLiveSnapshotSessionActive(snapshot, now)
+        ? 'RESULT'
+        : 'LIVE',
     lapCurrent: lapCurrent < 0 ? 0 : lapCurrent,
     lapTotal: lapTotal < 0 ? 0 : lapTotal,
     topThree: topThree,
+    topThreePositions: topThreePositions,
+    topThreeNames: topThreeNames,
+    topThreeTimes: topThreeTimes,
     topThreeColors: topThreeColors,
   );
 }
@@ -251,3 +287,39 @@ String _firstNonEmpty(List<String?> values) {
   }
   return '';
 }
+
+String _driverDisplayNameKo(LiveDriverPosition driver) {
+  final code = driver.code.trim().toUpperCase();
+  return _driverNameKoByCode[code] ?? driver.displayName.trim();
+}
+
+String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
+  final value = driver.gap(raceLike: raceLike).trim();
+  return value.isEmpty ? '—' : value;
+}
+
+const Map<String, String> _driverNameKoByCode = {
+  'NOR': '랜도 노리스',
+  'PIA': '오스카 피아스트리',
+  'VER': '막스 베르스타펜',
+  'TSU': '유키 츠노다',
+  'LEC': '샤를 르클레르',
+  'HAM': '루이스 해밀턴',
+  'RUS': '조지 러셀',
+  'ANT': '키미 안토넬리',
+  'SAI': '카를로스 사인츠',
+  'ALB': '알렉산더 알본',
+  'ALO': '페르난도 알론소',
+  'STR': '랜스 스트롤',
+  'GAS': '피에르 가슬리',
+  'COL': '프랑코 콜라핀토',
+  'OCO': '에스테반 오콘',
+  'BEA': '올리버 베어먼',
+  'HAD': '아이작 하자르',
+  'LAW': '리암 로슨',
+  'HUL': '니코 휠켄베르크',
+  'BOR': '가브리엘 보르톨레토',
+  'BOT': '발테리 보타스',
+  'PER': '세르히오 페레즈',
+  'LIN': '아비드 린드블라드',
+};

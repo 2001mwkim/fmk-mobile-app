@@ -86,164 +86,179 @@
         android:layout_height="0dp"
         android:layout_marginTop="10dp"
         android:layout_weight="1"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/card_p1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="7dp"
+            android:id="@+id/row_p1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginBottom="6dp"
             android:layout_weight="1"
             android:background="@drawable/card_live_top"
-            android:clipToOutline="true"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp">
+
+            <TextView
+                android:id="@+id/tv_p1_pos"
+                android:layout_width="28dp"
+                android:layout_height="match_parent"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/fmk_red"
+                android:textSize="19sp"
+                android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/view_p1_accent"
-                android:layout_width="match_parent"
-                android:layout_height="2dp"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="10dp"
                 android:background="@color/fmk_red"
                 android:contentDescription="@null" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+            <TextView
+                android:id="@+id/tv_p1_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:baselineAligned="false"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_p1_pos"
-                    android:layout_width="15dp"
-                    android:layout_height="match_parent"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:text="1"
-                    android:textColor="@color/fmk_red"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_p1_code"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="5dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="@color/fmk_white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tv_p1_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/card_p2"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="7dp"
+            android:id="@+id/row_p2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginBottom="6dp"
             android:layout_weight="1"
             android:background="@drawable/card_live_top"
-            android:clipToOutline="true"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp">
+
+            <TextView
+                android:id="@+id/tv_p2_pos"
+                android:layout_width="28dp"
+                android:layout_height="match_parent"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/fmk_dim"
+                android:textSize="19sp"
+                android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/view_p2_accent"
-                android:layout_width="match_parent"
-                android:layout_height="2dp"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="10dp"
                 android:background="@color/fmk_dim"
                 android:contentDescription="@null" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+            <TextView
+                android:id="@+id/tv_p2_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:baselineAligned="false"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_text"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_p2_pos"
-                    android:layout_width="15dp"
-                    android:layout_height="match_parent"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:text="2"
-                    android:textColor="@color/fmk_dim"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_p2_code"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="5dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="@color/fmk_text"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tv_p2_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/card_p3"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:id="@+id/row_p3"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
             android:background="@drawable/card_live_top"
-            android:clipToOutline="true"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp">
+
+            <TextView
+                android:id="@+id/tv_p3_pos"
+                android:layout_width="28dp"
+                android:layout_height="match_parent"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/fmk_dim"
+                android:textSize="19sp"
+                android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/view_p3_accent"
-                android:layout_width="match_parent"
-                android:layout_height="2dp"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="10dp"
                 android:background="@color/fmk_faint"
                 android:contentDescription="@null" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+            <TextView
+                android:id="@+id/tv_p3_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:baselineAligned="false"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp">
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_text"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_p3_pos"
-                    android:layout_width="15dp"
-                    android:layout_height="match_parent"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:text="3"
-                    android:textColor="@color/fmk_dim"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_p3_code"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="5dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="@color/fmk_text"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tv_p3_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/fmk_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

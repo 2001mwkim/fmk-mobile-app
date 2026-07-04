@@ -133,13 +133,28 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       setTextViewText(R.id.tv_lap_total, if (lapTotal > 0) "/ $lapTotal" else "/ -")
       setProgressBar(R.id.pb_lap, progressMax, progressCurrent, false)
 
-      setTextViewText(R.id.tv_p1_code, data.getString("p1Code", "").dashIfBlank())
-      setTextViewText(R.id.tv_p2_code, data.getString("p2Code", "").dashIfBlank())
-      setTextViewText(R.id.tv_p3_code, data.getString("p3Code", "").dashIfBlank())
+      bindDriverRow(data, 1, R.id.row_p1, R.id.tv_p1_pos, R.id.tv_p1_name, R.id.tv_p1_time)
+      bindDriverRow(data, 2, R.id.row_p2, R.id.tv_p2_pos, R.id.tv_p2_name, R.id.tv_p2_time)
+      bindDriverRow(data, 3, R.id.row_p3, R.id.tv_p3_pos, R.id.tv_p3_name, R.id.tv_p3_time)
       setInt(R.id.view_p1_accent, "setBackgroundColor", accentColor(data, "p1Color"))
       setInt(R.id.view_p2_accent, "setBackgroundColor", accentColor(data, "p2Color"))
       setInt(R.id.view_p3_accent, "setBackgroundColor", accentColor(data, "p3Color"))
     }
+  }
+
+  private fun RemoteViews.bindDriverRow(
+      data: SharedPreferences,
+      index: Int,
+      rowId: Int,
+      positionId: Int,
+      nameId: Int,
+      timeId: Int,
+  ) {
+    val name = data.getString("p${index}Name", "").orEmpty().trim()
+    setViewVisibility(rowId, if (name.isEmpty()) View.GONE else View.VISIBLE)
+    setTextViewText(positionId, data.getInt("p${index}Position", index).toString())
+    setTextViewText(nameId, name.dashIfBlank())
+    setTextViewText(timeId, data.getString("p${index}Time", "").dashIfBlank())
   }
 
   /** Reads a stored accent color, falling back to red when missing/invalid (0 == transparent). */

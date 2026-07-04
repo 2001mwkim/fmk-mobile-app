@@ -31,9 +31,24 @@ void main() {
         currentLap: 12,
         totalLaps: 58,
         topThree: [
-          LiveDriverPosition(position: 1, code: 'NOR', displayName: 'NOR'),
-          LiveDriverPosition(position: 2, code: 'PIA', displayName: 'PIA'),
-          LiveDriverPosition(position: 3, code: 'VER', displayName: 'VER'),
+          LiveDriverPosition(
+            position: 1,
+            code: 'NOR',
+            displayName: 'NOR',
+            interval: 'LEADER',
+          ),
+          LiveDriverPosition(
+            position: 2,
+            code: 'PIA',
+            displayName: 'PIA',
+            interval: '+1.264',
+          ),
+          LiveDriverPosition(
+            position: 3,
+            code: 'VER',
+            displayName: 'VER',
+            interval: '+3.891',
+          ),
         ],
       ),
     );
@@ -44,6 +59,9 @@ void main() {
     expect(payload.lapCurrent, 12);
     expect(payload.lapTotal, 58);
     expect(payload.topThree, ['NOR', 'PIA', 'VER']);
+    expect(payload.topThreePositions, [1, 2, 3]);
+    expect(payload.topThreeNames, ['랜도 노리스', '오스카 피아스트리', '막스 베르스타펜']);
+    expect(payload.topThreeTimes, ['LEADER', '+1.264', '+3.891']);
     expect(payload.topThreeColors, [-30976, -30976, -14794241]);
   });
 
@@ -66,7 +84,29 @@ void main() {
     expect(payload.mode, 'live');
     expect(payload.liveBadge, 'RESULT');
     expect(payload.topThree, ['LEC']);
+    expect(payload.topThreeNames, ['샤를 르클레르']);
     expect(payload.topThreeColors, [-1572832]);
+  });
+
+  test('home widget keeps live badge for qualifying between Q segments', () {
+    final payload = buildFmkHomeWidgetPayload(
+      now: DateTime.parse('2026-07-05T00:20:00+09:00'),
+      snapshot: LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '2026-07-04T15:18:00Z',
+        raceId: 'great-britain-2026',
+        raceName: 'British Grand Prix',
+        sessionType: 'Qualifying',
+        sessionName: 'Qualifying',
+        endedAt: DateTime.parse('2026-07-04T15:18:00Z'),
+        topThree: const [
+          LiveDriverPosition(position: 1, code: 'NOR', displayName: 'NOR'),
+        ],
+      ),
+    );
+
+    expect(payload.mode, 'live');
+    expect(payload.liveBadge, 'LIVE');
   });
 
   test('home widget expired live payload falls back to default', () {
