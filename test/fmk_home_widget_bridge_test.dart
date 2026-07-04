@@ -63,6 +63,14 @@ void main() {
     expect(payload.topThreeNames, ['랜도 노리스', '오스카 피아스트리', '막스 베르스타펜']);
     expect(payload.topThreeTimes, ['LEADER', '+1.264', '+3.891']);
     expect(payload.topThreeColors, [-30976, -30976, -14794241]);
+
+    // 위젯 토글(라이브 ↔ 일정)용: live 모드에서도 일정 데이터를 항상 채운다.
+    expect(payload.sessions, isNotEmpty);
+    expect(payload.scheduleGpName, isNotEmpty);
+    expect(
+      payload.sessions.first.date,
+      matches(RegExp(r'^\d{1,2}\.\d{1,2} [월화수목금토일]$')),
+    );
   });
 
   test('home widget ended payload uses result badge while displayable', () {

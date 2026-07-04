@@ -21,6 +21,8 @@ class FmkHomeWidgetPayload {
     required this.mode,
     required this.gpFlag,
     required this.gpName,
+    required this.scheduleGpFlag,
+    required this.scheduleGpName,
     required this.sessions,
     required this.liveBadge,
     required this.lapCurrent,
@@ -35,6 +37,13 @@ class FmkHomeWidgetPayload {
   final String mode;
   final String gpFlag;
   final String gpName;
+
+  /// 위젯 토글용 일정 화면 헤더. live 모드에서도 항상 채워서, 위젯이 앱 실행
+  /// 없이 라이브 ↔ 일정 화면을 전환할 수 있게 한다.
+  final String scheduleGpFlag;
+  final String scheduleGpName;
+
+  /// 다음 그랑프리 세션 일정(최대 5개). 모드와 무관하게 항상 채운다.
   final List<FmkHomeWidgetSessionRow> sessions;
   final String liveBadge;
   final int lapCurrent;
@@ -97,6 +106,8 @@ class FmkHomeWidgetBridge {
       HomeWidget.saveWidgetData<String>('mode', payload.mode),
       HomeWidget.saveWidgetData<String>('gpFlag', payload.gpFlag),
       HomeWidget.saveWidgetData<String>('gpName', payload.gpName),
+      HomeWidget.saveWidgetData<String>('scheduleGpFlag', payload.scheduleGpFlag),
+      HomeWidget.saveWidgetData<String>('scheduleGpName', payload.scheduleGpName),
       HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
       HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
       HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
@@ -171,9 +182,12 @@ FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
   return _buildDefaultPayload(currentTime);
 }
 
-FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
+/// 다음 그랑프리와 세션 일정 행(최대 5개). 두 모드가 공유한다.
+({Race race, List<FmkHomeWidgetSessionRow> rows}) _nextRaceSchedule(
+  DateTime now,
+) {
   final race = getNextRace(now);
-  final sessions = race.sessions.take(5).map((session) {
+  final rows = race.sessions.take(5).map((session) {
     final start = getSessionDate(race, session);
     return FmkHomeWidgetSessionRow(
       name: _sessionName(session),
@@ -181,12 +195,19 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
       time: _formatTimeKst(start),
     );
   }).toList();
+  return (race: race, rows: rows);
+}
+
+FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
+  final schedule = _nextRaceSchedule(now);
 
   return FmkHomeWidgetPayload(
     mode: _modeDefault,
-    gpFlag: _flagForRace(race),
-    gpName: race.nameKo,
-    sessions: sessions,
+    gpFlag: _flagForRace(schedule.race),
+    gpName: schedule.race.nameKo,
+    scheduleGpFlag: _flagForRace(schedule.race),
+    scheduleGpName: schedule.race.nameKo,
+    sessions: schedule.rows,
     liveBadge: 'LIVE',
     lapCurrent: 0,
     lapTotal: 0,
@@ -225,6 +246,9 @@ FmkHomeWidgetPayload _buildLivePayload(
       .toList();
   final lapTotal = snapshot.totalLaps ?? 0;
   final lapCurrent = snapshot.currentLap ?? 0;
+  // live 모드에서도 일정 데이터를 함께 저장해, 위젯 토글 버튼이 앱 실행 없이
+  // 일정 화면을 그릴 수 있게 한다.
+  final schedule = _nextRaceSchedule(now);
 
   return FmkHomeWidgetPayload(
     mode: _modeLive,
@@ -234,7 +258,9 @@ FmkHomeWidgetPayload _buildLivePayload(
       if (race != null) _flagForRace(race),
     ]),
     gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '포매코 라이브']),
-    sessions: const [],
+    scheduleGpFlag: _flagForRace(schedule.race),
+    scheduleGpName: schedule.race.nameKo,
+    sessions: schedule.rows,
     liveBadge: snapshot.isEnded && !isLiveSnapshotSessionActive(snapshot, now)
         ? 'RESULT'
         : 'LIVE',

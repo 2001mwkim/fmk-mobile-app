@@ -1,12 +1,16 @@
 package kr.formulamagazine.fmk
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class FmkHomeWidgetProvider : HomeWidgetProvider() {
@@ -24,6 +28,30 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
         Log.e(TAG, "updateAppWidget failed for id=$widgetId", error)
       }
     }
+  }
+
+  /** 위젯 우상단 토글 버튼: 라이브 ↔ 일정 화면 전환 브로드캐스트 처리. */
+  override fun onReceive(context: Context, intent: Intent) {
+    if (intent.action == ACTION_TOGGLE_VIEW) {
+      try {
+        val state = widgetState(context)
+        val next = !state.getBoolean(KEY_SHOW_SCHEDULE, false)
+        state.edit().putBoolean(KEY_SHOW_SCHEDULE, next).apply()
+
+        val manager = AppWidgetManager.getInstance(context)
+        val ids =
+            manager.getAppWidgetIds(
+                ComponentName(context, FmkHomeWidgetProvider::class.java)
+            )
+        if (ids != null && ids.isNotEmpty()) {
+          onUpdate(context, manager, ids, HomeWidgetPlugin.getData(context))
+        }
+      } catch (error: Throwable) {
+        Log.e(TAG, "toggle view failed", error)
+      }
+      return
+    }
+    super.onReceive(context, intent)
   }
 
   /**
@@ -44,7 +72,15 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       "default"
     }
 
-    if (mode == "live") {
+    val hasLive = mode == "live"
+    val showSchedule = try {
+      resolveShowSchedule(context, mode)
+    } catch (error: Throwable) {
+      Log.e(TAG, "Failed to resolve toggle state for id=$widgetId", error)
+      false
+    }
+
+    if (hasLive && !showSchedule) {
       try {
         return buildLive(context, data)
       } catch (error: Throwable) {
@@ -53,11 +89,44 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     }
 
     return try {
-      buildDefault(context, data)
+      // 라이브 데이터가 있을 때만 일정 화면에 라이브 복귀 버튼을 노출한다.
+      buildDefault(context, data, showLiveToggle = hasLive)
     } catch (error: Throwable) {
       Log.e(TAG, "buildDefault failed for id=$widgetId, using minimal fallback", error)
       buildMinimal(context)
     }
+  }
+
+  /**
+   * 사용자가 마지막으로 고른 화면(라이브/일정)을 읽는다. default → live 로
+   * 모드가 바뀌는 순간(새 세션 시작)에는 일정 화면에 두었더라도 라이브 화면으로
+   * 복귀시킨다.
+   */
+  private fun resolveShowSchedule(context: Context, mode: String?): Boolean {
+    val state = widgetState(context)
+    val lastMode = state.getString(KEY_LAST_MODE, "")
+
+    if (mode != lastMode) {
+      val edit = state.edit().putString(KEY_LAST_MODE, mode)
+      if (mode == "live") edit.putBoolean(KEY_SHOW_SCHEDULE, false)
+      edit.apply()
+    }
+
+    return state.getBoolean(KEY_SHOW_SCHEDULE, false)
+  }
+
+  private fun widgetState(context: Context): SharedPreferences =
+      context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
+
+  private fun togglePendingIntent(context: Context): PendingIntent {
+    val intent =
+        Intent(context, FmkHomeWidgetProvider::class.java).setAction(ACTION_TOGGLE_VIEW)
+    return PendingIntent.getBroadcast(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
   }
 
   /** Pure inflate of the default layout with no dynamic mutation — cannot fail on data. */
@@ -65,15 +134,36 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default)
   }
 
-  private fun buildDefault(context: Context, data: SharedPreferences): RemoteViews {
+  private fun buildDefault(
+      context: Context,
+      data: SharedPreferences,
+      showLiveToggle: Boolean = false,
+  ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
       setOnClickPendingIntent(
           R.id.widget_root_default,
           HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
       )
 
-      setTextViewText(R.id.tv_gp_flag, data.getString("gpFlag", ""))
-      setTextViewText(R.id.tv_gp_name, data.getString("gpName", "포매코"))
+      // live 모드에서 gpFlag/gpName 은 라이브 그랑프리 정보라서, 일정 화면은
+      // 전용 키(scheduleGpFlag/scheduleGpName)를 우선 사용한다(없으면 기존 키).
+      val flag = data.getString("scheduleGpFlag", null) ?: data.getString("gpFlag", "")
+      val name = data.getString("scheduleGpName", null) ?: data.getString("gpName", "포매코")
+      setTextViewText(R.id.tv_gp_flag, flag)
+      setTextViewText(R.id.tv_gp_name, name)
+
+      if (showLiveToggle) {
+        val label =
+            if (data.getString("liveBadge", "LIVE") == "RESULT") "결과" else "LIVE"
+        setViewVisibility(R.id.btn_widget_toggle_default, View.VISIBLE)
+        setTextViewText(R.id.btn_widget_toggle_default, label)
+        setOnClickPendingIntent(
+            R.id.btn_widget_toggle_default,
+            togglePendingIntent(context),
+        )
+      } else {
+        setViewVisibility(R.id.btn_widget_toggle_default, View.GONE)
+      }
 
       val rowIds =
           intArrayOf(R.id.row_s1, R.id.row_s2, R.id.row_s3, R.id.row_s4, R.id.row_s5)
@@ -127,6 +217,11 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
           HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
       )
 
+      setOnClickPendingIntent(
+          R.id.btn_widget_toggle_live,
+          togglePendingIntent(context),
+      )
+
       setTextViewText(R.id.tv_live_badge, data.getString("liveBadge", "LIVE"))
       setTextViewText(R.id.tv_gp_name_live, listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "))
       setTextViewText(R.id.tv_lap_cur, if (lapTotal > 0) lapCurrent.toString() else "-")
@@ -176,5 +271,11 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
   companion object {
     private const val TAG = "FmkHomeWidget"
     private const val FMK_RED = -1095588 // 0xFFEF4444
+
+    /** 위젯 자체 상태(토글) 저장소 — home_widget 데이터와 분리해서 보관. */
+    private const val STATE_PREFS = "FmkWidgetState"
+    private const val KEY_SHOW_SCHEDULE = "showSchedule"
+    private const val KEY_LAST_MODE = "lastSeenMode"
+    private const val ACTION_TOGGLE_VIEW = "kr.formulamagazine.fmk.widget.TOGGLE_VIEW"
   }
 }

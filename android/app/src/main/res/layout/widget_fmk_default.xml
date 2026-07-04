@@ -49,6 +49,22 @@
             android:text="KST"
             android:textColor="@color/fmk_faint"
             android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/btn_widget_toggle_default"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_toggle_bg"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="LIVE"
+            android:textColor="@color/fmk_white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout

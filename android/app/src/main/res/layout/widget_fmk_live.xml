@@ -71,6 +71,21 @@
             android:textColor="@color/fmk_dim"
             android:textSize="12sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btn_widget_toggle_live"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_toggle_bg"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="일정"
+            android:textColor="@color/fmk_white"
+            android:textSize="11sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <ProgressBar
