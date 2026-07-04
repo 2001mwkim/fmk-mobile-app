@@ -93,6 +93,7 @@ LiveSessionSnapshot? parseLiveJson(String body) {
       updatedAt: _string(map['updatedAt']) ?? '',
       raceId: _string(map['raceId']),
       raceName: _string(map['raceName']),
+      sessionKey: _string(map['sessionKey']),
       sessionType: _string(map['sessionType']),
       sessionName: _string(map['sessionName']),
       currentLap: _int(map['currentLap']),

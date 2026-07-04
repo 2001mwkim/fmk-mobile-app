@@ -43,10 +43,12 @@ class LiveDriverPosition {
     return gapToLeader ?? interval ?? '—';
   }
 
-  /// UI에 표시할 시간. Race/Sprint는 기존 gap/interval, Practice/Qualifying은 랩타임 우선.
+  /// UI에 표시할 시간. Race/Sprint는 기존 gap/interval, Practice/Qualifying은
+  /// 현재 세션 랩타임(displayTime/lapTime)만 사용한다. 랩타임이 아직 없으면
+  /// gap/interval로 대체하지 않고 '—'를 보여준다(이전 세션 gap 재사용 방지).
   String time({required bool raceLike}) {
     if (raceLike) return gap(raceLike: true);
-    return displayTime ?? lapTime ?? gap(raceLike: false);
+    return displayTime ?? lapTime ?? '—';
   }
 }
 
@@ -57,6 +59,7 @@ class LiveSessionSnapshot {
     required this.updatedAt,
     this.raceId,
     this.raceName,
+    this.sessionKey,
     this.sessionType,
     this.sessionName,
     this.currentLap,
@@ -74,6 +77,10 @@ class LiveSessionSnapshot {
   final String updatedAt;
   final String? raceId;
   final String? raceName;
+
+  /// collector가 내려주는 현재 세션 식별 키. classification의 랩타임이 현재
+  /// 세션에서 생성된 값인지 검증(디버그)하는 용도.
+  final String? sessionKey;
   final String? sessionType;
   final String? sessionName;
   final int? currentLap;
@@ -103,14 +110,20 @@ class LiveSessionSnapshot {
   bool get isDisplayable => status == LiveSessionStatus.live || isRecentlyEnded;
 
   /// practice/qualifying/shootout 이 아니고 race/sprint 면 true.
+  /// 한글 세션명('레이스'/'스프린트'/'퀄리파잉'/'프랙티스')도 인식한다.
   bool get isRaceOrSprint {
     final text = '${sessionType ?? ''} ${sessionName ?? ''}'.toLowerCase();
     if (text.contains('practice') ||
         text.contains('qualifying') ||
-        text.contains('shootout')) {
+        text.contains('shootout') ||
+        text.contains('프랙티스') ||
+        text.contains('퀄리')) {
       return false;
     }
-    return text.contains('race') || text.contains('sprint');
+    return text.contains('race') ||
+        text.contains('sprint') ||
+        text.contains('레이스') ||
+        text.contains('스프린트');
   }
 
   bool get showLap => isRaceOrSprint && currentLap != null && totalLaps != null;
