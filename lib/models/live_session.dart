@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/races.dart';
+
 /// 웹 lib/live/types.ts 의 라이브 세션 타입을 Flutter로 옮긴 모델.
 /// 실제 데이터(SignalR/live.json) 연결 전까지 UI 구조만 정의한다.
 enum LiveSessionStatus { live, ended, inactive }
@@ -129,6 +131,26 @@ class LiveSessionSnapshot {
   }
 
   String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'GAP';
+}
+
+/// 스케줄을 반영한 라이브 박스 노출 여부.
+///
+/// - live: 항상 노출.
+/// - ended: 같은 그랑프리 주말의 다음 세션 시작 30분 전까지(마지막 레이스는 종료
+///   1시간 후까지) 결과를 계속 노출한다. 예) 레이스 날에도 직전 퀄리파잉 결과 유지.
+///   스케줄 매칭에 실패하면 기존 [LiveSessionSnapshot.isDisplayable](종료+30분) 규칙으로
+///   안전하게 fallback 한다.
+bool isLiveSnapshotDisplayable(LiveSessionSnapshot snapshot, [DateTime? now]) {
+  if (snapshot.status == LiveSessionStatus.live) return true;
+  if (snapshot.status != LiveSessionStatus.ended) return false;
+
+  final until = liveEndedResultVisibleUntil(
+    raceId: snapshot.raceId,
+    raceName: snapshot.raceName,
+    endedAt: snapshot.endedAt,
+  );
+  if (until == null) return snapshot.isDisplayable;
+  return (now ?? DateTime.now()).isBefore(until);
 }
 
 /// 종료 후 노출 라벨(웹 LIVE_ENDED_HOME_LABEL / LIVE_ENDED_PANEL_LABEL).

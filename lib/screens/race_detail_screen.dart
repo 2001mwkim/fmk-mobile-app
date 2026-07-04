@@ -65,9 +65,10 @@ class RaceDetailScreen extends StatelessWidget {
             const SizedBox(height: 12),
             // 라이브 순위 패널 (실데이터 없으면 렌더되지 않음)
             LiveSessionBuilder(
-              builder: (_, snapshot) => RaceLiveClassificationPanel(
+              builder: (_, snapshot, isStale) => RaceLiveClassificationPanel(
                 snapshot: snapshot,
                 raceId: race.id,
+                isStale: isStale,
               ),
             ),
             _HeroCard(race: race, status: status),

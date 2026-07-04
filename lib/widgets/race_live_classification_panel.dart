@@ -12,10 +12,14 @@ class RaceLiveClassificationPanel extends StatefulWidget {
     super.key,
     required this.snapshot,
     required this.raceId,
+    this.isStale = false,
   });
 
   final LiveSessionSnapshot? snapshot;
   final String raceId;
+
+  /// 데이터 연결이 잠깐 흔들려 마지막 순위표를 유지 중인 상태(3분 초과).
+  final bool isStale;
 
   @override
   State<RaceLiveClassificationPanel> createState() =>
@@ -137,6 +141,10 @@ class _RaceLiveClassificationPanelState
                   ),
                 ),
               ),
+              if (widget.isStale) ...[
+                const _StaleBadge(),
+                const SizedBox(width: 8),
+              ],
               const SizedBox(width: 10),
               Text(
                 '${s.classification.length} DRIVERS',
@@ -363,6 +371,31 @@ class _ClassificationRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 연결이 잠깐 흔들려 마지막 순위표를 유지 중임을 알리는 muted 배지(경고 톤 아님).
+class _StaleBadge extends StatelessWidget {
+  const _StaleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0x14FFFFFF), // white/8
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: const Text(
+        '업데이트 지연',
+        style: TextStyle(
+          fontSize: 10,
+          fontFamily: 'Pretendard',
+          color: Color(0xFF8088A8),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

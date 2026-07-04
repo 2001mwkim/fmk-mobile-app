@@ -6,6 +6,7 @@ import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/home_screen.dart';
 import 'package:fmk_app/screens/race_detail_screen.dart';
+import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
 import 'package:fmk_app/services/live_session_controller.dart';
 import 'package:fmk_app/services/live_session_service.dart';
 import 'package:fmk_app/theme/app_theme.dart';
@@ -335,7 +336,8 @@ void main() {
           const LiveSessionFetchResult.failed(),
         ]),
         now: () => now,
-        staleSnapshotTtl: const Duration(seconds: 75),
+        gracePeriod: const Duration(seconds: 30),
+        staleMaxAge: const Duration(seconds: 75),
       );
 
       await controller.refresh();
@@ -353,6 +355,154 @@ void main() {
       expect(controller.isStale, isFalse);
     },
   );
+
+  test('keeps live snapshot when the next fetch fails within grace', () async {
+    var now = DateTime(2026, 6, 30, 12);
+    final live = _liveSnapshot();
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(live),
+        const LiveSessionFetchResult.failed(),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    now = now.add(const Duration(minutes: 1)); // grace(3분) 이내
+    await controller.refresh();
+
+    expect(controller.snapshot, same(live));
+    expect(controller.isStale, isFalse);
+  });
+
+  test('keeps live snapshot on successful null response', () async {
+    var now = DateTime(2026, 6, 30, 12);
+    final live = _liveSnapshot();
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(live),
+        const LiveSessionFetchResult.success(null),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    now = now.add(const Duration(minutes: 1));
+    await controller.refresh();
+
+    expect(controller.snapshot, same(live));
+    expect(controller.isStale, isFalse);
+  });
+
+  test(
+    'keeps live snapshot on transient non-displayable, marks stale',
+    () async {
+      var now = DateTime(2026, 6, 30, 12);
+      final live = _liveSnapshot();
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([
+          LiveSessionFetchResult.success(live),
+          const LiveSessionFetchResult.success(
+            LiveSessionSnapshot(
+              status: LiveSessionStatus.inactive,
+              updatedAt: '',
+            ),
+          ),
+        ]),
+        now: () => now,
+      );
+
+      await controller.refresh();
+      now = now.add(const Duration(minutes: 5)); // grace 초과, max 이내
+      await controller.refresh();
+
+      expect(controller.snapshot, same(live));
+      expect(controller.isStale, isTrue);
+    },
+  );
+
+  test('drops live snapshot after staleMaxAge', () async {
+    var now = DateTime(2026, 6, 30, 12);
+    final live = _liveSnapshot();
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(live),
+        const LiveSessionFetchResult.failed(),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    now = now.add(const Duration(minutes: 11)); // max(10분) 초과
+    await controller.refresh();
+
+    expect(controller.snapshot, isNull);
+    expect(controller.isStale, isFalse);
+  });
+
+  test('shows ended snapshot while visibleUntil is valid', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final ended = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '',
+      visibleUntil: DateTime.now().add(const Duration(minutes: 25)),
+      topThree: const [
+        LiveDriverPosition(position: 1, code: 'NOR', displayName: 'NOR'),
+      ],
+    );
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(ended)]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    expect(controller.snapshot, same(ended));
+  });
+
+  test('hides ended snapshot once visibleUntil passed', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final live = _liveSnapshot();
+    final expired = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '',
+      visibleUntil: DateTime.now().subtract(const Duration(minutes: 1)),
+    );
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(live),
+        LiveSessionFetchResult.success(expired),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    expect(controller.snapshot, same(live));
+    await controller.refresh();
+    expect(controller.snapshot, isNull); // 확정 종료 → 즉시 숨김
+  });
+
+  test('widget bridge keeps live payload through a transient null', () async {
+    var now = DateTime(2026, 6, 30, 12);
+    final live = _liveSnapshot();
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(live),
+        const LiveSessionFetchResult.success(null),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    now = now.add(const Duration(minutes: 1));
+    await controller.refresh();
+
+    // 컨트롤러가 마지막 스냅샷을 유지하므로 위젯도 default 로 돌아가지 않는다.
+    final payload = buildFmkHomeWidgetPayload(
+      snapshot: controller.snapshot,
+      now: now,
+    );
+    expect(payload.mode, 'live');
+  });
 
   test(
     'LiveSessionController keeps null when fetch fails without snapshot',

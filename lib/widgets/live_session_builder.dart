@@ -10,7 +10,11 @@ import '../services/live_session_controller.dart';
 class LiveSessionBuilder extends StatefulWidget {
   const LiveSessionBuilder({super.key, required this.builder});
 
-  final Widget Function(BuildContext context, LiveSessionSnapshot? snapshot)
+  final Widget Function(
+    BuildContext context,
+    LiveSessionSnapshot? snapshot,
+    bool isStale,
+  )
   builder;
 
   @override
@@ -36,6 +40,10 @@ class _LiveSessionBuilderState extends State<LiveSessionBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context, liveSessionController.snapshot);
+    return widget.builder(
+      context,
+      liveSessionController.snapshot,
+      liveSessionController.isStale,
+    );
   }
 }

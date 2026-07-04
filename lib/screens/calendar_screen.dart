@@ -335,11 +335,15 @@ class _ActiveRaceCard extends StatelessWidget {
   final bool isNext;
   final VoidCallback onTap;
 
+  // 다음 그랑프리(NEXT)뿐 아니라 현재 진행중 그랑프리도 동일하게 강조한다.
+  bool get _emphasized =>
+      isNext || getRaceStatus(race) == RaceStatus.inProgress;
+
   @override
   Widget build(BuildContext context) {
     final content = _content(context);
 
-    if (!isNext) {
+    if (!_emphasized) {
       return AppCard(
         padding: const EdgeInsets.all(18),
         onTap: onTap,
@@ -347,7 +351,7 @@ class _ActiveRaceCard extends StatelessWidget {
       );
     }
 
-    // NEXT — 레드 보더 + 은은한 그라데이션 + 리본.
+    // NEXT / 진행중 — 레드 보더 + 은은한 그라데이션 + 리본.
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
@@ -384,7 +388,7 @@ class _ActiveRaceCard extends StatelessWidget {
 
   Widget _content(BuildContext context) {
     final status = getRaceStatus(race);
-    final statusVariant = (isNext || status == RaceStatus.inProgress)
+    final statusVariant = _emphasized
         ? AppChipVariant.red
         : AppChipVariant.neutral;
     final dateText =
@@ -427,7 +431,7 @@ class _ActiveRaceCard extends StatelessWidget {
             ),
           ],
         ),
-        if (isNext) ...[
+        if (_emphasized) ...[
           const SizedBox(height: 10),
           _RaceInfoLine(
             dateText: dateText,

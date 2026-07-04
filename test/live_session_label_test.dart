@@ -39,6 +39,76 @@ void main() {
     });
   });
 
+  group('liveEndedResultVisibleUntil / isLiveSnapshotDisplayable', () {
+    // 영국 GP(스프린트 주말): 스프린트 종료(2026-07-04 20:30 KST) 후 다음 세션은
+    // 퀄리파잉(2026-07-05 00:00 KST = 07-04 15:00Z).
+    final sprintEndedAt = DateTime.parse('2026-07-04T11:30:11Z');
+
+    test('keeps result until 30min before the next session', () {
+      final until = liveEndedResultVisibleUntil(
+        raceId: 'great-britain-2026',
+        raceName: 'British Grand Prix',
+        endedAt: sprintEndedAt,
+      );
+      // 퀄리 시작 07-04 15:00Z 의 30분 전 = 14:30Z.
+      expect(until, DateTime.parse('2026-07-04T14:30:00Z'));
+    });
+
+    test('final race stays for one hour after it ends', () {
+      // 레이스 시작 2026-07-05 23:00 KST(=14:00Z) + 180분 => 17:00Z 종료.
+      final raceEndedAt = DateTime.parse('2026-07-05T17:00:00Z');
+      final until = liveEndedResultVisibleUntil(
+        raceId: 'great-britain-2026',
+        endedAt: raceEndedAt,
+      );
+      expect(until, raceEndedAt.add(const Duration(hours: 1)));
+    });
+
+    test(
+      'returns null when race or endedAt is missing (caller falls back)',
+      () {
+        expect(
+          liveEndedResultVisibleUntil(raceId: 'nope', endedAt: sprintEndedAt),
+          isNull,
+        );
+        expect(
+          liveEndedResultVisibleUntil(
+            raceId: 'great-britain-2026',
+            endedAt: null,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('displayable until the next session window closes', () {
+      final snapshot = LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '',
+        raceId: 'great-britain-2026',
+        raceName: 'British Grand Prix',
+        endedAt: sprintEndedAt,
+      );
+
+      // 종료 30분 뒤(=기존 visibleUntil 만료)여도 다음 세션 30분 전까지는 노출.
+      expect(
+        isLiveSnapshotDisplayable(
+          snapshot,
+          DateTime.parse('2026-07-04T13:00:00Z'),
+        ),
+        isTrue,
+      );
+      // 퀄리 30분 전 이후에는 숨김.
+      expect(
+        isLiveSnapshotDisplayable(
+          snapshot,
+          DateTime.parse('2026-07-04T14:45:00Z'),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   test('Audi drivers use the standings dark-grey accent', () {
     final audiColor = getTeamColor('아우디');
     expect(liveDriverAccent('HUL'), audiColor);

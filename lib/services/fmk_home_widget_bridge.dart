@@ -143,7 +143,8 @@ FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
-  final displayable = snapshot != null && snapshot.isDisplayable;
+  final displayable =
+      snapshot != null && isLiveSnapshotDisplayable(snapshot, currentTime);
   if (displayable) {
     return _buildLivePayload(snapshot, currentTime);
   }

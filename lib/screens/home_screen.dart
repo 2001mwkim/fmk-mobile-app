@@ -59,12 +59,14 @@ class _SeasonHomeContent extends StatelessWidget {
           const SizedBox(height: 16),
           // 라이브 Top 3 카드와 히어로 세션 박스는 같은 스냅샷을 본다.
           LiveSessionBuilder(
-            builder: (builderContext, snapshot) {
+            builder: (builderContext, snapshot, isStale) {
               final liveSnapshot = liveSnapshotOverride ?? snapshot;
+              final liveStale = liveSnapshotOverride == null && isStale;
               return Column(
                 children: [
                   HomeLiveTopThreeCard(
                     snapshot: liveSnapshot,
+                    isStale: liveStale,
                     onTap: () =>
                         _openLiveRace(builderContext, liveSnapshot?.raceId),
                   ),
@@ -425,15 +427,13 @@ String _snapshotSessionTitle(
   LiveSessionSnapshot snapshot,
   RaceSession? mappedSession,
 ) {
-  final sessionName = snapshot.sessionName?.trim();
-  if (sessionName != null && sessionName.isNotEmpty) return sessionName;
+  // 스냅샷의 영문 세션 이름(예: 'Sprint', 'Race')을 한글로 변환해 우선 사용한다.
+  final label = liveSessionLabelKo(snapshot.sessionName, snapshot.sessionType);
+  if (label != '세션') return label;
 
-  final sessionType = snapshot.sessionType?.trim();
-  if (sessionType != null && sessionType.isNotEmpty) {
-    return mappedSession?.fullLabel ?? sessionType;
-  }
-
-  return mappedSession?.fullLabel ?? '세션';
+  // 스냅샷에 세션 정보가 없을 때만 스케줄에서 매핑된 한글 라벨로 보완한다.
+  final mapped = mappedSession?.fullLabel.trim();
+  return (mapped != null && mapped.isNotEmpty) ? mapped : '세션';
 }
 
 String _liveValue(LiveSessionSnapshot snapshot) {

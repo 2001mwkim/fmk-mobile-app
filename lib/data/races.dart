@@ -1421,6 +1421,36 @@ Race? resolveLiveRace(String? raceId, String? raceName) {
   return null;
 }
 
+/// 종료된 라이브 세션 결과를 스케줄 기준 언제까지 노출할지 계산한다.
+///
+/// 같은 그랑프리 주말에서 [endedAt] 이후 시작하는 다음 세션이 있으면 그 세션
+/// 시작 30분 전까지, 없으면(마지막 일요일 레이스) 종료 1시간 후까지 노출한다.
+/// raceId/raceName 으로 Race 를 못 찾거나 [endedAt] 이 null 이면 null 을 돌려주고,
+/// 호출부는 기존 visibleUntil(종료+30분) 규칙으로 fallback 한다.
+DateTime? liveEndedResultVisibleUntil({
+  String? raceId,
+  String? raceName,
+  DateTime? endedAt,
+}) {
+  if (endedAt == null) return null;
+  final race = resolveLiveRace(raceId, raceName);
+  if (race == null) return null;
+
+  DateTime? nextStart;
+  for (final session in race.sessions) {
+    final start = getSessionDate(race, session);
+    if (start.isAfter(endedAt) &&
+        (nextStart == null || start.isBefore(nextStart))) {
+      nextStart = start;
+    }
+  }
+
+  if (nextStart != null) {
+    return nextStart.subtract(const Duration(minutes: 30));
+  }
+  return endedAt.add(const Duration(hours: 1));
+}
+
 /// 라이브 스냅샷 raceId 로 홈 라이브 카드 국기를 구한다. 매핑 실패 시 null.
 String? liveCountryFlag(String? raceId) {
   final race = getRaceById(raceId);

@@ -12,10 +12,18 @@ import '../theme/app_colors.dart';
 /// snapshot 이 없거나 Top 3 가 3명 미만이면 아무것도 렌더하지 않는다(자리만 차지하지 않음).
 /// 실데이터 연결 전에는 [snapshot] 이 null 로 들어와 화면에 노출되지 않는다.
 class HomeLiveTopThreeCard extends StatelessWidget {
-  const HomeLiveTopThreeCard({super.key, required this.snapshot, this.onTap});
+  const HomeLiveTopThreeCard({
+    super.key,
+    required this.snapshot,
+    this.onTap,
+    this.isStale = false,
+  });
 
   final LiveSessionSnapshot? snapshot;
   final VoidCallback? onTap;
+
+  /// 데이터 연결이 잠깐 흔들려 마지막 순위를 유지 중인 상태(3분 초과).
+  final bool isStale;
 
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(20));
 
@@ -143,6 +151,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (isStale) ...[const SizedBox(width: 8), const _StaleBadge()],
           ],
         ),
         const SizedBox(height: 10),
@@ -243,6 +252,31 @@ class HomeLiveTopThreeCard extends StatelessWidget {
         gradient: RadialGradient(
           colors: [Color(0x33EF4444), Color(0x00EF4444)],
           stops: [0.0, 0.7],
+        ),
+      ),
+    );
+  }
+}
+
+/// 연결이 잠깐 흔들려 마지막 순위를 유지 중임을 알리는 muted 배지(경고 톤 아님).
+class _StaleBadge extends StatelessWidget {
+  const _StaleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0x14FFFFFF), // white/8
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: const Text(
+        '업데이트 지연',
+        style: TextStyle(
+          fontSize: 10,
+          fontFamily: 'Pretendard',
+          color: Color(0xFF8088A8),
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
