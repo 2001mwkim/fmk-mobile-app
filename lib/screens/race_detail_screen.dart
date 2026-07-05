@@ -17,6 +17,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/race_live_classification_panel.dart';
+import '../widgets/race_result_classification_panel.dart';
 
 // 웹 상세 페이지 전용 색 (page.tsx / globals 에서 사용하는 값).
 const Color _muted = Color(0xFF7880A0); // #7880a0
@@ -36,11 +37,11 @@ class RaceDetailScreen extends StatelessWidget {
     final status = getRaceDisplayStatus(race);
     final circuitInfo = getCircuitInfo(race.id);
     final raceSession = _raceSessionOf(race);
-    // 종료(취소 제외) 그랑프리면 결과 카드 노출 (포디움 없으면 placeholder).
+    // 종료(취소 제외) 그랑프리면 결과 노출 (결과 없으면 placeholder).
     final showResultCard =
         getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
-    final top3 = showResultCard
-        ? getRaceTop3(race.id)
+    final results = showResultCard
+        ? (getRaceResults(race.id) ?? const <RaceResultEntry>[])
         : const <RaceResultEntry>[];
 
     return Scaffold(
@@ -74,7 +75,12 @@ class RaceDetailScreen extends StatelessWidget {
             _HeroCard(race: race, status: status),
             if (showResultCard) ...[
               const SizedBox(height: 12),
-              _Top3ResultsCard(results: top3),
+              // 결과가 있으면 라이브 순위 패널과 같은 UI로 전체 순위를 보여주고,
+              // 아직 없으면 기존 placeholder 카드를 유지한다.
+              if (results.isEmpty)
+                const _Top3ResultsCard(results: [])
+              else
+                RaceResultClassificationPanel(results: results),
             ],
             if (raceSession != null) ...[
               const SizedBox(height: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
 import 'package:fmk_app/data/live_session_mock.dart';
+import 'package:fmk_app/data/race_results.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/home_screen.dart';
@@ -12,6 +13,7 @@ import 'package:fmk_app/services/live_session_service.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/home_live_top_three_card.dart';
 import 'package:fmk_app/widgets/race_live_classification_panel.dart';
+import 'package:fmk_app/widgets/race_result_classification_panel.dart';
 
 void main() {
   testWidgets('bottom tabs, race detail, and settings navigation work', (
@@ -600,6 +602,35 @@ void main() {
       expect(controller.isStale, isFalse);
     },
   );
+
+  testWidgets('race result panel shows podium and expands full order', (
+    tester,
+  ) async {
+    final results = getRaceResults('australia-2026')!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: Scaffold(
+          body: ListView(
+            children: [RaceResultClassificationPanel(results: results)],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('레이스 결과'), findsOneWidget);
+    expect(find.text('${results.length} DRIVERS'), findsOneWidget);
+    // 포디움 3명 + 갭/총시간 표기.
+    expect(find.text('조지 러셀'), findsOneWidget);
+    expect(find.text('1:23:06.801'), findsOneWidget);
+    expect(find.text('+2.974'), findsOneWidget);
+    // 4위 이하는 접혀 있다가 확장 시 노출.
+    expect(find.text('루이스 해밀턴'), findsNothing);
+    await tester.tap(find.text('4위 이하 순위 보기'));
+    await tester.pumpAndSettle();
+    expect(find.text('순위 접기'), findsOneWidget);
+    expect(find.text('루이스 해밀턴'), findsOneWidget);
+  });
 
   testWidgets('home live card tap navigates to the matching race detail', (
     tester,
