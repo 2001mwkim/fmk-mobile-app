@@ -379,7 +379,10 @@ class _ActiveRaceCard extends StatelessWidget {
               padding: const EdgeInsets.all(18),
               child: content,
             ),
-            const Positioned(top: -8, right: 18, child: _Ribbon()),
+            // 진행중 카드는 상태 칩('진행중')이 이미 있으므로 NEXT 리본은
+            // 다음 그랑프리에만 붙인다.
+            if (isNext)
+              const Positioned(top: -8, right: 18, child: _Ribbon()),
           ],
         ),
       ),

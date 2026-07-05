@@ -239,30 +239,23 @@ class _HeroSessionBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = session;
+    // 세션 박스는 '진행중인 세션' 또는 '다음 세션'만 보여준다. 종료된 세션
+    // 결과는 라이브 카드/상세 패널이 담당하므로, 스냅샷이 ended 상태면
+    // 아래 스케줄 기반 '다음 세션' 표시로 넘어간다.
     final snapshot = _matchingDisplayableSnapshot(liveSnapshot, race, now);
-    if (snapshot != null) {
-      final isLive = isLiveSnapshotSessionActive(snapshot, now);
+    if (snapshot != null && isLiveSnapshotSessionActive(snapshot, now)) {
       final mappedSession = liveRaceSessionForSnapshot(snapshot, race) ?? s;
-      final accent = isLive ? AppColors.redSoft : const Color(0xFFAAB0CC);
-      final label = isLive ? '진행중인 세션' : '최근 종료된 세션';
-      final badgeLabel = isLive ? 'LIVE' : 'RESULT';
-      final badgeVariant = isLive ? AppChipVariant.red : AppChipVariant.mono;
-      final sessionTitle = _snapshotSessionTitle(snapshot, mappedSession);
-      final value = isLive ? _liveValue(snapshot) : '종료';
-      final meta = isLive
-          ? (snapshot.updatedAtLabel ?? 'LIVE')
-          : (mappedSession?.date ?? snapshot.updatedAtLabel ?? '');
 
       return _sessionBox(
-        label: label,
-        accent: accent,
-        sessionTitle: sessionTitle,
-        meta: meta,
-        value: value,
-        valueColor: isLive ? AppColors.redSoft : AppColors.slate300,
-        badgeLabel: badgeLabel,
-        badgeVariant: badgeVariant,
-        isLive: isLive,
+        label: '진행중인 세션',
+        accent: AppColors.redSoft,
+        sessionTitle: _snapshotSessionTitle(snapshot, mappedSession),
+        meta: snapshot.updatedAtLabel ?? 'LIVE',
+        value: _liveValue(snapshot),
+        valueColor: AppColors.redSoft,
+        badgeLabel: 'LIVE',
+        badgeVariant: AppChipVariant.red,
+        isLive: true,
       );
     }
 

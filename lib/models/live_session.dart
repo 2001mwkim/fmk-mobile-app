@@ -237,6 +237,11 @@ DateTime? scheduledLiveSessionEnd(LiveSessionSnapshot snapshot) {
 
 /// collector 가 Q1/Q2 같은 하위 구간 종료를 `ended` 로 보내도, 앱의 스케줄상
 /// 상위 세션(퀄리파잉/스프린트 퀄리파잉)이 아직 진행 중이면 LIVE 로 취급한다.
+///
+/// 이 보정은 세그먼트 사이 휴식이 존재하는 퀄리파잉 계열에만 적용한다.
+/// 레이스/스프린트/프랙티스는 세그먼트가 없어서 collector 의 `ended` 가 곧
+/// 실제 종료다 — 스케줄 창이 남았다고 LIVE 로 되돌리면, 일찍 끝난 레이스가
+/// 스케줄상 종료 시각까지 계속 LIVE 로 표시되는 문제가 생긴다.
 bool isLiveSnapshotSessionActive(
   LiveSessionSnapshot snapshot, [
   DateTime? now,
@@ -247,6 +252,9 @@ bool isLiveSnapshotSessionActive(
   final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
   final session = liveRaceSessionForSnapshot(snapshot, race);
   if (race == null || session == null) return false;
+  if (session.id != 'qualifying' && session.id != 'sprint_qualifying') {
+    return false;
+  }
 
   final currentTime = now ?? DateTime.now();
   final start = getSessionDate(race, session);

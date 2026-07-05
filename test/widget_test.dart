@@ -196,7 +196,7 @@ void main() {
     expect(find.text('진행중인 세션'), findsNothing);
   });
 
-  testWidgets('home hero shows recent state for matching ended snapshot', (
+  testWidgets('home hero shows next session instead of ended snapshot', (
     tester,
   ) async {
     await _pumpHome(
@@ -209,9 +209,10 @@ void main() {
       ),
     );
 
-    expect(find.text('최근 종료된 세션'), findsOneWidget);
-    expect(find.text('RESULT'), findsOneWidget);
-    expect(find.text('종료'), findsOneWidget);
+    // 종료된 세션 결과는 세션 박스에 띄우지 않고 다음 세션으로 대체한다.
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('최근 종료된 세션'), findsNothing);
+    expect(find.text('RESULT'), findsNothing);
   });
 
   testWidgets('home hero keeps qualifying live between Q segments', (
@@ -315,6 +316,25 @@ void main() {
     // 잘못된 본문은 null (앱 크래시 방지)
     expect(parseLiveJson('not json'), isNull);
     expect(parseLiveJson('{"snapshot": 123}'), isNull);
+  });
+
+  test('ended race is not treated live within its scheduled window', () {
+    // 레이스가 스케줄상 종료 창(시작+3시간)보다 일찍 끝난 상황.
+    final snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '2026-07-05T15:35:00.000Z',
+      raceId: 'great-britain-2026',
+      raceName: '영국 그랑프리',
+      sessionType: 'Race',
+      sessionName: 'Race',
+      endedAt: DateTime.parse('2026-07-05T15:31:00Z'),
+    );
+    final duringWindow = DateTime.parse('2026-07-06T00:40:00+09:00');
+
+    // 세그먼트가 없는 레이스는 ended = 실제 종료 → LIVE로 되돌리지 않는다.
+    expect(isLiveSnapshotSessionActive(snapshot, duringWindow), isFalse);
+    // 다만 최종 결과로는 계속 노출(마지막 세션 종료 +1시간 규칙).
+    expect(isLiveSnapshotDisplayable(snapshot, duringWindow), isTrue);
   });
 
   test('ended within 30min is displayable, expired is hidden', () {
