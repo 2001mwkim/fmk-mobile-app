@@ -512,7 +512,8 @@ class _WeekendSessionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = getSessionStatus(race, session, now);
-    final isRace = session.id == 'race';
+    // 강조는 진행중(라이브) 세션에만 적용 — 레이스 상시 강조는 다음/진행중
+    // 세션 강조와 겹쳐 혼란을 줘서 제거했다.
     final isLive = status == SessionStatus.live;
 
     return Container(
@@ -528,7 +529,7 @@ class _WeekendSessionRow extends StatelessWidget {
             width: 7,
             height: 7,
             decoration: BoxDecoration(
-              color: isRace || isLive ? AppColors.red : AppColors.textMuted,
+              color: isLive ? AppColors.red : AppColors.textMuted,
               shape: BoxShape.circle,
             ),
           ),
@@ -545,10 +546,8 @@ class _WeekendSessionRow extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 14.5,
                       height: 1.2,
-                      color: isRace || isLive ? AppColors.red : AppColors.white,
-                      fontWeight: isRace || isLive
-                          ? FontWeight.w900
-                          : FontWeight.w700,
+                      color: isLive ? AppColors.red : AppColors.white,
+                      fontWeight: isLive ? FontWeight.w900 : FontWeight.w700,
                     ),
                   ),
                 ),
@@ -568,7 +567,7 @@ class _WeekendSessionRow extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontSize: 13.5,
               height: 1.2,
-              color: isRace || isLive ? AppColors.white : AppColors.textMuted,
+              color: isLive ? AppColors.white : AppColors.textMuted,
               fontWeight: FontWeight.w800,
             ),
           ),

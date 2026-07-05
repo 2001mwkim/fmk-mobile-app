@@ -580,8 +580,9 @@ class _SessionTimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLive = status == SessionStatus.live;
     final isEnded = status == SessionStatus.ended;
-    final isRace = session.id == 'race';
-    final emphasize = isLive || isRace;
+    // 강조는 진행중(라이브) 세션에만 적용한다. 레이스를 상시 강조하면
+    // 다음/진행중 세션 강조와 겹쳐 혼란스럽다.
+    final emphasize = isLive;
 
     final labelStyle = TextStyle(
       fontSize: emphasize ? 15 : 14,
@@ -649,9 +650,7 @@ class _SessionTimelineRow extends StatelessWidget {
           width: 24,
           child: Padding(
             padding: const EdgeInsets.only(top: 13),
-            child: Center(
-              child: _TimelineDot(status: status, isRace: isRace),
-            ),
+            child: Center(child: _TimelineDot(status: status)),
           ),
         ),
         const SizedBox(width: 12),
@@ -662,17 +661,16 @@ class _SessionTimelineRow extends StatelessWidget {
 }
 
 class _TimelineDot extends StatelessWidget {
-  const _TimelineDot({required this.status, required this.isRace});
+  const _TimelineDot({required this.status});
 
   final SessionStatus status;
-  final bool isRace;
 
   @override
   Widget build(BuildContext context) {
     final isLive = status == SessionStatus.live;
     final isEnded = status == SessionStatus.ended;
 
-    if (isLive || isRace) {
+    if (isLive) {
       return Container(
         width: 13,
         height: 13,
