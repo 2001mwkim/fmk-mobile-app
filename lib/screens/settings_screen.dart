@@ -320,14 +320,15 @@ class _CardHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // 배지는 제목 줄에만 두고 설명은 카드 전체 폭을 쓰게 한다.
+    // (설명까지 배지 옆 좁은 컬럼에 넣으면 불필요한 줄바꿈이 생긴다.)
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        Row(
+          children: [
+            Expanded(
+              child: Text(
                 title,
                 style: const TextStyle(
                   fontSize: 15,
@@ -335,21 +336,21 @@ class _CardHeaderRow extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: _muted,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+            ),
+            const SizedBox(width: 12),
+            AppChip(label: badge, variant: AppChipVariant.neutral),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          description,
+          style: const TextStyle(
+            fontSize: 12,
+            color: _muted,
+            height: 1.45,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(width: 12),
-        AppChip(label: badge, variant: AppChipVariant.neutral),
       ],
     );
   }
