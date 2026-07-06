@@ -29,6 +29,30 @@ class AppColors {
   // 웹 mono 칩 텍스트 (slate-300)
   static const Color slate300 = Color(0xFFCBD5E1);
 
+  // ── 보조 텍스트 계열 (웹 상세/목록 화면에서 그대로 옮긴 값) ──
+  // 웹 #7880a0 — 라벨/메타 등 기본 보조 텍스트
+  static const Color muted = Color(0xFF7880A0);
+  // 웹 #aab0cc — 비활성/보조 이름 텍스트
+  static const Color nameMuted = Color(0xFFAAB0CC);
+  // 웹 #8088a8 — 히어로 서브 텍스트
+  static const Color heroSub = Color(0xFF8088A8);
+  // 웹 #5b6178 — 가장 흐린 텍스트(순위 컬럼 헤더 등). textEnded 와 같은 값.
+  static const Color faint = textEnded;
+
+  // ── 표면/구분선 계열 ──
+  // 웹 #0e1018 — 카드 안 타일 표면
+  static const Color tileSurface = Color(0xFF0E1018);
+  // 웹 white/8 — 헤어라인 구분선
+  static const Color hairline = Color(0x14FFFFFF);
+  // 웹 white/7 — 칸 구분선
+  static const Color divider = Color(0x12FFFFFF);
+  // 웹 white/6 — 옅은 보더
+  static const Color faintBorder = Color(0x0FFFFFFF);
+  // 웹 white/5 — 행 구분선
+  static const Color rowBorder = Color(0x0DFFFFFF);
+  // black/20 — 패널 헤더 등 어두운 오버레이
+  static const Color black20 = Color(0x33000000);
+
   // 일부 화면이 진한 배경(#090b12)을 참조할 때 쓰는 별칭.
   static const Color black = background;
 }

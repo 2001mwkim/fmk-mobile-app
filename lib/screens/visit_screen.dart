@@ -5,11 +5,11 @@ import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 
 // 웹 직관 페이지 전용 색.
-const Color _muted = Color(0xFF7880A0); // #7880a0
-const Color _subtitle = Color(0xFF8088A8); // #8088a8 (헤더 설명)
-const Color _descMuted = Color(0xFF959BB6); // #959bb6 (가이드 설명)
-const Color _nameMuted = Color(0xFFAAB0CC); // #aab0cc
-const Color _tileSurface = Color(0xFF0E1018); // #0e1018
+const Color _muted = AppColors.muted; // #7880a0
+const Color _subtitle = AppColors.heroSub; // #8088a8 (헤더 설명)
+const Color _descMuted = AppColors.textMuted; // #959bb6 (가이드 설명)
+const Color _nameMuted = AppColors.nameMuted; // #aab0cc
+const Color _tileSurface = AppColors.tileSurface; // #0e1018
 
 class VisitScreen extends StatelessWidget {
   const VisitScreen({super.key});

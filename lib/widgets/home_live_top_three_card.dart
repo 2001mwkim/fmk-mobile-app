@@ -178,7 +178,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0x12FFFFFF), // white/7
+              color: AppColors.divider, // white/7
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -199,7 +199,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
-                color: Color(0xFF7880A0),
+                color: AppColors.muted,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -214,18 +214,18 @@ class HomeLiveTopThreeCard extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: const TextStyle(
         fontSize: 11,
-        color: Color(0xFF7880A0),
+        color: AppColors.muted,
         fontWeight: FontWeight.w700,
       ),
     );
   }
 
   Widget _footer(bool ended) {
-    final color = ended ? const Color(0xFFAAB0CC) : AppColors.redSoft;
+    final color = ended ? AppColors.nameMuted : AppColors.redSoft;
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0x33000000), // black/20
-        border: Border(top: BorderSide(color: Color(0x14FFFFFF))), // white/8
+        color: AppColors.black20, // black/20
+        border: Border(top: BorderSide(color: AppColors.hairline)), // white/8
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       child: Row(
@@ -269,7 +269,7 @@ class _StaleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF), // white/8
+        color: AppColors.hairline, // white/8
         borderRadius: BorderRadius.circular(5),
       ),
       child: const Text(
@@ -277,7 +277,7 @@ class _StaleBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontFamily: 'Pretendard',
-          color: Color(0xFF8088A8),
+          color: AppColors.heroSub,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -308,7 +308,7 @@ class _StatusBadge extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: ended ? const Color(0xFF7880A0) : AppColors.white,
+              color: ended ? AppColors.muted : AppColors.white,
               shape: BoxShape.circle,
             ),
           ),
@@ -317,7 +317,7 @@ class _StatusBadge extends StatelessWidget {
             ended ? label : 'LIVE',
             style: TextStyle(
               fontSize: 10,
-              color: ended ? const Color(0xFFAAB0CC) : AppColors.white,
+              color: ended ? AppColors.nameMuted : AppColors.white,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -344,7 +344,7 @@ class _LiveClock extends StatelessWidget {
           width: 5,
           height: 5,
           decoration: BoxDecoration(
-            color: ended ? const Color(0xFF7880A0) : AppColors.red,
+            color: ended ? AppColors.muted : AppColors.red,
             shape: BoxShape.circle,
           ),
         ),
@@ -354,7 +354,7 @@ class _LiveClock extends StatelessWidget {
           style: const TextStyle(
             fontSize: 11,
             fontFamily: 'Pretendard',
-            color: Color(0xFF8088A8),
+            color: AppColors.heroSub,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -384,7 +384,7 @@ class _TopThreeRow extends StatelessWidget {
         border: isFirst
             ? null
             : const Border(
-                top: BorderSide(color: Color(0x0FFFFFFF)),
+                top: BorderSide(color: AppColors.faintBorder),
               ), // white/6
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -434,8 +434,8 @@ class _TopThreeRow extends StatelessWidget {
               fontSize: 12,
               fontFamily: 'Pretendard',
               color: gap == '—'
-                  ? const Color(0xFF5B6178)
-                  : const Color(0xFFAAB0CC),
+                  ? AppColors.faint
+                  : AppColors.nameMuted,
               fontWeight: FontWeight.w700,
             ),
           ),

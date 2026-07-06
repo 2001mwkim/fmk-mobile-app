@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../data/races.dart';
+import '../theme/app_colors.dart';
 import 'race.dart';
 import 'race_session.dart';
+
+// 드라이버 액센트 컬러는 data/drivers.dart 로 이동했지만, 기존 사용처가
+// live_session.dart 를 통해 참조하므로 여기서 재노출한다.
+export '../data/drivers.dart' show liveDriverAccent;
 
 /// 웹 lib/live/types.ts 의 라이브 세션 타입을 Flutter로 옮긴 모델.
 /// 실제 데이터(SignalR/live.json) 연결 전까지 UI 구조만 정의한다.
@@ -333,32 +338,6 @@ RaceSession? liveRaceSessionForSnapshot(
 const String liveEndedHomeLabel = 'LIVE 종료 · 최종 결과';
 const String liveEndedPanelLabel = '세션 종료 · 최종 결과';
 
-/// 웹 driverAccentColor 매핑(드라이버 코드 → 팀 컬러). 노란색은 사용하지 않는다.
-const Map<String, int> _driverAccent = {
-  'NOR': 0xFFFF8700,
-  'PIA': 0xFFFF8700,
-  'VER': 0xFF1E41FF,
-  'TSU': 0xFF1E41FF,
-  'LEC': 0xFFE80020,
-  'HAM': 0xFFE80020,
-  'RUS': 0xFF00D2BE,
-  'ANT': 0xFF00D2BE,
-  'SAI': 0xFF00A3FF,
-  'ALB': 0xFF00A3FF,
-  'ALO': 0xFF229971,
-  'STR': 0xFF229971,
-  'GAS': 0xFFFF87BC,
-  'COL': 0xFFFF87BC,
-  'OCO': 0xFFF4F4F4,
-  'BEA': 0xFFF4F4F4,
-  'HAD': 0xFF6CC3FF,
-  'LAW': 0xFF6CC3FF,
-  'HUL': 0xFF4B5563, // 아우디(2026) — 순위 페이지와 동일한 짙은 회색
-  'BOR': 0xFF4B5563,
-};
-
-Color liveDriverAccent(String code) => Color(_driverAccent[code] ?? 0xFF7880A0);
-
 /// 라이브 세션 이름(영문 live.json)을 한글 표기로 변환한다.
 ///
 /// 실데이터의 [sessionName]/[sessionType] 은 'Race', 'Qualifying', 'Practice 1',
@@ -411,8 +390,8 @@ String liveSessionLabelKo(String? sessionName, String? sessionType) {
       );
     default:
       return (
-        background: const Color(0x0DFFFFFF), // white/5
-        foreground: const Color(0xFF7880A0),
+        background: AppColors.rowBorder, // white/5
+        foreground: AppColors.muted,
       );
   }
 }

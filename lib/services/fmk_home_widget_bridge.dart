@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../data/country_flags.dart';
+import '../data/drivers.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
@@ -315,8 +316,7 @@ String _firstNonEmpty(List<String?> values) {
 }
 
 String _driverDisplayNameKo(LiveDriverPosition driver) {
-  final code = driver.code.trim().toUpperCase();
-  return _driverNameKoByCode[code] ?? driver.displayName.trim();
+  return driverNameKo(driver.code, driver.displayName.trim());
 }
 
 String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
@@ -324,28 +324,3 @@ String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
   return value.isEmpty ? '—' : value;
 }
 
-const Map<String, String> _driverNameKoByCode = {
-  'NOR': '랜도 노리스',
-  'PIA': '오스카 피아스트리',
-  'VER': '막스 베르스타펜',
-  'TSU': '유키 츠노다',
-  'LEC': '샤를 르클레르',
-  'HAM': '루이스 해밀턴',
-  'RUS': '조지 러셀',
-  'ANT': '키미 안토넬리',
-  'SAI': '카를로스 사인츠',
-  'ALB': '알렉산더 알본',
-  'ALO': '페르난도 알론소',
-  'STR': '랜스 스트롤',
-  'GAS': '피에르 가슬리',
-  'COL': '프랑코 콜라핀토',
-  'OCO': '에스테반 오콘',
-  'BEA': '올리버 베어먼',
-  'HAD': '아이작 하자르',
-  'LAW': '리암 로슨',
-  'HUL': '니코 휠켄베르크',
-  'BOR': '가브리엘 보르톨레토',
-  'BOT': '발테리 보타스',
-  'PER': '세르히오 페레즈',
-  'LIN': '아비드 린드블라드',
-};

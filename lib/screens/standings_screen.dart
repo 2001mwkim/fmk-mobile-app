@@ -7,11 +7,11 @@ import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 
 // 웹 순위 페이지 전용 색.
-const Color _muted = Color(0xFF7880A0); // #7880a0
-const Color _navMuted = Color(0xFF959BB6); // 비활성 탭 텍스트
-const Color _hairline = Color(0x14FFFFFF); // white/8 (알약 보더)
-const Color _rowBorder = Color(0x0DFFFFFF); // white/5 (행 구분선)
-const Color _track = Color(0x0FFFFFFF); // white/6 (진행 막대 배경)
+const Color _muted = AppColors.muted; // #7880a0
+const Color _navMuted = AppColors.textMuted; // 비활성 탭 텍스트
+const Color _hairline = AppColors.hairline; // white/8 (알약 보더)
+const Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
+const Color _track = AppColors.faintBorder; // white/6 (진행 막대 배경)
 
 enum _StandingsTab { drivers, constructors }
 
@@ -483,7 +483,7 @@ class _RowData {
         foreground: const Color(0xFFFB923C), // orange-400
       );
     default:
-      return (background: const Color(0x0DFFFFFF), foreground: _muted);
+      return (background: AppColors.rowBorder, foreground: _muted);
   }
 }
 

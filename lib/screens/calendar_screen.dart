@@ -9,11 +9,11 @@ import '../widgets/app_chip.dart';
 import 'race_detail_screen.dart';
 
 // 웹 calendar 전용 색 (globals/CalendarClient 에서 사용하는 값).
-const Color _muted = Color(0xFF7880A0); // #7880a0
-const Color _nameMuted = Color(0xFFAAB0CC); // #aab0cc (비활성 카드 이름)
-const Color _endedSurface = Color(0xFF0E1018); // #0e1018 (비활성 카드 표면)
-const Color _hairline = Color(0x14FFFFFF); // white/8
-const Color _faintLine = Color(0x0FFFFFFF); // white/6
+const Color _muted = AppColors.muted; // #7880a0
+const Color _nameMuted = AppColors.nameMuted; // #aab0cc (비활성 카드 이름)
+const Color _endedSurface = AppColors.tileSurface; // #0e1018 (비활성 카드 표면)
+const Color _hairline = AppColors.hairline; // white/8
+const Color _faintLine = AppColors.faintBorder; // white/6
 
 enum _CalendarFilter {
   all('전체'),

@@ -63,12 +63,12 @@ class AppChip extends StatelessWidget {
         );
       case AppChipVariant.neutral:
         return const _ChipSpec(
-          background: Color(0x0FFFFFFF), // white / 6%
+          background: AppColors.faintBorder, // white / 6%
           foreground: AppColors.textMuted,
         );
       case AppChipVariant.mono:
         return const _ChipSpec(
-          background: Color(0x12FFFFFF), // white / 7%
+          background: AppColors.divider, // white / 7%
           foreground: AppColors.slate300,
           isPill: false,
         );

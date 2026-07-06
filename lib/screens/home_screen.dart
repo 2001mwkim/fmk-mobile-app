@@ -219,7 +219,7 @@ class _NextRaceCard extends StatelessWidget {
             '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
             // 웹 hero 서브텍스트 색 (#8088a8)
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF8088A8),
+              color: AppColors.heroSub,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -378,7 +378,7 @@ class _HeroSessionBox extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontFamily: 'Pretendard',
-                  color: Color(0xFF7880A0),
+                  color: AppColors.muted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -415,7 +415,7 @@ class _HeroSessionBox extends StatelessWidget {
             : null,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isLive ? const Color(0x66EF4444) : const Color(0x12FFFFFF),
+          color: isLive ? const Color(0x66EF4444) : AppColors.divider,
         ),
       ),
       child: child,

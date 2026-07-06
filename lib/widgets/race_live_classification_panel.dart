@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
+import 'classification_panel_parts.dart';
 
 /// 웹 components/live/RaceLiveClassificationPanel.tsx 의 Flutter 이식.
 ///
 /// snapshot 이 없거나 표시 불가/다른 그랑프리/순위 비어있으면 렌더하지 않는다.
 /// 실데이터 연결 전에는 [snapshot] 이 null 로 들어와 화면에 노출되지 않는다.
-class RaceLiveClassificationPanel extends StatefulWidget {
+/// 카드 셸/행/확장 UI 는 최종 결과 패널과 공유한다
+/// ([classification_panel_parts.dart] 참고).
+class RaceLiveClassificationPanel extends StatelessWidget {
   const RaceLiveClassificationPanel({
     super.key,
     required this.snapshot,
@@ -23,78 +26,58 @@ class RaceLiveClassificationPanel extends StatefulWidget {
   final bool isStale;
   final DateTime? now;
 
-  @override
-  State<RaceLiveClassificationPanel> createState() =>
-      _RaceLiveClassificationPanelState();
-}
-
-class _RaceLiveClassificationPanelState
-    extends State<RaceLiveClassificationPanel> {
-  bool _expanded = false;
-
-  static const Color _muted = Color(0xFF7880A0);
-  static const Color _faint = Color(0xFF5B6178);
-  static const Color _nameMuted = Color(0xFFAAB0CC);
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(18));
+  static const Color _faint = AppColors.faint;
+  static const Color _nameMuted = AppColors.nameMuted;
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.snapshot;
+    final s = snapshot;
     if (s == null ||
-        !isLiveSnapshotDisplayable(s, widget.now) ||
-        s.raceId != widget.raceId ||
+        !isLiveSnapshotDisplayable(s, now) ||
+        s.raceId != raceId ||
         s.classification.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, widget.now);
+    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
     final raceLike = s.isRaceOrSprint;
     final topThree = s.classification.take(3).toList();
     final remaining = s.classification.skip(3).toList();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF141019),
-          borderRadius: _radius,
-        ),
-        foregroundDecoration: BoxDecoration(
-          borderRadius: _radius,
-          border: Border.all(
-            color: ended ? AppColors.border : const Color(0x66EF4444),
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: _radius,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(s, ended),
-              _columnHeader(s),
-              for (final d in topThree)
-                _ClassificationRow(driver: d, raceLike: raceLike),
-              if (remaining.isNotEmpty) _expander(remaining, ended, raceLike),
-            ],
-          ),
-        ),
+      child: ClassificationPanelShell(
+        borderColor: ended ? AppColors.border : const Color(0x66EF4444),
+        children: [
+          _header(s, ended),
+          ClassificationColumnHeader(timeLabel: s.gapColumnLabel),
+          for (final d in topThree) _row(d, raceLike),
+          if (remaining.isNotEmpty)
+            ClassificationExpander(
+              accent: ended ? _nameMuted : AppColors.redSoft,
+              startPosition: remaining.first.position,
+              endPosition: remaining.last.position,
+              count: remaining.length,
+              rows: [for (final d in remaining) _row(d, raceLike)],
+            ),
+        ],
       ),
     );
   }
 
+  Widget _row(LiveDriverPosition driver, bool raceLike) {
+    return ClassificationRow(
+      position: driver.position,
+      accentColor: liveDriverAccent(driver.code),
+      code: driver.code,
+      name: driver.displayName,
+      trailing: driver.time(raceLike: raceLike),
+    );
+  }
+
   Widget _header(LiveSessionSnapshot s, bool ended) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: ended
-              ? const [Color(0x08FFFFFF), Color(0x00FFFFFF)]
-              : const [Color(0x14EF4444), Color(0x00EF4444)],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
+    return ClassificationHeaderContainer(
+      emphasized: !ended,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -143,7 +126,7 @@ class _RaceLiveClassificationPanelState
                   ),
                 ),
               ),
-              if (widget.isStale) ...[
+              if (isStale) ...[
                 const _StaleBadge(),
                 const SizedBox(width: 8),
               ],
@@ -159,204 +142,6 @@ class _RaceLiveClassificationPanelState
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _columnHeader(LiveSessionSnapshot s) {
-    const style = TextStyle(
-      fontSize: 9,
-      fontFamily: 'Pretendard',
-      color: _faint,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0.8,
-    );
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0x33000000), // black/20
-        border: Border(top: BorderSide(color: Color(0x12FFFFFF))), // white/7
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          const SizedBox(width: 22, child: Text('POS', style: style)),
-          const SizedBox(width: 11),
-          const Expanded(child: Text('DRIVER', style: style)),
-          Text(s.gapColumnLabel, style: style),
-        ],
-      ),
-    );
-  }
-
-  Widget _expander(
-    List<LiveDriverPosition> remaining,
-    bool ended,
-    bool raceLike,
-  ) {
-    final accent = ended ? _nameMuted : AppColors.redSoft;
-    final start = remaining.first.position;
-    final end = remaining.last.position;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Material(
-          color: const Color(0x33000000),
-          child: InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0x0DFFFFFF)),
-                ), // white/5
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _expanded ? '순위 접기' : '4위 이하 순위 보기',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _expanded ? '$start-$end위' : '+ ${remaining.length}명 더',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontFamily: 'Pretendard',
-                          color: _muted,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _expanded ? '↑' : '↓',
-                        style: TextStyle(fontSize: 11, color: accent),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (_expanded)
-          for (final d in remaining)
-            _ClassificationRow(driver: d, raceLike: raceLike),
-      ],
-    );
-  }
-}
-
-class _ClassificationRow extends StatelessWidget {
-  const _ClassificationRow({required this.driver, required this.raceLike});
-
-  final LiveDriverPosition driver;
-  final bool raceLike;
-
-  @override
-  Widget build(BuildContext context) {
-    final isTopThree = driver.position <= 3;
-    final podium = livePodiumColors(driver.position);
-    final gap = driver.time(raceLike: raceLike);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isTopThree ? const Color(0x09FFFFFF) : null, // white/3.5
-        border: const Border(
-          top: BorderSide(color: Color(0x0DFFFFFF)),
-        ), // white/5
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: isTopThree ? 9 : 8,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: podium.background,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '${driver.position}',
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Pretendard',
-                color: podium.foreground,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 3,
-            height: 24,
-            decoration: BoxDecoration(
-              color: liveDriverAccent(driver.code),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 38,
-            child: Text(
-              driver.code,
-              style: TextStyle(
-                fontSize: 13,
-                fontFamily: 'Pretendard',
-                color: isTopThree
-                    ? const Color(0xFFE8EDF6)
-                    : const Color(0xFFCBD5E1),
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              driver.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                color: isTopThree
-                    ? AppColors.white
-                    : const Color(0xFFAAB0CC),
-                fontWeight: isTopThree ? FontWeight.w700 : FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 54,
-            child: Text(
-              gap,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'Pretendard',
-                color: gap == '—'
-                    ? const Color(0xFF5B6178)
-                    : (isTopThree
-                          ? const Color(0xFFAAB0CC)
-                          : const Color(0xFF7880A0)),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ),
         ],
       ),
@@ -381,7 +166,7 @@ class _StaleBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontFamily: 'Pretendard',
-          color: Color(0xFF8088A8),
+          color: AppColors.heroSub,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -409,7 +194,7 @@ class _StatusBadge extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: ended ? const Color(0xFF7880A0) : AppColors.white,
+              color: ended ? AppColors.muted : AppColors.white,
               shape: BoxShape.circle,
             ),
           ),
@@ -418,7 +203,7 @@ class _StatusBadge extends StatelessWidget {
             ended ? liveEndedPanelLabel : 'LIVE',
             style: TextStyle(
               fontSize: 10,
-              color: ended ? const Color(0xFFAAB0CC) : AppColors.white,
+              color: ended ? AppColors.nameMuted : AppColors.white,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -439,7 +224,7 @@ class _LapChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0x12FFFFFF), // white/7
+        color: AppColors.divider, // white/7
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -471,7 +256,7 @@ class _LiveClock extends StatelessWidget {
           width: 5,
           height: 5,
           decoration: BoxDecoration(
-            color: ended ? const Color(0xFF7880A0) : AppColors.red,
+            color: ended ? AppColors.muted : AppColors.red,
             shape: BoxShape.circle,
           ),
         ),
@@ -481,7 +266,7 @@ class _LiveClock extends StatelessWidget {
           style: const TextStyle(
             fontSize: 11,
             fontFamily: 'Pretendard',
-            color: Color(0xFF8088A8),
+            color: AppColors.heroSub,
             fontWeight: FontWeight.w700,
           ),
         ),
