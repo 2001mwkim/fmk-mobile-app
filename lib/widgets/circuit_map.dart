@@ -78,10 +78,7 @@ class _DiagonalBandsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = AppColors.tileSurface,
-    );
+    canvas.drawRect(Offset.zero & size, Paint()..color = AppColors.tileSurface);
 
     final paint = Paint()
       ..color = const Color(0xFF12141E)

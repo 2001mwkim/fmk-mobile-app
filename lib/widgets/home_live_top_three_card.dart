@@ -433,9 +433,7 @@ class _TopThreeRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontFamily: 'Pretendard',
-              color: gap == '—'
-                  ? AppColors.faint
-                  : AppColors.nameMuted,
+              color: gap == '—' ? AppColors.faint : AppColors.nameMuted,
               fontWeight: FontWeight.w700,
             ),
           ),

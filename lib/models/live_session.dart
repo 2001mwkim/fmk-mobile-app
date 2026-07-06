@@ -213,8 +213,11 @@ bool isLiveSnapshotDisplayable(LiveSessionSnapshot snapshot, [DateTime? now]) {
   // 스케줄 폴백은 collector 가 lifecycle 정보를 아예 못 준 경우
   // (endedAt/visibleUntil 둘 다 없음)에만 적용한다. visibleUntil 이 명시돼
   // 있으면(만료 포함) collector 의 판단을 그대로 따른다.
-  final endedAt = snapshot.endedAt ??
-      (snapshot.visibleUntil == null ? scheduledLiveSessionEnd(snapshot) : null);
+  final endedAt =
+      snapshot.endedAt ??
+      (snapshot.visibleUntil == null
+          ? scheduledLiveSessionEnd(snapshot)
+          : null);
   final until = liveEndedResultVisibleUntil(
     raceId: snapshot.raceId,
     raceName: snapshot.raceName,

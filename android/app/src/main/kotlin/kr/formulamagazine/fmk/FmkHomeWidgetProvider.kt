@@ -185,7 +185,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       // live 모드에서 gpFlag/gpName 은 라이브 그랑프리 정보라서, 일정 화면은
       // 전용 키(scheduleGpFlag/scheduleGpName)를 우선 사용한다(없으면 기존 키).
       val flag = data.getString("scheduleGpFlag", null) ?: data.getString("gpFlag", "")
-      val name = data.getString("scheduleGpName", null) ?: data.getString("gpName", "포매코")
+      val name = data.getString("scheduleGpName", null) ?: data.getString("gpName", "비아 포뮬러")
       setTextViewText(R.id.tv_gp_flag, flag)
       setTextViewText(R.id.tv_gp_name, name)
 
@@ -244,7 +244,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     val lapTotal = data.getInt("lapTotal", 0).coerceAtLeast(0)
     val lapCurrent = data.getInt("lapCurrent", 0).coerceIn(0, lapTotal.takeIf { it > 0 } ?: 0)
     val flag = data.getString("gpFlag", "").orEmpty()
-    val gpName = data.getString("gpName", "포매코").orEmpty()
+    val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
 
     return RemoteViews(context.packageName, R.layout.widget_fmk_live).apply {
       setOnClickPendingIntent(

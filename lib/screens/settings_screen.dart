@@ -9,7 +9,7 @@ import '../services/notification_service.dart';
 
 const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
-const String _feedbackSubject = '포매코 F1 캘린더 오류 제보 / 기능 제안';
+const String _feedbackSubject = '비아 포뮬러 오류 제보 / 기능 제안';
 const String _f1dbUrl = 'https://github.com/f1db/f1db';
 
 // 웹 설정 페이지 전용 색.
@@ -90,7 +90,7 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'FMK F1 CALENDAR',
+            'VIA FORMULA',
             style: TextStyle(
               fontSize: 11,
               color: _muted,
@@ -572,7 +572,7 @@ class _AppInfoCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '포매코 F1 캘린더',
+                          '비아 포뮬러',
                           style: TextStyle(
                             fontSize: 15,
                             color: AppColors.white,

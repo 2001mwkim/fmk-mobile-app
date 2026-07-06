@@ -64,7 +64,7 @@ void main() {
 
       expect(notifications, hasLength(1));
       expect(notifications.single.sessionId, 'race');
-      expect(notifications.single.title, '포매코 레이스 알림');
+      expect(notifications.single.title, '비아 포뮬러 레이스 알림');
     });
 
     test('does not duplicate race when both options are on', () {

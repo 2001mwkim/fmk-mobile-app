@@ -13,7 +13,7 @@ class FmkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '포매코',
+      title: '비아 포뮬러',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       home: const MainShell(),

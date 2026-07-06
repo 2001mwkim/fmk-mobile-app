@@ -139,8 +139,8 @@ class SessionNotificationPlanner {
           raceId: race.id,
           sessionId: session.id,
           title: kind == ScheduledNotificationKind.raceOnly
-              ? '포매코 레이스 알림'
-              : '포매코 세션 알림',
+              ? '비아 포뮬러 레이스 알림'
+              : '비아 포뮬러 세션 알림',
           body: kind == ScheduledNotificationKind.raceOnly
               ? '${race.nameKo} 레이스가 30분 뒤 시작됩니다.'
               : '${race.nameKo} ${session.label}이 30분 뒤 시작됩니다.',

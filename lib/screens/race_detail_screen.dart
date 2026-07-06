@@ -859,4 +859,3 @@ String _formatNumber(double value) {
   }
   return text;
 }
-

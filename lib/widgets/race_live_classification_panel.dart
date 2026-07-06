@@ -126,10 +126,7 @@ class RaceLiveClassificationPanel extends StatelessWidget {
                   ),
                 ),
               ),
-              if (isStale) ...[
-                const _StaleBadge(),
-                const SizedBox(width: 8),
-              ],
+              if (isStale) ...[const _StaleBadge(), const SizedBox(width: 8)],
               const SizedBox(width: 10),
               Text(
                 '${s.classification.length} DRIVERS',

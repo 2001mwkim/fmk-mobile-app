@@ -1,10 +1,13 @@
-# 포매코 Flutter 앱
+# 비아 포뮬러 (Via Formula) Flutter 앱
 
-포매코 Flutter 앱입니다.
+Formula Magazine Korea가 운영하는 F1 팬 앱 "비아 포뮬러"입니다.
+
+- 스토어명 후보: `비아 포뮬러 - 일정·라이브·직관`
+- 운영 브랜드: `Formula Magazine Korea` (포뮬러 매거진 코리아)
 
 ## App Settings
 
-- App display name: `포매코`
+- App display name: `비아 포뮬러`
 - Android package name: `kr.formulamagazine.fmk`
 - iOS bundle identifier: `kr.formulamagazine.fmk`
 - Android permission: `android.permission.INTERNET` is enabled for live JSON fetches.

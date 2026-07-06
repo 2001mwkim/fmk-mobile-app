@@ -107,8 +107,14 @@ class FmkHomeWidgetBridge {
       HomeWidget.saveWidgetData<String>('mode', payload.mode),
       HomeWidget.saveWidgetData<String>('gpFlag', payload.gpFlag),
       HomeWidget.saveWidgetData<String>('gpName', payload.gpName),
-      HomeWidget.saveWidgetData<String>('scheduleGpFlag', payload.scheduleGpFlag),
-      HomeWidget.saveWidgetData<String>('scheduleGpName', payload.scheduleGpName),
+      HomeWidget.saveWidgetData<String>(
+        'scheduleGpFlag',
+        payload.scheduleGpFlag,
+      ),
+      HomeWidget.saveWidgetData<String>(
+        'scheduleGpName',
+        payload.scheduleGpName,
+      ),
       HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
       HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
       HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
@@ -258,7 +264,7 @@ FmkHomeWidgetPayload _buildLivePayload(
       liveCountryFlag(snapshot.raceId),
       if (race != null) _flagForRace(race),
     ]),
-    gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '포매코 라이브']),
+    gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '비아 포뮬러 라이브']),
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
     sessions: schedule.rows,
@@ -323,4 +329,3 @@ String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
   final value = driver.time(raceLike: raceLike).trim();
   return value.isEmpty ? '—' : value;
 }
-
