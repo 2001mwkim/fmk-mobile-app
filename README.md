@@ -15,6 +15,23 @@ Formula Magazine Korea가 운영하는 F1 팬 앱 "비아 포뮬러"입니다.
 - App icon generation: run `dart run flutter_launcher_icons` only after `assets/icon/app_icon.png` exists.
 - App icon colors: black / white / yellow. In-app UI colors stay black / white / red.
 
+## Android Release Signing (Play 업로드)
+
+release 빌드는 `android/key.properties`에서 업로드 키 정보를 읽는다.
+이 파일과 keystore(`*.jks`)는 **gitignore 대상이며 절대 커밋하지 않는다.**
+새 머신에서는 아래 형식으로 직접 만든다:
+
+```properties
+storePassword=<키스토어 비밀번호>
+keyPassword=<키 비밀번호>
+keyAlias=upload
+storeFile=<upload-keystore.jks 절대 경로>
+```
+
+- 빌드: `flutter build appbundle --release --dart-define=LIVE_JSON_URL=...`
+- 산출물: `build/app/outputs/bundle/release/app-release.aab`
+- key.properties가 없으면 release 빌드는 명확한 에러로 실패한다(debug 빌드는 영향 없음).
+
 ## Android Home Widget
 
 - Package: `home_widget`
