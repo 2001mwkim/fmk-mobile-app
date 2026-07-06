@@ -4,9 +4,11 @@ import 'country_flags.dart';
 
 const String _kstOffset = '+09:00';
 const Duration _defaultSessionDuration = Duration(minutes: 60);
+// 레이스는 F1 규정상 2시간 제한(통상 1시간 30분 내외). 창을 너무 길게 잡으면
+// 레이스가 끝난 뒤에도 스케줄 폴백이 오래 '진행중'으로 표시한다.
 const Map<String, Duration> _sessionDurations = {
   'sprint': Duration(minutes: 60),
-  'race': Duration(minutes: 180),
+  'race': Duration(minutes: 120),
 };
 
 const List<Race> races = [

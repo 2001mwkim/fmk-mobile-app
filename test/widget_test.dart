@@ -236,6 +236,26 @@ void main() {
     expect(find.text('RESULT'), findsNothing);
   });
 
+  testWidgets('home hero moves to next GP when live data marks race ended', (
+    tester,
+  ) async {
+    // 레이스가 스케줄 종료 창(23:00+2h=01:00)보다 일찍 끝난 상황(00:31 체커기).
+    await _pumpHome(
+      tester,
+      now: DateTime.parse('2026-07-06T00:40:00+09:00'),
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'great-britain-2026',
+        endedAt: DateTime.parse('2026-07-05T15:31:00Z'),
+      ),
+    );
+
+    // 히어로가 끝난 영국 GP를 '진행중'으로 붙잡지 않고 다음 GP로 넘어간다.
+    expect(find.text('진행중인 세션'), findsNothing);
+    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.text('벨기에 그랑프리'), findsOneWidget);
+  });
+
   testWidgets('home hero falls back to next session for expired snapshot', (
     tester,
   ) async {

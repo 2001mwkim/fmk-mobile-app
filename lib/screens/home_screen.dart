@@ -38,11 +38,23 @@ class _SeasonHomeContent extends StatelessWidget {
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
 
+  /// 스케줄 기준 다음 그랑프리. 다만 라이브 데이터가 레이스의 실제 종료를
+  /// 알려주면(스케줄 종료 창보다 일찍 체커기), 그 시점부터 다음 그랑프리로
+  /// 넘어간다 — 끝난 레이스를 '진행중'으로 계속 보여주지 않기 위함.
+  Race _effectiveNextRace(DateTime now, LiveSessionSnapshot? liveSnapshot) {
+    final race = getNextRace(now);
+    if (liveSnapshot == null ||
+        !liveSnapshotMarksRaceEnded(liveSnapshot, race, now)) {
+      return race;
+    }
+    final weekendEnd = getRaceWeekendEndDate(race);
+    if (weekendEnd == null) return race;
+    return getNextRace(weekendEnd);
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = nowOverride ?? DateTime.now();
-    final nextRace = getNextRace(now);
-    final nextSession = getNextSession(nextRace, now);
 
     return SafeArea(
       child: ListView(
@@ -57,11 +69,13 @@ class _SeasonHomeContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // 라이브 Top 3 카드와 히어로 세션 박스는 같은 스냅샷을 본다.
+          // 라이브 Top 3 카드/히어로/주말 일정 모두 같은 스냅샷을 본다.
           LiveSessionBuilder(
             builder: (builderContext, snapshot, isStale) {
               final liveSnapshot = liveSnapshotOverride ?? snapshot;
               final liveStale = liveSnapshotOverride == null && isStale;
+              final nextRace = _effectiveNextRace(now, liveSnapshot);
+              final nextSession = getNextSession(nextRace, now);
               return Column(
                 children: [
                   HomeLiveTopThreeCard(
@@ -79,12 +93,12 @@ class _SeasonHomeContent extends StatelessWidget {
                     now: now,
                     liveSnapshot: liveSnapshot,
                   ),
+                  const SizedBox(height: 12),
+                  _WeekendScheduleCard(race: nextRace, now: now),
                 ],
               );
             },
           ),
-          const SizedBox(height: 12),
-          _WeekendScheduleCard(race: nextRace, now: now),
         ],
       ),
     );

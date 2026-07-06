@@ -262,6 +262,26 @@ bool isLiveSnapshotSessionActive(
   return !currentTime.isBefore(start) && currentTime.isBefore(end);
 }
 
+/// 스냅샷이 [race]의 레이스 세션이 실제로 끝났음을 알려주는지.
+///
+/// 레이스가 스케줄상 종료 창(시작+2시간)보다 일찍 끝나면, 라이브 데이터를
+/// 근거로 홈 화면이 스케줄 폴백('진행중')을 무시하고 다음 그랑프리로
+/// 넘어갈 수 있게 한다.
+bool liveSnapshotMarksRaceEnded(
+  LiveSessionSnapshot snapshot,
+  Race race, [
+  DateTime? now,
+]) {
+  if (snapshot.status != LiveSessionStatus.ended) return false;
+  if (isLiveSnapshotSessionActive(snapshot, now)) return false;
+
+  final snapshotRace = resolveLiveRace(snapshot.raceId, snapshot.raceName);
+  if (snapshotRace == null || snapshotRace.id != race.id) return false;
+
+  final session = liveRaceSessionForSnapshot(snapshot, snapshotRace);
+  return session?.id == 'race';
+}
+
 RaceSession? liveRaceSessionForSnapshot(
   LiveSessionSnapshot snapshot, [
   Race? resolvedRace,
