@@ -9,7 +9,8 @@ import '../theme/app_colors.dart';
 ///   - 비활성: font-semibold text-[#959bb6]
 ///   - 아이콘 25px, 라벨 10px, 아이콘-라벨 gap 6
 ///
-/// 탭 구조(홈 / 일정 / 순위 / 직관)와 (currentIndex, onTap) 시그니처는 유지.
+/// 탭 구조(홈 / 일정 / 순위 / 소식)와 (currentIndex, onTap) 시그니처는 유지.
+/// 항목 순서는 app.dart 의 MainShell._screens 인덱스와 1:1 이므로 함께 수정할 것.
 class BottomNav extends StatelessWidget {
   const BottomNav({super.key, required this.currentIndex, required this.onTap});
 
@@ -20,7 +21,7 @@ class BottomNav extends StatelessWidget {
     _NavItem(label: '홈', icon: Icons.home_outlined),
     _NavItem(label: '일정', icon: Icons.calendar_today_outlined),
     _NavItem(label: '순위', icon: Icons.bar_chart),
-    _NavItem(label: '직관', icon: Icons.confirmation_number_outlined),
+    _NavItem(label: '소식', icon: Icons.article_outlined),
   ];
 
   @override

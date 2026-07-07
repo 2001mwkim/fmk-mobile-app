@@ -13,7 +13,7 @@ void main() {
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
-    expect(find.text('직관'), findsOneWidget);
+    expect(find.text('소식'), findsOneWidget);
     // 히어로 상태 칩은 시점에 따라 '다음 그랑프리' 또는 '진행중'으로 표시된다.
     expect(
       find.text('다음 그랑프리').evaluate().isNotEmpty ||
@@ -62,17 +62,13 @@ void main() {
     expect(find.text('키미 안토넬리'), findsNothing);
     expect(find.text('메르세데스'), findsWidgets);
 
-    await tester.tap(find.text('직관'));
+    // 직관 탭은 MVP 범위 제외로 소식 탭으로 교체됨.
+    await tester.tap(find.text('소식'));
     await tester.pumpAndSettle();
-    expect(find.text('직관 가이드'), findsWidgets);
-    expect(find.text('GUIDE IN PROGRESS'), findsOneWidget);
-    expect(find.text('아시아 그랑프리 직관 정보 준비 중'), findsOneWidget);
-    expect(find.text('일본 그랑프리'), findsOneWidget);
-    expect(find.text('중국 그랑프리'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('싱가포르 그랑프리'), 200);
-    expect(find.text('싱가포르 그랑프리'), findsOneWidget);
-    expect(find.text('관련 그랑프리'), findsWidgets);
-    expect(find.text('직관 정보 준비 중'), findsWidgets);
+    expect(find.text('직관'), findsNothing);
+    expect(find.text('F1 NEWS BRIEFING'), findsOneWidget);
+    expect(find.text('해외 F1 주요 소식을 한국어 브리핑으로 빠르게 확인하세요.'), findsOneWidget);
+    expect(find.text('원문 보기'), findsWidgets);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();

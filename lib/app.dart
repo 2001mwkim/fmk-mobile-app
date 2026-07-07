@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/news_screen.dart';
 import 'screens/standings_screen.dart';
-import 'screens/visit_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav.dart';
 
@@ -31,11 +31,13 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
+  // 하단 탭과 1:1 인덱스 매핑(BottomNav._items 순서와 함께 수정할 것).
+  // 직관(VisitScreen)은 MVP 범위 제외로 탭에서 내렸다 — 화면 파일은 유지.
   static const List<Widget> _screens = [
     HomeScreen(),
     CalendarScreen(),
     StandingsScreen(),
-    VisitScreen(),
+    NewsScreen(),
   ];
 
   void _onTabSelected(int index) {
