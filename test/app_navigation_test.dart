@@ -88,5 +88,8 @@ void main() {
     expect(find.text('인스타그램 보러가기'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('F1DB · CC BY 4.0'), 200);
     expect(find.text('F1DB · CC BY 4.0'), findsOneWidget);
+    // 설정 최하단 개인정보 처리방침 링크
+    await tester.scrollUntilVisible(find.text('개인정보 처리방침'), 200);
+    expect(find.text('개인정보 처리방침'), findsOneWidget);
   });
 }

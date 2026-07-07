@@ -11,6 +11,7 @@ const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
 const String _feedbackSubject = '비아 포뮬러 오류 제보 / 기능 제안';
 const String _f1dbUrl = 'https://github.com/f1db/f1db';
+const String _privacyPolicyUrl = 'https://www.formulamagazine.kr/privacy';
 
 // 웹 설정 페이지 전용 색.
 const Color _muted = AppColors.muted; // #7880a0
@@ -611,7 +612,12 @@ class _AppInfoCard extends StatelessWidget {
               onTap: () => _openExternalUri(context, Uri.parse(_f1dbUrl)),
             ),
             const _DlRow(label: '시간 기준', value: '한국시간 KST'),
-            const _DlRow(label: '사용 분석', value: 'Vercel Analytics'),
+            _DlRow(
+              label: '개인정보 처리방침',
+              value: '보기',
+              onTap: () =>
+                  _openExternalUri(context, Uri.parse(_privacyPolicyUrl)),
+            ),
           ],
         ),
       ),
