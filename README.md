@@ -28,7 +28,9 @@ keyAlias=upload
 storeFile=<upload-keystore.jks 절대 경로>
 ```
 
-- 빌드: `flutter build appbundle --release --dart-define=LIVE_JSON_URL=...`
+- 빌드(난독화 포함 권장):
+  `flutter build appbundle --release --obfuscate --split-debug-info=build/symbols --dart-define=LIVE_JSON_URL=...`
+  (`build/symbols`는 크래시 스택 복원용 심볼 — 릴리즈별로 보관)
 - 산출물: `build/app/outputs/bundle/release/app-release.aab`
 - key.properties가 없으면 release 빌드는 명확한 에러로 실패한다(debug 빌드는 영향 없음).
 

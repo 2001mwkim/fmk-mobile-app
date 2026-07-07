@@ -108,10 +108,17 @@ LiveSessionSnapshot? parseLiveJson(String body) {
   }
 }
 
+/// 한 목록에서 받아들일 최대 드라이버 수.
+/// F1 그리드는 20대라 정상 응답은 이보다 훨씬 작다. collector 가 오염되거나
+/// 다른 서버가 응답을 위조해 초대형 배열을 내려보내도 앱이 무한정 파싱/렌더링
+/// 하지 않도록 방어한다(방어적 상한 — CWE-20/무제한 자원 소비 대응).
+const int _maxDriversPerList = 40;
+
 List<LiveDriverPosition> _parseDrivers(dynamic value) {
   if (value is! List) return const [];
   final result = <LiveDriverPosition>[];
   for (final item in value) {
+    if (result.length >= _maxDriversPerList) break;
     if (item is! Map) continue;
     final m = item.cast<String, dynamic>();
     final position = _int(m['position']);

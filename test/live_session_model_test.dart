@@ -51,6 +51,23 @@ void main() {
     expect(parseLiveJson('{"snapshot": 123}'), isNull);
   });
 
+  test('parseLiveJson caps oversized classification lists', () {
+    // 오염/위조된 서버가 초대형 배열을 내려보내는 상황 방어(리스트 상한 40).
+    final rows = List.generate(
+      200,
+      (i) =>
+          '{"position": ${i + 1}, "racingNumber": "$i", '
+          '"code": "D$i", "displayName": "Driver $i"}',
+    ).join(',');
+    final snapshot = parseLiveJson(
+      '{"snapshot": {"status": "live", "updatedAt": "", '
+      '"classification": [$rows]}}',
+    );
+
+    expect(snapshot, isNotNull);
+    expect(snapshot!.classification.length, 40);
+  });
+
   test('ended race is not treated live within its scheduled window', () {
     // 레이스가 스케줄상 종료 창(시작+3시간)보다 일찍 끝난 상황.
     final snapshot = LiveSessionSnapshot(
