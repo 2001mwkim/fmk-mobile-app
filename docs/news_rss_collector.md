@@ -6,7 +6,9 @@ live.json collector 와 같은 계층이다.
 
 - 스크립트: `C:\Users\2001m\fmk-f1-calendar\scripts\news-rss-collector.ts`
 - AI 브리핑 계층: 같은 폴더의 `news-ai-briefing.ts` (기본 비활성 — 아래 참고)
-- 테스트: 같은 폴더의 `news-rss-collector.test.ts`, `news-ai-briefing.test.ts`
+- API 라우트: `app/api/news/route.ts` (Next.js — `GET /api/news?limit=20&lang=ko`)
+- 테스트: `scripts/` 의 `news-rss-collector.test.ts`, `news-ai-briefing.test.ts`,
+  `news-api.test.ts`
 - 출력 계약: 이 저장소의 [news_api_contract.md](news_api_contract.md)와 동일
   (앱 모델 `lib/models/news_item.dart` 와 **수동 동기화** — 필드 변경 시
   수집기·계약 문서·앱 모델을 함께 고칠 것)
@@ -68,6 +70,42 @@ sourceSummary 없음·40자 미만 / originalTitle 없음 / API key 없음 /
 
 TODO: `hash` 기반 요약 캐시(같은 기사 재요약 방지) — DB 도입 시 구현.
 
+## 전체 흐름 (수집 → API → 앱)
+
+```
+npm run news-collector          ┌ NEWS_AI_ENABLED=true 면 AI 브리핑 포함
+        │                       ┘
+        ▼
+ .news/news.json  ──읽기──▶  GET /api/news?limit=20&lang=ko  ──▶  비아 포뮬러 앱
+                             (app/api/news/route.ts)              (HttpNewsRepository)
+```
+
+1. `npm run news-collector` 가 `.news/news.json` 생성 (AI 활성 시 브리핑 포함)
+2. Next.js 라우트 `/api/news` 가 그 파일을 읽어 계약 형태로 서빙
+3. **Flutter 앱은 이 API 만 호출한다** — 직접 크롤링하지 않는다
+
+### /api/news 동작
+
+- `limit`: 기본 20, 최대 50 (초과·비정상 값은 각각 상한/기본값 처리)
+- `lang`: 현재 `ko` 만 지원. 다른 값이 와도 ko 데이터를 그대로 반환
+  (항목을 언어별로 만들지 않기 때문 — 계약 문서와 동일)
+- 캐시: `Cache-Control: public, max-age=0, s-maxage=120,
+  stale-while-revalidate=300` — CDN 2분 캐시라 소식 갱신이 크게 늦지 않는다
+- **파일 없음/깨진 JSON 이어도 500 없이 빈 `items` 로 200 응답**
+  (앱은 빈 상태 카드를 표시). 배포 직후 수집 전 상태도 정상 흐름으로 처리
+- 데이터 파일 경로는 `NEWS_JSON_PATH` 환경변수로 교체 가능
+
+> ⚠️ 배포 주의: `.news/` 는 git 무시라서 새 배포에는 파일이 없다.
+> 실서비스 전에 서버에서 collector 를 주기 실행(cron)하거나 빌드/시작 시
+> 생성하는 단계가 필요하다 — 그 전까지 `/api/news` 는 빈 목록을 돌려준다.
+
+로컬 확인:
+
+```powershell
+npm run news-collector   # 데이터 생성
+npm run dev              # http://localhost:3000/api/news?limit=20&lang=ko
+```
+
 ## 수집 출처 (2026-07-08 확인)
 
 | 출처 | feedUrl | 상태 |
@@ -124,5 +162,6 @@ TODO: `hash` 기반 요약 캐시(같은 기사 재요약 방지) — DB 도입 
 
 - ~~AI 요약 파이프라인~~ → `news-ai-briefing.ts` 초안 완료(기본 비활성,
   `NEWS_AI_ENABLED=true` + API key 로 활성). 남은 것: `hash` 기반 요약 캐시
-- `/api/news` HTTP 엔드포인트로 서빙(현재는 파일 출력만)
+- ~~`/api/news` HTTP 엔드포인트~~ → `app/api/news/route.ts` 완료.
+  남은 것: 서버에서 collector 주기 실행(cron 등)으로 `.news/news.json` 갱신
 - 서빙 시작 시 앱 `NewsScreen` 기본 저장소를 `HttpNewsRepository` 로 교체

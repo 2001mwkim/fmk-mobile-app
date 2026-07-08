@@ -4,8 +4,9 @@
 합의할 계약을 먼저 고정해 둔다. 앱 쪽 파싱 구현은
 `lib/models/news_item.dart` (`NewsItem.fromJson`)와
 `lib/services/news_repository.dart` (`HttpNewsRepository`)에 있다.
-서버 쪽 수집기 초안은 자매 저장소 fmk-f1-calendar 의
-`scripts/news-rss-collector.ts` — [news_rss_collector.md](news_rss_collector.md) 참고.
+서버 쪽 구현은 자매 저장소 fmk-f1-calendar 에 있다: 수집기
+`scripts/news-rss-collector.ts` + 엔드포인트 `app/api/news/route.ts`
+(Next.js) — [news_rss_collector.md](news_rss_collector.md) 참고.
 
 ## 목적과 정책 (중요)
 
