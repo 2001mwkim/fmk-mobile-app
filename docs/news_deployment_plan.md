@@ -97,6 +97,7 @@
 | `NEWS_AI_MODEL` | `claude-haiku-4-5` | AI 모델. 기본은 가성비 Haiku — 품질 필요 시 상위 모델로 교체 |
 | `NEWS_AI_MAX_CALLS_PER_RUN` | `20` | 실행당 실제 API 호출 상한(캐시 hit 제외). 초과분은 다음 실행에서 처리 |
 | `NEWS_AI_DEBUG` | (비활성) | `true` 면 항목별 fallback 사유 상세 로그 |
+| `NEWS_MAX_PER_SOURCE` | `8` | 최신 20개 안의 출처별 상한(독식 방지). `0` 이하 = 무제한 |
 
 비용 구조: 같은 기사는 hash 캐시(`.news/news-ai-cache.json`, 최근 800개)로
 재호출하지 않으므로, 정상 상태에서 AI 비용은 "6시간마다 새 기사 수 × Haiku

@@ -18,6 +18,8 @@ void main() {
       'aiBriefKo': '$id 한국어 브리핑입니다.',
       'tags': ['페라리'],
       'hash': 'hash-$id',
+      'thumbnailUrl': 'https://cdn.example.com/$id.jpg',
+      'relatedSources': ['Autosport'],
     };
   }
 
@@ -58,14 +60,21 @@ void main() {
     expect(items.map((i) => i.id), containsAll(['a', 'b']));
     expect(items.first.sourceName, 'Motorsport.com');
     expect(items.first.titleKo, isNotEmpty); // 서버 titleKo 파싱
+    // 정렬 순서와 무관하게 id 로 찾아 선택 필드 파싱을 확인한다.
+    final itemA = items.firstWhere((i) => i.id == 'a');
+    expect(itemA.thumbnailUrl, 'https://cdn.example.com/a.jpg');
+    expect(itemA.relatedSources, ['Autosport']);
     // 요청 형태: /api/news?limit=20&lang=ko
     expect(requested.path, '/api/news');
     expect(requested.queryParameters['limit'], '$kNewsDisplayLimit');
     expect(requested.queryParameters['lang'], 'ko');
   });
 
-  test('titleKo 가 없는 구버전 응답도 정상 파싱된다 (하위 호환)', () async {
-    final legacy = validItem('legacy')..remove('titleKo');
+  test('titleKo/thumbnailUrl 이 없는 구버전 응답도 정상 파싱된다 (하위 호환)', () async {
+    final legacy = validItem('legacy')
+      ..remove('titleKo')
+      ..remove('thumbnailUrl')
+      ..remove('relatedSources');
     final client = MockClient((request) async {
       return jsonResponse({
         'items': [legacy],
@@ -76,6 +85,8 @@ void main() {
 
     expect(items.single.id, 'legacy');
     expect(items.single.titleKo, ''); // 빈 값 → 앱이 제목 영역 생략
+    expect(items.single.thumbnailUrl, isNull); // 없으면 썸네일 생략
+    expect(items.single.relatedSources, isEmpty); // 없으면 출처명 그대로
     expect(items.single.originalTitle, 'Headline legacy'); // 내부 보존
   });
 

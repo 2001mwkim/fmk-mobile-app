@@ -128,12 +128,15 @@ class _NewsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 출처 · 발행 시간 (출처 명시 정책)
+          // 출처 · 발행 시간 (출처 명시 정책). 유사 기사가 묶인 경우
+          // "Motorsport.com 외 1곳"처럼 함께 보도한 출처 수를 표시한다.
           Row(
             children: [
               Flexible(
                 child: Text(
-                  item.sourceName,
+                  item.relatedSources.isEmpty
+                      ? item.sourceName
+                      : '${item.sourceName} 외 ${item.relatedSources.length}곳',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -155,34 +158,52 @@ class _NewsCard extends StatelessWidget {
               ),
             ],
           ),
-          // 제목은 한국어(titleKo)만 표시한다. 빈 값이면(AI 미생성/구버전 응답)
-          // 영어 원문 제목으로 대체하지 않고 제목 영역을 생략 — 브리핑이 본문
-          // 역할을 한다. 원문 제목은 '원문 보기' 링크로만 접근.
-          if (item.titleKo.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              item.titleKo,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.white,
-                fontWeight: FontWeight.w800,
-                height: 1.35,
+          const SizedBox(height: 8),
+          // 본문(제목+브리핑) 왼쪽 + 썸네일 오른쪽. 썸네일은 출처가 RSS 로
+          // 직접 제공한 이미지만 서버가 내려준다(크롤링 금지 정책).
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 제목은 한국어(titleKo)만 표시한다. 빈 값이면(AI 미생성/
+                    // 구버전 응답) 영어 원문 제목으로 대체하지 않고 제목 영역을
+                    // 생략 — 브리핑이 본문 역할을 한다.
+                    if (item.titleKo.isNotEmpty) ...[
+                      Text(
+                        item.titleKo,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                    Text(
+                      item.aiBriefKo,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.nameMuted,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-          const SizedBox(height: 6),
-          Text(
-            item.aiBriefKo,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.nameMuted,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
-            ),
+              if (item.thumbnailUrl != null) ...[
+                const SizedBox(width: 12),
+                _NewsThumbnail(url: item.thumbnailUrl!),
+              ],
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -237,6 +258,39 @@ class _NewsCard extends StatelessWidget {
     if (opened || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('원문 링크를 열지 못했습니다.')),
+    );
+  }
+}
+
+/// 카드 우측 썸네일. 로드 실패(핫링크 차단 등) 시 깨진 아이콘 대신
+/// 톤에 맞는 placeholder 박스를 유지해 레이아웃이 흔들리지 않게 한다.
+class _NewsThumbnail extends StatelessWidget {
+  const _NewsThumbnail({required this.url});
+
+  final String url;
+
+  static const double _size = 78;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        url,
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          width: _size,
+          height: _size,
+          color: AppColors.tileSurface,
+          child: const Icon(
+            Icons.image_not_supported_outlined,
+            size: 18,
+            color: AppColors.muted,
+          ),
+        ),
+      ),
     );
   }
 }

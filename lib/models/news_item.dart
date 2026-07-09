@@ -16,6 +16,8 @@ class NewsItem {
     required this.aiBriefKo,
     this.tags = const [],
     required this.hash,
+    this.thumbnailUrl,
+    this.relatedSources = const [],
   });
 
   final String id;
@@ -46,6 +48,14 @@ class NewsItem {
 
   /// 중복 수집 방지용 해시(서버 생성).
   final String hash;
+
+  /// 카드 썸네일 URL. 출처가 RSS 로 직접 제공한 이미지만 서버가 전달한다
+  /// (원문 페이지 크롤링 금지 정책 유지). 없으면 null → 카드에서 생략.
+  final String? thumbnailUrl;
+
+  /// 같은 뉴스로 묶인 다른 출처들(서버 유사도 중복 제거 결과, 선택 필드).
+  /// 있으면 카드 출처를 "Motorsport.com 외 1곳"처럼 표시한다.
+  final List<String> relatedSources;
 
   /// 서버 JSON 파싱. live.json 파서와 같은 원칙으로 방어적으로 처리하고,
   /// 필수 필드가 깨져 있으면 null 을 반환한다(항목 단위 skip).
@@ -80,6 +90,12 @@ class NewsItem {
           ? (json['tags'] as List).whereType<String>().toList()
           : const [],
       hash: _string(json['hash']) ?? id,
+      // 선택 필드 — 없거나 빈 값이면 null(하위 호환). http(s) URL 만 신뢰.
+      thumbnailUrl: _httpUrl(json['thumbnailUrl']),
+      // 선택 필드 — 없으면 빈 배열(하위 호환).
+      relatedSources: json['relatedSources'] is List
+          ? (json['relatedSources'] as List).whereType<String>().toList()
+          : const [],
     );
   }
 
@@ -92,5 +108,11 @@ class NewsItem {
   static DateTime? _dateTime(dynamic value) {
     if (value is String) return DateTime.tryParse(value.trim());
     return null;
+  }
+
+  static String? _httpUrl(dynamic value) {
+    final url = _string(value);
+    if (url == null) return null;
+    return url.startsWith('http://') || url.startsWith('https://') ? url : null;
   }
 }

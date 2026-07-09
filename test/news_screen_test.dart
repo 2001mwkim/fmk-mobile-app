@@ -13,6 +13,8 @@ void main() {
     required DateTime publishedAt,
     String titleKo = '',
     List<String> tags = const [],
+    String? thumbnailUrl,
+    List<String> relatedSources = const [],
   }) {
     return NewsItem(
       id: id,
@@ -25,6 +27,8 @@ void main() {
       aiBriefKo: '$id 한국어 브리핑 본문입니다.',
       tags: tags,
       hash: 'hash-$id',
+      thumbnailUrl: thumbnailUrl,
+      relatedSources: relatedSources,
     );
   }
 
@@ -37,6 +41,8 @@ void main() {
         publishedAt: now.subtract(const Duration(hours: 2)),
         titleKo: 'a번 한국어 제목입니다',
         tags: const ['해밀턴', '페라리'],
+        // 유사 기사로 묶인 출처 — "외 1곳" 표시 검증
+        relatedSources: const ['Autosport'],
       ),
       item(id: 'b', publishedAt: now.subtract(const Duration(days: 1))),
     ]);
@@ -52,7 +58,9 @@ void main() {
     expect(find.text('소식'), findsOneWidget);
     expect(find.text('해외 F1 주요 소식을 한국어 브리핑으로 빠르게 확인하세요.'), findsOneWidget);
     // 출처 · 상대 시간 · 한국어 제목 · 브리핑 · 태그 · 원문 보기
-    expect(find.text('Motorsport.com'), findsNWidgets(2));
+    // 묶인 기사(a)는 "외 1곳", 단독 기사(b)는 출처명 그대로.
+    expect(find.text('Motorsport.com 외 1곳'), findsOneWidget);
+    expect(find.text('Motorsport.com'), findsOneWidget);
     expect(find.textContaining('2시간 전'), findsOneWidget);
     expect(find.text('a번 한국어 제목입니다'), findsOneWidget);
     expect(find.text('a 한국어 브리핑 본문입니다.'), findsOneWidget);
@@ -80,6 +88,37 @@ void main() {
     expect(find.text('Test headline old'), findsNothing); // 영어 fallback 금지
     expect(find.text('old 한국어 브리핑 본문입니다.'), findsOneWidget);
     expect(find.text('원문 보기'), findsOneWidget); // 원문 접근은 링크로 유지
+  });
+
+  testWidgets('thumbnailUrl 이 있는 카드만 썸네일 이미지를 렌더링한다', (tester) async {
+    final repository = _FakeNewsRepository([
+      item(
+        id: 'pic',
+        publishedAt: now.subtract(const Duration(hours: 1)),
+        titleKo: '썸네일 있는 소식',
+        thumbnailUrl: 'https://cdn.example.com/pic.jpg',
+      ),
+      item(
+        id: 'nopic',
+        publishedAt: now.subtract(const Duration(hours: 2)),
+        titleKo: '썸네일 없는 소식',
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: NewsScreen(repository: repository, nowOverride: now),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 카드 2장 중 썸네일이 있는 1장만 Image 위젯을 가진다.
+    // (테스트 환경은 네트워크가 차단돼 errorBuilder 의 placeholder 가 뜨지만
+    // 크래시 없이 렌더링되는 것까지가 검증 대상)
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('썸네일 있는 소식'), findsOneWidget);
+    expect(find.text('썸네일 없는 소식'), findsOneWidget);
   });
 
   testWidgets('news screen caps list to display limit', (tester) async {

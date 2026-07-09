@@ -137,14 +137,23 @@ npm run dev              # http://localhost:3000/api/news?limit=20&lang=ko
 
 ## 처리 규칙
 
-1. RSS 2.0 `<item>` 에서 title/link/pubDate/description 만 추출
-   (의존성 없는 자체 파서, 깨진 항목은 그 항목만 skip)
+1. RSS 2.0 `<item>` 에서 title/link/pubDate/description + 썸네일 URL 을 추출
+   (의존성 없는 자체 파서, 깨진 항목은 그 항목만 skip). 썸네일은 출처가
+   RSS 로 직접 제공한 `<enclosure type="image/*">`/`<media:content>`/
+   `<media:thumbnail>` 만 사용 — 원문 페이지 크롤링 없음. 미제공 출처는
+   `thumbnailUrl` 빈 값(앱이 생략)
 2. 링크의 `utm_*` 추적 파라미터 제거(같은 기사가 다른 링크로 보이는 것 방지)
-3. **중복 제거**: 정규화된 originalLink 기준, 링크가 불안정하면
-   `sourceName + originalTitle` 해시 기준
-4. publishedAt **최신순 정렬** 후 **20개**(`API_ITEM_LIMIT`, 앱
-   `kNewsDisplayLimit` 과 동일)만 출력. 내부적으로는 출처당 50개까지
-   수집해 두어 향후 DB 저장으로 확장 가능
+3. **중복 제거 2단계**:
+   ① 정규화된 originalLink 기준(링크가 불안정하면 `sourceName+originalTitle` 해시)
+   ② **유사 기사 묶기** — 발행 48시간 이내 기사끼리 제목(originalTitle+titleKo)
+   /요약(sourceSummary+aiBriefKo) 토큰 겹침이 기준(0.7/0.65) 이상이면 같은
+   뉴스로 판정(Motorsport.com↔Autosport 중복 대응). 대표 기사는
+   한국어 브리핑 보유 → 요약 충실도 → 최신 → 출처 우선순위 순으로 고르고,
+   묶인 출처는 `relatedSources` 로 보존(앱이 "외 1곳" 표시)
+4. publishedAt **최신순 정렬** + **출처별 상한**(`NEWS_MAX_PER_SOURCE`, 기본 8
+   — 한 출처의 독식 방지, 상한 탓에 20개를 못 채우면 백필) 을 적용해
+   **20개**(`API_ITEM_LIMIT`, 앱 `kNewsDisplayLimit` 과 동일)만 출력.
+   내부적으로는 출처당 50개까지 수집해 두어 향후 DB 저장으로 확장 가능
 5. `id`/`hash` 는 링크의 SHA-1 에서 파생 — 실행 시점과 무관하게 안정적
 
 ## 출력 구조

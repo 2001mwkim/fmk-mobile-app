@@ -73,6 +73,8 @@ GET /api/news?limit=20&lang=ko
 | `aiBriefKo` | string | ✅ | 2~3줄 한국어 AI 브리핑. 앱 카드 본문 |
 | `tags` | string[] | ⬜ | 드라이버/팀/그랑프리 태그(한국어). 없으면 빈 배열 |
 | `hash` | string | ⬜ | 중복 수집 방지용 콘텐츠 해시. 없으면 앱이 id 로 대체 |
+| `thumbnailUrl` | string | ⬜ | 카드 썸네일 URL. **출처가 RSS 로 직접 제공한 이미지만** 서버가 전달한다(원문 페이지 크롤링 금지 정책). 없거나 빈 값이면 앱이 썸네일을 생략. 앱은 http(s) URL 만 신뢰하고, 로드 실패 시 placeholder 표시 |
+| `relatedSources` | string[] | ⬜ | 유사도 중복 제거에서 이 기사로 묶인 다른 출처 매체명들(예: `["Autosport"]`). 있으면 앱이 출처를 "Motorsport.com 외 1곳"으로 표시. 없으면 단독 보도 |
 
 ## 앱 쪽 파싱 규칙 (서버 참고사항)
 
