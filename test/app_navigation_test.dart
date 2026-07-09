@@ -63,12 +63,15 @@ void main() {
     expect(find.text('메르세데스'), findsWidgets);
 
     // 직관 탭은 MVP 범위 제외로 소식 탭으로 교체됨.
+    // 기본 저장소가 실서버(HttpNewsRepository)라 네트워크가 차단된 테스트
+    // 환경에서는 빈 상태 카드가 뜬다(크래시 없음 검증). 카드 렌더링은
+    // mock 저장소를 주입하는 news_screen_test 가 담당한다.
     await tester.tap(find.text('소식'));
     await tester.pumpAndSettle();
     expect(find.text('직관'), findsNothing);
     expect(find.text('F1 NEWS BRIEFING'), findsOneWidget);
     expect(find.text('해외 F1 주요 소식을 한국어 브리핑으로 빠르게 확인하세요.'), findsOneWidget);
-    expect(find.text('원문 보기'), findsWidgets);
+    expect(find.text('표시할 소식이 없습니다'), findsOneWidget);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();

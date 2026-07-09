@@ -7,16 +7,18 @@ import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 
-/// 소식 탭 — AI 가 정리한 해외 F1 주요 소식(한국어 브리핑) MVP 화면.
+/// 소식 탭 — AI 가 정리한 해외 F1 주요 소식(한국어 브리핑) 화면.
 ///
 /// 데이터는 [NewsRepository] 계층에서 받아 렌더링만 한다(하드코딩 금지).
-/// 지금은 [SampleNewsRepository](로컬 샘플)이고, 실서버 완성 시
-/// `/api/news?limit=20&lang=ko` HTTP 구현으로 교체한다.
-/// 정책: 원문 전문을 싣지 않고 2~3줄 브리핑 + 출처/원문 링크만 제공.
+/// 기본값은 실서버 [HttpNewsRepository](`/api/news?limit=20&lang=ko`,
+/// origin 은 kNewsApiBaseUrl 한 곳에서 관리). 서버 실패/빈 응답이면
+/// 빈 상태 카드를 보여준다 — 샘플 데이터로 자동 폴백하지 않는다.
+/// 정책: 앱은 직접 크롤링하지 않고 서버 JSON 만 렌더링,
+/// 원문 전문 없이 2~3줄 브리핑 + 출처/원문 링크만 제공.
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key, this.repository, this.nowOverride});
 
-  /// 테스트/실서버 교체용 주입 지점.
+  /// 테스트/개발용 주입 지점(예: [SampleNewsRepository]).
   final NewsRepository? repository;
   final DateTime? nowOverride;
 
@@ -26,7 +28,7 @@ class NewsScreen extends StatefulWidget {
 
 class _NewsScreenState extends State<NewsScreen> {
   late final NewsRepository _repository =
-      widget.repository ?? const SampleNewsRepository();
+      widget.repository ?? const HttpNewsRepository(baseUrl: kNewsApiBaseUrl);
   late final Future<List<NewsItem>> _future = _repository.fetchLatest();
 
   @override
@@ -153,18 +155,23 @@ class _NewsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            item.originalTitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-              height: 1.35,
+          // 제목은 한국어(titleKo)만 표시한다. 빈 값이면(AI 미생성/구버전 응답)
+          // 영어 원문 제목으로 대체하지 않고 제목 영역을 생략 — 브리핑이 본문
+          // 역할을 한다. 원문 제목은 '원문 보기' 링크로만 접근.
+          if (item.titleKo.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              item.titleKo,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.white,
+                fontWeight: FontWeight.w800,
+                height: 1.35,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 6),
           Text(
             item.aiBriefKo,

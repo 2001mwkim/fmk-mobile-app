@@ -42,6 +42,7 @@ GET /api/news?limit=20&lang=ko
       "id": "news-20260707-001",
       "sourceName": "Motorsport.com",
       "originalTitle": "Leclerc holds off Russell in Silverstone thriller",
+      "titleKo": "르클레르, 실버스톤에서 러셀 추격 막고 우승",
       "originalLink": "https://www.motorsport.com/f1/news/example-article",
       "publishedAt": "2026-07-07T01:10:00.000Z",
       "fetchedAt": "2026-07-07T01:20:00.000Z",
@@ -63,7 +64,8 @@ GET /api/news?limit=20&lang=ko
 |---|---|---|---|
 | `id` | string | ✅ | 항목 고유 ID |
 | `sourceName` | string | ✅ | 출처 매체명. 카드에 항상 노출(출처 명시 정책) |
-| `originalTitle` | string | ✅ | 원문 제목(원어) |
+| `originalTitle` | string | ✅ | 원문 제목(원어). **내부 보존/중복 제거/디버깅·원문 확인용 — 클라이언트 UI 는 이 값을 직접 표시하지 않는다** |
+| `titleKo` | string | ⬜ | 앱 카드에 표시할 한국어 제목(AI 생성, 60자 이내). **UI 는 titleKo 만 제목으로 표시**하고, 없거나 빈 값이면 제목 영역을 생략한다(영어 제목으로 대체하지 않음). 하위 호환: 필드가 없는 응답도 유효 |
 | `originalLink` | string | ✅ | 원문 기사 URL. '원문 보기' 링크 |
 | `publishedAt` | string(ISO 8601) | ✅ | 원문 발행 시각(UTC 권장) |
 | `fetchedAt` | string(ISO 8601) | ⬜ | 서버 수집 시각. 없으면 앱이 publishedAt 으로 대체 |

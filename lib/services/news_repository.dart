@@ -8,12 +8,22 @@ import '../models/news_item.dart';
 /// 소식 탭에 노출할 최대 항목 수.
 const int kNewsDisplayLimit = 20;
 
+/// 소식 API 서버 origin. dev/prod 분리는 여기(빌드 주입) 한 곳에서만 한다.
+///
+/// 기본값은 실서비스(Vercel) 도메인 — apex(`formulamagazine.kr`)는 www 로
+/// 308 리다이렉트되므로 www 를 직접 쓴다(불필요한 왕복 방지).
+/// 라이브(kLiveJsonUrl)와 같은 방식으로 빌드 시 재정의 가능:
+///   flutter run --dart-define=NEWS_API_BASE_URL=http://localhost:3000
+const String kNewsApiBaseUrl = String.fromEnvironment(
+  'NEWS_API_BASE_URL',
+  defaultValue: 'https://www.formulamagazine.kr',
+);
+
 /// 소식 데이터 공급 계층.
 ///
 /// 앱은 외부 사이트를 직접 크롤링하지 않고, 서버가 수집·요약한 JSON 만 받는다.
-/// 실서버 완성 시 이 인터페이스의 HTTP 구현
-/// (예: `GET /api/news?limit=20&lang=ko` 를 [NewsItem.fromJson] 으로 파싱)으로
-/// [SampleNewsRepository] 를 교체하면 화면 코드는 그대로 재사용된다.
+/// 앱 기본값은 [HttpNewsRepository](실서버 `/api/news`)이고,
+/// [SampleNewsRepository] 는 개발/테스트 주입용으로 남겨둔다.
 abstract class NewsRepository {
   Future<List<NewsItem>> fetchLatest({int limit = kNewsDisplayLimit});
 }
@@ -21,16 +31,15 @@ abstract class NewsRepository {
 /// 뉴스 요청 타임아웃(라이브 폴링과 동일하게 화면 응답성 우선).
 const Duration kNewsFetchTimeout = Duration(seconds: 8);
 
-/// 서버 API 구현 초안. 계약은 docs/news_api_contract.md 참고.
+/// 실서버 구현(앱 기본값). 계약은 docs/news_api_contract.md 참고.
 ///
 /// `GET {baseUrl}/api/news?limit=20&lang=ko` 를 호출해 [NewsItem.fromJson]
 /// 으로 파싱한다. live_session_service 와 같은 원칙:
 /// - 깨진 항목은 그 항목만 건너뛴다(전체 실패 아님)
 /// - 네트워크 오류/타임아웃/비정상 JSON 은 예외를 던지지 않고 빈 목록을
-///   돌려줘 화면이 죽지 않게 한다(NewsScreen 이 빈 상태 카드를 보여준다)
-///
-/// 실서버가 준비되면 NewsScreen 의 기본 저장소를 이 클래스로 교체한다.
-/// 그 전까지 앱 기본값은 [SampleNewsRepository] 다.
+///   돌려줘 화면이 죽지 않게 한다(NewsScreen 이 빈 상태 카드를 보여준다).
+///   서버 실패 시 샘플 데이터로 자동 폴백하지 않는다 — 실서비스에서 오래된
+///   가짜 뉴스처럼 보일 수 있어 빈 상태 안내가 낫다.
 class HttpNewsRepository implements NewsRepository {
   const HttpNewsRepository({required this.baseUrl, this.client});
 
@@ -87,7 +96,7 @@ List<NewsItem> parseNewsJson(String body, {int limit = kNewsDisplayLimit}) {
   }
 }
 
-/// 서버 API 완성 전까지 쓰는 로컬 샘플 구현.
+/// 로컬 샘플 구현 — 개발/테스트 주입용(앱 기본값 아님).
 class SampleNewsRepository implements NewsRepository {
   const SampleNewsRepository({this.now});
 

@@ -11,6 +11,7 @@ void main() {
       'id': id,
       'sourceName': 'Motorsport.com',
       'originalTitle': 'Headline $id',
+      'titleKo': '$id 한국어 제목',
       'originalLink': 'https://www.motorsport.com/$id',
       'publishedAt': '2026-07-07T0${id.hashCode % 10}:00:00.000Z',
       'fetchedAt': '2026-07-07T09:10:00.000Z',
@@ -36,6 +37,11 @@ void main() {
     );
   }
 
+  test('default base url points to production Vercel domain', () {
+    // dev/prod 분리는 --dart-define=NEWS_API_BASE_URL 로만 한다(한 곳 관리).
+    expect(kNewsApiBaseUrl, 'https://www.formulamagazine.kr');
+  });
+
   test('parses items wrapper into NewsItem list', () async {
     late Uri requested;
     final client = MockClient((request) async {
@@ -51,10 +57,26 @@ void main() {
     expect(items.length, 2);
     expect(items.map((i) => i.id), containsAll(['a', 'b']));
     expect(items.first.sourceName, 'Motorsport.com');
+    expect(items.first.titleKo, isNotEmpty); // 서버 titleKo 파싱
     // 요청 형태: /api/news?limit=20&lang=ko
     expect(requested.path, '/api/news');
     expect(requested.queryParameters['limit'], '$kNewsDisplayLimit');
     expect(requested.queryParameters['lang'], 'ko');
+  });
+
+  test('titleKo 가 없는 구버전 응답도 정상 파싱된다 (하위 호환)', () async {
+    final legacy = validItem('legacy')..remove('titleKo');
+    final client = MockClient((request) async {
+      return jsonResponse({
+        'items': [legacy],
+      });
+    });
+
+    final items = await repositoryWith(client).fetchLatest();
+
+    expect(items.single.id, 'legacy');
+    expect(items.single.titleKo, ''); // 빈 값 → 앱이 제목 영역 생략
+    expect(items.single.originalTitle, 'Headline legacy'); // 내부 보존
   });
 
   test('skips broken items but keeps valid ones', () async {

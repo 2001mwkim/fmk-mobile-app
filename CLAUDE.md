@@ -15,7 +15,7 @@
 - **배포**: main 브랜치 push → Railway 자동 배포 (`https://live-production-c03d.up.railway.app/live.json`)
 - 타입 동기화: 웹 `lib/live/types.ts` ↔ 앱 `lib/models/live_session.dart`는 **수동 복제** 관계다. collector가 내려주는 필드를 바꾸면 양쪽 모두 고칠 것.
 - collector mock 모드: `LIVE_MOCK_MODE=live LIVE_MOCK_SESSION_TYPE=race|sprint|qualifying|practice npm run live-collector:dev` (+`LIVE_MOCK_NO_LAP_TIMES=1`로 랩타임 수신 전 상태 재현)
-- 소식(뉴스) 수집기도 같은 저장소: `scripts/news-rss-collector.ts` (`npm run news-collector`) — 계약은 앱 `docs/news_api_contract.md`, 사용법은 `docs/news_rss_collector.md`. 앱 기본값은 아직 `SampleNewsRepository`(서버 미연동)
+- 소식(뉴스) 수집기도 같은 저장소: `scripts/news-rss-collector.ts` (`npm run news-collector`) — 계약은 앱 `docs/news_api_contract.md`, 사용법은 `docs/news_rss_collector.md`. Railway collector 프로세스가 주기 수집(`scripts/news-scheduler.ts`, 기본 30분) 후 `/news.json` 으로 서빙하고, Vercel `/api/news` 가 `NEWS_JSON_REMOTE_URL` 로 이를 중계한다(배포 계획: `docs/news_deployment_plan.md`). 앱 기본값은 `HttpNewsRepository`(origin 은 `lib/services/news_repository.dart` 의 `kNewsApiBaseUrl`, `--dart-define=NEWS_API_BASE_URL` 로 재정의)
 
 ## 명령어
 

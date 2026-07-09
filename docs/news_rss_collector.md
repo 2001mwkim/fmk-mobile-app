@@ -46,29 +46,42 @@ npm run news-collector
 
 ## AI 브리핑 단계 (`news-ai-briefing.ts`)
 
-`NEWS_AI_ENABLED=true` 일 때 최종 출력(최대 20개)에 대해서만 Claude API 로
-2~3줄 한국어 브리핑(`aiBriefKo`)과 태그(`tags`)를 생성한다.
+`NEWS_AI_ENABLED=true` 일 때 한국어 제목(`titleKo`) + **정확히 3문장** 요약
+(`aiBriefKo`: 무슨 일 / 왜 중요 / 볼 포인트) + 태그(`tags`, 최대 5개)를
+생성한다. 응답은 구조화 출력(JSON schema)으로
+`{titleKo, aiBriefKo, tags}` 형태를 고정한다.
 
 | 환경변수 | 기본값 | 설명 |
 |---|---|---|
 | `NEWS_AI_ENABLED` | (비활성) | `true`/`1` 일 때만 AI 호출. 비활성이면 placeholder 유지 |
 | `ANTHROPIC_API_KEY` | — | 없으면 AI 호출 없이 fallback 문구 사용 |
-| `NEWS_AI_MODEL` | `claude-opus-4-8` | 사용할 Claude 모델 |
+| `NEWS_AI_MODEL` | `claude-haiku-4-5` | 사용할 Claude 모델(가성비 기본값) |
+| `NEWS_AI_INTERVAL_MINUTES` | `360` | 스케줄러의 AI 호출 허용 주기(RSS 주기와 분리) |
+| `NEWS_AI_MAX_CALLS_PER_RUN` | `20` | 실행당 실제 API 호출 상한(캐시 hit 제외) |
+| `NEWS_AI_DEBUG` | (비활성) | `true` 면 항목별 fallback 사유 로그 |
 
-호출 상한은 코드 상수 `NEWS_AI_MAX_ITEMS_DEFAULT`(20 = 앱 노출 한도)로,
-비용/속도 보호를 위해 실행당 최대 20개만 요약한다.
+**hash 캐시**: 성공 결과는 `.news/news-ai-cache.json`(gitignore, 최근 800개)에
+`{hash, titleKo, aiBriefKo, tags, generatedAt, model}` 로 저장되고, 같은
+hash 는 다시 호출하지 않는다. 원문 전문/요약 원본은 캐시에 저장하지 않는다.
+캐시 파일이 없거나 깨져도 빈 캐시로 시작한다(크래시 없음).
 
-**프롬프트 규칙**: 한국어 / 2~3문장 / 전체 번역 금지 / 제목·RSS 요약에 없는
-사실 추가 금지 / 불확실한 내용 단정 금지 / 과장 금지 / 한국 F1 팬 기준
-중요성 한 구절. 응답은 구조화 출력(JSON schema)으로 형태를 고정한다.
+**프롬프트 규칙**: 한국어 / 자연스러운 한국어 제목(60자, 자극·낚시 금지) /
+정확히 3문장(무슨 일→왜 중요→볼 포인트) / 전체 번역 금지 / 제목·RSS 요약에
+없는 사실 추가 금지 / 불확실한 내용 단정 금지 / 과장 금지.
 
-**fallback 정책** — 다음 경우 해당 항목만 아래 문구로 대체한다(전체 실패 없음):
-sourceSummary 없음·40자 미만 / originalTitle 없음 / API key 없음 /
-호출 실패 / 응답 JSON 파싱 실패 / 브리핑이 비었거나 350자 초과.
+**fallback 정책** — 다음 경우 해당 항목만 대체하고 전체 수집은 계속한다.
+사유는 실행 통계 로그에 집계된다(ai_disabled / missing_api_key /
+missing_title / missing_summary / short_summary / api_error / invalid_json /
+empty_response / too_long_response / schema_error / interval_skip /
+max_calls_skip). `aiBriefKo` fallback 문구:
 
 > "해당 소식은 원문 제목과 출처를 기준으로 확인이 필요합니다. 자세한 내용은 원문 링크에서 확인해 주세요."
 
-TODO: `hash` 기반 요약 캐시(같은 기사 재요약 방지) — DB 도입 시 구현.
+`titleKo` fallback 은 빈 문자열 — 앱이 제목 영역을 생략한다(영어 제목 미노출).
+
+**진단 로그**: 시작 시 설정 요약(`[news-ai] config: ...`, key 는 존재 여부만),
+실행마다 통계(`total/cacheHits/aiCalls/success/fallback + 사유별 카운트`).
+API 오류는 모델명/status/에러 타입을 남긴다(key 값·기사 전문은 로그 금지).
 
 ## 전체 흐름 (수집 → API → 앱)
 
@@ -91,13 +104,16 @@ npm run news-collector          ┌ NEWS_AI_ENABLED=true 면 AI 브리핑 포함
   (항목을 언어별로 만들지 않기 때문 — 계약 문서와 동일)
 - 캐시: `Cache-Control: public, max-age=0, s-maxage=120,
   stale-while-revalidate=300` — CDN 2분 캐시라 소식 갱신이 크게 늦지 않는다
-- **파일 없음/깨진 JSON 이어도 500 없이 빈 `items` 로 200 응답**
+- **소스가 없거나 깨져도 500 없이 빈 `items` 로 200 응답**
   (앱은 빈 상태 카드를 표시). 배포 직후 수집 전 상태도 정상 흐름으로 처리
-- 데이터 파일 경로는 `NEWS_JSON_PATH` 환경변수로 교체 가능
+- 데이터 소스는 순서대로 시도: ① `NEWS_JSON_REMOTE_URL`(원격 JSON URL,
+  프로덕션용 — 2.5초 타임아웃) → ② `NEWS_JSON_PATH` 또는 `.news/news.json`
+  (로컬, 개발용) → ③ 빈 응답
 
-> ⚠️ 배포 주의: `.news/` 는 git 무시라서 새 배포에는 파일이 없다.
-> 실서비스 전에 서버에서 collector 를 주기 실행(cron)하거나 빌드/시작 시
-> 생성하는 단계가 필요하다 — 그 전까지 `/api/news` 는 빈 목록을 돌려준다.
+> ⚠️ 배포 주의: 웹앱은 Vercel(서버리스)이라 `.news/` 로컬 파일이 배포에
+> 존재하지 않는다. 실서비스는 `NEWS_JSON_REMOTE_URL` 로 원격 소스를
+> 연결해야 한다 — 저장/주기 실행 계획은
+> [news_deployment_plan.md](news_deployment_plan.md) 참고.
 
 로컬 확인:
 
@@ -160,8 +176,11 @@ npm run dev              # http://localhost:3000/api/news?limit=20&lang=ko
 
 ## 남은 단계 (TODO)
 
-- ~~AI 요약 파이프라인~~ → `news-ai-briefing.ts` 초안 완료(기본 비활성,
-  `NEWS_AI_ENABLED=true` + API key 로 활성). 남은 것: `hash` 기반 요약 캐시
-- ~~`/api/news` HTTP 엔드포인트~~ → `app/api/news/route.ts` 완료.
-  남은 것: 서버에서 collector 주기 실행(cron 등)으로 `.news/news.json` 갱신
-- 서빙 시작 시 앱 `NewsScreen` 기본 저장소를 `HttpNewsRepository` 로 교체
+- ~~AI 요약 파이프라인~~ → `news-ai-briefing.ts` 완료(기본 비활성,
+  `NEWS_AI_ENABLED=true` + API key 로 활성, hash 캐시·호출 상한·주기 분리 포함)
+- ~~`/api/news` HTTP 엔드포인트~~ → `app/api/news/route.ts` 완료
+  (원격 소스 `NEWS_JSON_REMOTE_URL` 지원 포함).
+  남은 것: 뉴스 수집 주기 실행 + 원격 서빙 —
+  [news_deployment_plan.md](news_deployment_plan.md) 의 체크리스트 참고
+- ~~앱 `NewsScreen` 기본 저장소를 `HttpNewsRepository` 로 교체~~ → 완료
+  (origin: `lib/services/news_repository.dart` 의 `kNewsApiBaseUrl`)

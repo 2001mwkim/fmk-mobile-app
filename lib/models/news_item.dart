@@ -8,6 +8,7 @@ class NewsItem {
     required this.id,
     required this.sourceName,
     required this.originalTitle,
+    this.titleKo = '',
     required this.originalLink,
     required this.publishedAt,
     required this.fetchedAt,
@@ -21,7 +22,13 @@ class NewsItem {
 
   /// 출처 매체명(예: 'Motorsport.com'). 카드에 항상 노출한다(출처 명시 정책).
   final String sourceName;
+
+  /// 원문 제목(원어). 내부 보존/원문 확인용 — **UI 에 직접 표시하지 않는다**.
   final String originalTitle;
+
+  /// 앱 카드에 표시할 한국어 제목(서버 AI 생성). 빈 값이면 제목 영역을
+  /// 생략한다 — 영어 원문 제목으로 대체하지 않는다(하위 호환: 구버전 응답).
+  final String titleKo;
 
   /// 원문 기사 링크. '원문 보기'로 항상 제공한다.
   final String originalLink;
@@ -62,6 +69,8 @@ class NewsItem {
       id: id,
       sourceName: sourceName,
       originalTitle: originalTitle,
+      // 선택 필드 — 없거나 빈 구버전 응답도 유효(하위 호환).
+      titleKo: _string(json['titleKo']) ?? '',
       originalLink: originalLink,
       publishedAt: publishedAt,
       fetchedAt: _dateTime(json['fetchedAt']) ?? publishedAt,
