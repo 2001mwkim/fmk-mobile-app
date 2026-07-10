@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../data/standings.dart';
+import '../data/standings.dart' as static_standings;
 import '../data/team_colors.dart';
 import '../models/standing.dart';
+import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 
@@ -16,7 +17,10 @@ const Color _track = AppColors.faintBorder; // white/6 (진행 막대 배경)
 enum _StandingsTab { drivers, constructors }
 
 class StandingsScreen extends StatefulWidget {
-  const StandingsScreen({super.key});
+  const StandingsScreen({super.key, this.repository});
+
+  /// 테스트/개발용 주입 지점. 기본값은 실서버(/api/standings).
+  final StandingsRepository? repository;
 
   @override
   State<StandingsScreen> createState() => _StandingsScreenState();
@@ -24,6 +28,27 @@ class StandingsScreen extends StatefulWidget {
 
 class _StandingsScreenState extends State<StandingsScreen> {
   _StandingsTab _tab = _StandingsTab.drivers;
+
+  // 첫 프레임은 번들된 정적 순위로 그리고(로딩 화면 없음), 서버 응답이
+  // 오면 최신 순위로 교체한다. 서버 실패 시 정적 데이터가 그대로 남는다.
+  List<DriverStanding> _drivers = static_standings.driverStandings;
+  List<ConstructorStanding> _constructors = static_standings.constructorStandings;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final repository = widget.repository ?? const HttpStandingsRepository();
+    final snapshot = await repository.fetchLatest();
+    if (snapshot == null || !mounted) return;
+    setState(() {
+      _drivers = snapshot.driverStandings;
+      _constructors = snapshot.constructorStandings;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,9 +95,9 @@ class _StandingsScreenState extends State<StandingsScreen> {
             ),
             const SizedBox(height: 16),
             if (isDrivers)
-              _StandingsCard(rows: _driverRows(driverStandings))
+              _StandingsCard(rows: _driverRows(_drivers))
             else
-              _StandingsCard(rows: _constructorRows(constructorStandings)),
+              _StandingsCard(rows: _constructorRows(_constructors)),
             const SizedBox(height: 16),
             const _DataSourceFooter(),
           ],
