@@ -193,6 +193,9 @@ class _FakeRaceResultsRepository implements RaceResultsRepository {
     required String raceId,
     int season = 2026,
   }) async => data;
+
+  @override
+  Future<LatestRaceResult?> fetchLatest({int season = 2026}) async => null;
 }
 
 class _ThrowingRaceResultsRepository implements RaceResultsRepository {
@@ -201,4 +204,8 @@ class _ThrowingRaceResultsRepository implements RaceResultsRepository {
     required String raceId,
     int season = 2026,
   }) async => throw Exception('boom');
+
+  @override
+  Future<LatestRaceResult?> fetchLatest({int season = 2026}) async =>
+      throw Exception('boom');
 }

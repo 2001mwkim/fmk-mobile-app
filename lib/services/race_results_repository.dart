@@ -19,6 +19,14 @@ class RaceResultData {
   bool get isOfficial => status == 'official';
 }
 
+/// 가장 최근에 결과가 존재하는 레이스(홈 "최근 레이스 결과" 카드용).
+class LatestRaceResult {
+  const LatestRaceResult({required this.raceId, required this.data});
+
+  final String raceId;
+  final RaceResultData data;
+}
+
 /// 레이스 결과 공급 계층.
 ///
 /// 서버(F1DB 주기 갱신 → Railway `/race-results.json` → Vercel
@@ -31,6 +39,9 @@ class RaceResultData {
 /// 앱과 같은 raceId 를 내려준다).
 abstract class RaceResultsRepository {
   Future<RaceResultData?> fetchResult({required String raceId, int season});
+
+  /// 가장 최근 결과가 있는 레이스 1개(홈 카드용). 없거나 실패하면 null.
+  Future<LatestRaceResult?> fetchLatest({int season});
 }
 
 /// 실서버 구현(앱 기본값). origin 은 뉴스/순위와 같은 Vercel 도메인
@@ -64,6 +75,45 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
     } finally {
       if (client == null) httpClient.close();
     }
+  }
+
+  @override
+  Future<LatestRaceResult?> fetchLatest({int season = 2026}) async {
+    final httpClient = client ?? http.Client();
+    try {
+      // raceId 필터 없이 시즌 전체를 받아 마지막(최신) 라운드를 고른다.
+      final uri = Uri.parse(baseUrl).replace(
+        path: '/api/race-results',
+        queryParameters: {'season': '$season'},
+      );
+      final response = await httpClient.get(uri).timeout(kRaceResultsFetchTimeout);
+      if (response.statusCode != 200) return null;
+      return parseLatestRaceResultJson(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      return null; // 홈 카드는 실패 시 그냥 표시하지 않는다.
+    } finally {
+      if (client == null) httpClient.close();
+    }
+  }
+}
+
+/// 응답에서 가장 최근(서버가 라운드 오름차순 정렬 → 마지막 항목) 유효 결과를
+/// 찾아 파싱한다. 유효 결과가 하나도 없으면 null(홈 카드 미표시).
+LatestRaceResult? parseLatestRaceResultJson(String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map || decoded['races'] is! List) return null;
+
+    LatestRaceResult? latest;
+    for (final rawRace in decoded['races'] as List) {
+      if (rawRace is! Map || rawRace['raceId'] is! String) continue;
+      final raceId = rawRace['raceId'] as String;
+      final data = parseRaceResultJson(body, raceId: raceId);
+      if (data != null) latest = LatestRaceResult(raceId: raceId, data: data);
+    }
+    return latest;
+  } catch (_) {
+    return null;
   }
 }
 
