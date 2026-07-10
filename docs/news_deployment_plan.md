@@ -98,6 +98,7 @@
 | `NEWS_AI_MAX_CALLS_PER_RUN` | `20` | 실행당 실제 API 호출 상한(캐시 hit 제외). 초과분은 다음 실행에서 처리 |
 | `NEWS_AI_DEBUG` | (비활성) | `true` 면 항목별 fallback 사유 상세 로그 |
 | `NEWS_MAX_PER_SOURCE` | `8` | 최신 20개 안의 출처별 상한(독식 방지). `0` 이하 = 무제한 |
+| `STANDINGS_UPDATE_INTERVAL_MINUTES` | `360` | 챔피언십 순위(F1DB) 갱신 주기. 릴리스 태그가 같으면 다운로드 스킵. `0` 이하 = 비활성 |
 
 비용 구조: 같은 기사는 hash 캐시(`.news/news-ai-cache.json`, 최근 800개)로
 재호출하지 않으므로, 정상 상태에서 AI 비용은 "6시간마다 새 기사 수 × Haiku
@@ -109,19 +110,22 @@
 | 변수 | 값 | 용도 |
 |---|---|---|
 | `NEWS_JSON_REMOTE_URL` | `https://<railway-domain>/news.json` | 원격 뉴스 소스. 프로덕션 필수 |
+| `STANDINGS_JSON_REMOTE_URL` | `https://<railway-domain>/standings.json` | 원격 순위 소스(`/api/standings`). 미설정이면 앱이 번들 정적 순위 사용 |
 
 **로컬/개발:** `NEWS_JSON_PATH` 로 로컬 파일 경로 재정의 가능(기본 `.news/news.json`).
 
 ## 배포 후 확인 명령
 
 ```powershell
-# 1) Railway — 수집/서빙 확인 (시작 후 첫 수집까지 수 초)
+# 1) Railway — 수집/서빙 확인 (시작 후 첫 수집까지 수 초, 순위는 F1DB 다운로드로 ~1분)
 curl "https://<railway-domain>/news.json"        # items 20건 + titleKo 채워짐 기대
+curl "https://<railway-domain>/standings.json"   # 드라이버 22명/팀 11팀 기대
 curl "https://<railway-domain>/live.json"        # 기존 라이브 동작 무변화 확인
 curl "https://<railway-domain>/healthz"
 
-# 2) Vercel — 원격 소스 연결 확인 (NEWS_JSON_REMOTE_URL 설정 후 재배포)
+# 2) Vercel — 원격 소스 연결 확인 (REMOTE_URL 환경변수 설정 후 재배포)
 curl "https://<vercel-domain>/api/news?limit=20&lang=ko"
+curl "https://<vercel-domain>/api/standings"
 ```
 
 **Railway 로그에서 볼 것** (AI 문제 진단은 이 두 줄이면 충분):
