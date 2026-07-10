@@ -5,7 +5,6 @@ import '../models/news_item.dart';
 import '../services/news_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
-import '../widgets/app_chip.dart';
 
 /// 소식 탭 — AI 가 정리한 해외 F1 주요 소식(한국어 브리핑) 화면.
 ///
@@ -171,28 +170,31 @@ class _NewsCard extends StatelessWidget {
                     // 제목은 한국어(titleKo)만 표시한다. 빈 값이면(AI 미생성/
                     // 구버전 응답) 영어 원문 제목으로 대체하지 않고 제목 영역을
                     // 생략 — 브리핑이 본문 역할을 한다.
+                    // 타이포: 뉴스 피드 톤 — 제목은 촘촘하게(height 1.18),
+                    // 요약은 태그 제거로 확보된 공간을 써서 더 크고 읽기 좋게.
                     if (item.titleKo.isNotEmpty) ...[
                       Text(
                         item.titleKo,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 20,
                           color: AppColors.white,
                           fontWeight: FontWeight.w800,
-                          height: 1.35,
+                          height: 1.18,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 7),
                     ],
                     Text(
                       item.aiBriefKo,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 15,
                         color: AppColors.nameMuted,
-                        height: 1.5,
+                        height: 1.45,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -205,39 +207,26 @@ class _NewsCard extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: item.tags.isEmpty
-                    ? const SizedBox.shrink()
-                    : Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final tag in item.tags)
-                            AppChip(label: tag, variant: AppChipVariant.mono),
-                        ],
-                      ),
-              ),
-              const SizedBox(width: 10),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '원문 보기',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.redSoft,
-                      fontWeight: FontWeight.w700,
-                    ),
+          // 태그 칩은 표시하지 않는다(정보 가치 대비 공간 소모 — tags 데이터는
+          // 향후 필터/검색용으로 모델에 유지). 하단은 원문 보기만 우측 정렬.
+          const SizedBox(height: 10),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '원문 보기',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.redSoft,
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(width: 4),
-                  Icon(Icons.open_in_new, size: 13, color: AppColors.redSoft),
-                ],
-              ),
-            ],
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.open_in_new, size: 13, color: AppColors.redSoft),
+              ],
+            ),
           ),
         ],
       ),
@@ -269,7 +258,7 @@ class _NewsThumbnail extends StatelessWidget {
 
   final String url;
 
-  static const double _size = 78;
+  static const double _size = 72;
 
   @override
   Widget build(BuildContext context) {

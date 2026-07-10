@@ -57,14 +57,17 @@ void main() {
 
     expect(find.text('소식'), findsOneWidget);
     expect(find.text('해외 F1 주요 소식을 한국어 브리핑으로 빠르게 확인하세요.'), findsOneWidget);
-    // 출처 · 상대 시간 · 한국어 제목 · 브리핑 · 태그 · 원문 보기
+    // 출처 · 상대 시간 · 한국어 제목 · 브리핑 · 원문 보기
     // 묶인 기사(a)는 "외 1곳", 단독 기사(b)는 출처명 그대로.
     expect(find.text('Motorsport.com 외 1곳'), findsOneWidget);
     expect(find.text('Motorsport.com'), findsOneWidget);
     expect(find.textContaining('2시간 전'), findsOneWidget);
     expect(find.text('a번 한국어 제목입니다'), findsOneWidget);
     expect(find.text('a 한국어 브리핑 본문입니다.'), findsOneWidget);
-    expect(find.text('해밀턴'), findsOneWidget);
+    // 태그 칩은 UI 에서 제거됨(데이터는 향후 필터/검색용으로 유지) —
+    // tags 를 넣어도 화면에 표시되지 않는다.
+    expect(find.text('해밀턴'), findsNothing);
+    expect(find.text('페라리'), findsNothing);
     expect(find.text('원문 보기'), findsNWidgets(2));
     // 영어 원문 제목은 어떤 카드에서도 표시하지 않는다.
     expect(find.text('Test headline a'), findsNothing);
@@ -117,8 +120,11 @@ void main() {
     // (테스트 환경은 네트워크가 차단돼 errorBuilder 의 placeholder 가 뜨지만
     // 크래시 없이 렌더링되는 것까지가 검증 대상)
     expect(find.byType(Image), findsOneWidget);
+    // 썸네일이 있어도 제목/요약/원문 보기가 정상 렌더링된다.
     expect(find.text('썸네일 있는 소식'), findsOneWidget);
+    expect(find.text('pic 한국어 브리핑 본문입니다.'), findsOneWidget);
     expect(find.text('썸네일 없는 소식'), findsOneWidget);
+    expect(find.text('원문 보기'), findsNWidgets(2));
   });
 
   testWidgets('news screen caps list to display limit', (tester) async {
