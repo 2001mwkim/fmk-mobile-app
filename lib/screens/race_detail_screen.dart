@@ -8,6 +8,7 @@ import '../models/circuit_info.dart';
 import '../models/race.dart';
 import '../models/race_result.dart';
 import '../models/race_session.dart';
+import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
@@ -24,10 +25,50 @@ const Color _tileSurface = AppColors.tileSurface; // #0e1018
 const Color _faintBorder = AppColors.faintBorder; // white/6
 const Color _hairline = AppColors.hairline; // white/8
 
-class RaceDetailScreen extends StatelessWidget {
-  const RaceDetailScreen({super.key, required this.race});
+class RaceDetailScreen extends StatefulWidget {
+  const RaceDetailScreen({super.key, required this.race, this.resultsRepository});
 
   final Race race;
+
+  /// 테스트/개발용 주입 지점. 기본값은 실서버(/api/race-results).
+  final RaceResultsRepository? resultsRepository;
+
+  @override
+  State<RaceDetailScreen> createState() => _RaceDetailScreenState();
+}
+
+class _RaceDetailScreenState extends State<RaceDetailScreen> {
+  Race get race => widget.race;
+
+  // 첫 프레임은 번들된 정적 결과(없으면 빈 목록 → "준비 중" 카드)로 그리고,
+  // 서버 결과가 오면 교체한다. 서버 실패/미존재 시 기존 상태 유지(크래시 없음).
+  late List<RaceResultEntry> _results;
+  String? _resultStatusLabel; // '공식 결과'/'잠정 결과' — 서버 결과일 때만
+
+  @override
+  void initState() {
+    super.initState();
+    _results = getRaceResults(race.id) ?? const <RaceResultEntry>[];
+    if (getRaceStatus(race) == RaceStatus.ended && !race.isCancelled) {
+      _refreshResults();
+    }
+  }
+
+  Future<void> _refreshResults() async {
+    final repository =
+        widget.resultsRepository ?? const HttpRaceResultsRepository();
+    RaceResultData? data;
+    try {
+      data = await repository.fetchResult(raceId: race.id);
+    } catch (_) {
+      return; // 어떤 실패도 화면을 깨지 않는다 — 기존 카드 유지.
+    }
+    if (data == null || !mounted) return;
+    setState(() {
+      _results = data!.entries;
+      _resultStatusLabel = data.isOfficial ? '공식 결과' : '잠정 결과';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +78,7 @@ class RaceDetailScreen extends StatelessWidget {
     // 종료(취소 제외) 그랑프리면 결과 노출 (결과 없으면 placeholder).
     final showResultCard =
         getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
-    final results = showResultCard
-        ? (getRaceResults(race.id) ?? const <RaceResultEntry>[])
-        : const <RaceResultEntry>[];
+    final results = showResultCard ? _results : const <RaceResultEntry>[];
 
     return Scaffold(
       body: SafeArea(
@@ -77,7 +116,10 @@ class RaceDetailScreen extends StatelessWidget {
               if (results.isEmpty)
                 const _RaceResultsPlaceholderCard()
               else
-                RaceResultClassificationPanel(results: results),
+                RaceResultClassificationPanel(
+                  results: results,
+                  statusLabel: _resultStatusLabel,
+                ),
             ],
             if (raceSession != null) ...[
               const SizedBox(height: 12),

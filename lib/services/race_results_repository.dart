@@ -1,0 +1,99 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../models/race_result.dart';
+import 'news_repository.dart' show kNewsApiBaseUrl;
+
+/// 결과 요청 타임아웃(순위/뉴스와 동일 — 화면 응답성 우선).
+const Duration kRaceResultsFetchTimeout = Duration(seconds: 8);
+
+/// 서버에서 받은 한 그랑프리의 레이스 결과.
+class RaceResultData {
+  const RaceResultData({required this.status, required this.entries});
+
+  /// 'official'(공식 결과) 또는 'provisional'(잠정 결과).
+  final String status;
+  final List<RaceResultEntry> entries;
+
+  bool get isOfficial => status == 'official';
+}
+
+/// 레이스 결과 공급 계층.
+///
+/// 서버(F1DB 주기 갱신 → Railway `/race-results.json` → Vercel
+/// `/api/race-results`)에서 그랑프리별 결과를 받아온다. **실패/미존재 시
+/// null** — 화면은 번들된 정적 결과가 있으면 그걸, 없으면 "결과 데이터
+/// 준비 중" 카드를 유지한다(크래시 없음).
+///
+/// 조회 키는 round 가 아니라 raceId 를 쓴다 — 취소 GP 때문에 F1DB 라운드
+/// 번호와 앱 라운드 번호가 어긋날 수 있어서(서버가 circuitId 로 조인해
+/// 앱과 같은 raceId 를 내려준다).
+abstract class RaceResultsRepository {
+  Future<RaceResultData?> fetchResult({required String raceId, int season});
+}
+
+/// 실서버 구현(앱 기본값). origin 은 뉴스/순위와 같은 Vercel 도메인
+/// ([kNewsApiBaseUrl] 공용 — `--dart-define=NEWS_API_BASE_URL` 로 재정의).
+class HttpRaceResultsRepository implements RaceResultsRepository {
+  const HttpRaceResultsRepository({this.baseUrl = kNewsApiBaseUrl, this.client});
+
+  final String baseUrl;
+
+  /// 테스트 주입용 클라이언트(없으면 매 요청마다 생성/정리).
+  final http.Client? client;
+
+  @override
+  Future<RaceResultData?> fetchResult({
+    required String raceId,
+    int season = 2026,
+  }) async {
+    final httpClient = client ?? http.Client();
+    try {
+      final uri = Uri.parse(baseUrl).replace(
+        path: '/api/race-results',
+        queryParameters: {'season': '$season', 'raceId': raceId},
+      );
+      final response = await httpClient.get(uri).timeout(kRaceResultsFetchTimeout);
+      if (response.statusCode != 200) return null;
+      // JSON 은 UTF-8 (RFC 8259) — 한글 이름 깨짐 방지(뉴스와 동일 규칙).
+      return parseRaceResultJson(utf8.decode(response.bodyBytes), raceId: raceId);
+    } catch (_) {
+      // 네트워크/타임아웃/파싱 오류 → null(기존 카드 유지).
+      return null;
+    } finally {
+      if (client == null) httpClient.close();
+    }
+  }
+}
+
+/// 응답에서 [raceId] 의 결과를 찾아 파싱한다. 깨진 행은 건너뛰되,
+/// 완주 분류로 보기 어려운 규모(10행 미만)면 불완전 응답으로 보고 null.
+RaceResultData? parseRaceResultJson(String body, {required String raceId}) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map || decoded['races'] is! List) return null;
+
+    for (final rawRace in decoded['races'] as List) {
+      if (rawRace is! Map || rawRace['raceId'] != raceId) continue;
+
+      final entries = <RaceResultEntry>[];
+      if (rawRace['results'] is List) {
+        for (final rawRow in rawRace['results'] as List) {
+          if (rawRow is! Map) continue;
+          final row = RaceResultEntry.fromJson(rawRow.cast<String, dynamic>());
+          if (row != null) entries.add(row);
+        }
+      }
+      if (entries.length < 10) return null;
+      entries.sort((a, b) => a.position.compareTo(b.position));
+      return RaceResultData(
+        status: rawRace['status'] == 'provisional' ? 'provisional' : 'official',
+        entries: entries,
+      );
+    }
+    return null; // 해당 raceId 결과 없음(아직 미개최 등)
+  } catch (_) {
+    return null;
+  }
+}

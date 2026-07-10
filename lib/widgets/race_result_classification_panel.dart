@@ -13,9 +13,17 @@ import 'classification_panel_parts.dart';
 /// 라이브 스냅샷과 달리 네트워크/폴링 없이 앱 내장 데이터만 그린다.
 /// [results]가 비어 있으면 렌더하지 않는다(호출부에서 placeholder 처리).
 class RaceResultClassificationPanel extends StatelessWidget {
-  const RaceResultClassificationPanel({super.key, required this.results});
+  const RaceResultClassificationPanel({
+    super.key,
+    required this.results,
+    this.statusLabel,
+  });
 
   final List<RaceResultEntry> results;
+
+  /// 서버 결과 상태 표기('공식 결과'/'잠정 결과'). null 이면 표시하지 않음
+  /// (번들 정적 데이터로 그릴 때).
+  final String? statusLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +84,18 @@ class RaceResultClassificationPanel extends StatelessWidget {
               ),
             ),
           ),
+          if (statusLabel != null) ...[
+            const SizedBox(width: 10),
+            Text(
+              statusLabel!,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.nameMuted,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
           const SizedBox(width: 10),
           Text(
             '$driverCount DRIVERS',

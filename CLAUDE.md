@@ -17,6 +17,7 @@
 - collector mock 모드: `LIVE_MOCK_MODE=live LIVE_MOCK_SESSION_TYPE=race|sprint|qualifying|practice npm run live-collector:dev` (+`LIVE_MOCK_NO_LAP_TIMES=1`로 랩타임 수신 전 상태 재현)
 - 소식(뉴스) 수집기도 같은 저장소: `scripts/news-rss-collector.ts` (`npm run news-collector`) — 계약은 앱 `docs/news_api_contract.md`, 사용법은 `docs/news_rss_collector.md`. Railway collector 프로세스가 주기 수집(`scripts/news-scheduler.ts`, 기본 30분) 후 `/news.json` 으로 서빙하고, Vercel `/api/news` 가 `NEWS_JSON_REMOTE_URL` 로 이를 중계한다(배포 계획: `docs/news_deployment_plan.md`). 앱 기본값은 `HttpNewsRepository`(origin 은 `lib/services/news_repository.dart` 의 `kNewsApiBaseUrl`, `--dart-define=NEWS_API_BASE_URL` 로 재정의)
 - 챔피언십 순위도 같은 방식: `scripts/standings-scheduler.ts` 가 F1DB 릴리스를 주기 확인(기본 6시간, 태그 같으면 다운로드 스킵) → `/standings.json` → Vercel `/api/standings`(`STANDINGS_JSON_REMOTE_URL`). 앱은 `HttpStandingsRepository` 로 받아오되 **실패 시 `lib/data/standings.dart` 정적 데이터로 폴백** — 정적 파일은 삭제 금지(오프라인/서버 장애 대비 초기값). 수동 갱신 스크립트 `update-standings.ts` 도 같은 `standings-fetcher.ts` 를 사용
+- 레이스 결과도 같은 방식: `scripts/race-results-scheduler.ts` → `/race-results.json` → Vercel `/api/race-results`(`RACE_RESULTS_JSON_REMOTE_URL`). **앱은 round 가 아니라 raceId 로 조회**(취소 GP 로 F1DB round 와 앱 round 가 어긋남 — 서버가 circuitId 조인으로 앱 raceId 를 내려줌). GP 상세 화면이 `HttpRaceResultsRepository` 로 받고, 실패/미존재 시 정적 결과 또는 "결과 데이터 준비 중" 카드 유지. `circuitIdByRaceId` 맵은 `race-results-fetcher.ts` 가 단일 출처
 
 ## 명령어
 
