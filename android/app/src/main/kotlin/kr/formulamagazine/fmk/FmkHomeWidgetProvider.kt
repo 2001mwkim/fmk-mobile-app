@@ -75,7 +75,9 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       "default"
     }
 
-    val hasLive = mode == "live"
+    // 우측 화면 데이터: live(진행 중) 또는 result(최근 확정 결과 — 상시).
+    // 결과 데이터가 있는 한 토글을 항상 노출해 일정↔결과를 오갈 수 있다.
+    val hasRightPane = mode == "live" || mode == "result"
     val showSchedule = try {
       resolveShowSchedule(context, mode)
     } catch (error: Throwable) {
@@ -83,7 +85,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       false
     }
 
-    if (hasLive && !showSchedule) {
+    if (hasRightPane && !showSchedule) {
       try {
         return buildLive(context, data)
       } catch (error: Throwable) {
@@ -92,8 +94,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     }
 
     return try {
-      // 라이브 데이터가 있을 때만 일정 화면에 라이브 복귀 버튼을 노출한다.
-      buildDefault(context, data, showLiveToggle = hasLive)
+      buildDefault(context, data, showLiveToggle = hasRightPane)
     } catch (error: Throwable) {
       Log.e(TAG, "buildDefault failed for id=$widgetId, using minimal fallback", error)
       buildMinimal(context)

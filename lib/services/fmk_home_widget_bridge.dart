@@ -6,16 +6,22 @@ import 'package:home_widget/home_widget.dart';
 import '../data/country_flags.dart';
 import '../data/drivers.dart';
 import '../data/races.dart';
+import '../data/team_colors.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import 'live_session_controller.dart';
+import 'live_session_service.dart';
+import 'race_results_repository.dart';
 
 const String fmkHomeWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkHomeWidgetProvider';
 
 const String _modeDefault = 'default';
 const String _modeLive = 'live';
+
+/// 라이브가 없을 때 우측 화면에 최근 확정 결과를 보여주는 모드.
+const String _modeResult = 'result';
 
 class FmkHomeWidgetPayload {
   const FmkHomeWidgetPayload({
@@ -56,6 +62,7 @@ class FmkHomeWidgetPayload {
   final List<int> topThreeColors;
 
   bool get isLive => mode == _modeLive;
+  bool get isResult => mode == _modeResult;
 }
 
 class FmkHomeWidgetSessionRow {
@@ -75,6 +82,16 @@ class FmkHomeWidgetBridge {
 
   static bool _bound = false;
 
+  /// 최근 확정 결과 캐시 — 라이브가 없을 때 위젯 '결과' 화면의 데이터.
+  /// 확정 결과는 레이스 후 바뀌지 않으므로 낡아도 틀리지 않는다.
+  static LatestRaceResult? _latestResult;
+  static DateTime? _latestResultFetchedAt;
+
+  /// 테스트 주입 지점(기본은 실서버 /api/race-results).
+  @visibleForTesting
+  static RaceResultsRepository resultsRepository =
+      const HttpRaceResultsRepository();
+
   static void bindTo(LiveSessionController controller) {
     if (_bound) return;
     _bound = true;
@@ -83,13 +100,34 @@ class FmkHomeWidgetBridge {
     });
   }
 
+  /// 확정 결과를 (최대 30분에 한 번) 갱신한다. 실패는 무시 — 기존 캐시 유지.
+  static Future<void> _ensureLatestResult({bool force = false}) async {
+    final now = DateTime.now();
+    if (!force &&
+        _latestResultFetchedAt != null &&
+        now.difference(_latestResultFetchedAt!) < const Duration(minutes: 30)) {
+      return;
+    }
+    _latestResultFetchedAt = now;
+    try {
+      _latestResult = await resultsRepository.fetchLatest() ?? _latestResult;
+    } catch (_) {
+      // 네트워크 실패 → 기존 캐시 유지(없으면 일정 전용 모드로 렌더).
+    }
+  }
+
   static Future<void> update({
     LiveSessionSnapshot? snapshot,
     DateTime? now,
   }) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
 
-    final payload = buildFmkHomeWidgetPayload(snapshot: snapshot, now: now);
+    await _ensureLatestResult();
+    final payload = buildFmkHomeWidgetPayload(
+      snapshot: snapshot,
+      latestResult: _latestResult,
+      now: now,
+    );
 
     try {
       await _savePayload(payload);
@@ -100,6 +138,21 @@ class FmkHomeWidgetBridge {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
+  }
+
+  /// 백그라운드(WorkManager)에서 호출 — 앱이 실행 중이 아니어도 라이브
+  /// 스냅샷과 확정 결과를 직접 받아 위젯 데이터를 갱신한다.
+  static Future<void> refreshFromNetwork() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+
+    LiveSessionSnapshot? snapshot;
+    try {
+      snapshot = await LiveSessionService().fetch();
+    } catch (_) {
+      snapshot = null; // 라이브 실패 → 일정/결과 화면만 갱신.
+    }
+    await _ensureLatestResult(force: true);
+    await update(snapshot: snapshot);
   }
 
   static Future<void> _savePayload(FmkHomeWidgetPayload payload) async {
@@ -178,6 +231,7 @@ class FmkHomeWidgetBridge {
 
 FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
   LiveSessionSnapshot? snapshot,
+  LatestRaceResult? latestResult,
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
@@ -186,7 +240,44 @@ FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
   if (displayable) {
     return _buildLivePayload(snapshot, currentTime);
   }
+  // 라이브가 없으면 최근 확정 결과를 우측 화면으로 제공(토글 상시 노출).
+  if (latestResult != null && latestResult.data.entries.isNotEmpty) {
+    return _buildResultPayload(latestResult, currentTime);
+  }
   return _buildDefaultPayload(currentTime);
+}
+
+/// 확정 결과 모드: 우측 화면에 최근 그랑프리 Top 3(공식 결과)를 그린다.
+/// 일정 화면 데이터는 항상 함께 저장한다(토글 전환용).
+FmkHomeWidgetPayload _buildResultPayload(LatestRaceResult latest, DateTime now) {
+  final race = getRaceById(latest.raceId);
+  final schedule = _nextRaceSchedule(now);
+  final topThree = latest.data.entries.take(3).toList();
+
+  return FmkHomeWidgetPayload(
+    mode: _modeResult,
+    gpFlag: race != null ? _flagForRace(race) : '',
+    gpName: race?.nameKo ?? '최근 레이스',
+    scheduleGpFlag: _flagForRace(schedule.race),
+    scheduleGpName: schedule.race.nameKo,
+    sessions: schedule.rows,
+    liveBadge: 'RESULT',
+    lapCurrent: 0,
+    lapTotal: 0,
+    // 확정 결과에는 드라이버 약어가 필요 없다(위젯이 이름만 그린다).
+    topThree: List.filled(topThree.length, ''),
+    topThreePositions: [for (final e in topThree) e.position],
+    topThreeNames: [for (final e in topThree) e.driverKo],
+    // 결과 패널과 같은 규칙: 1위는 총 시간, 이후는 갭(DNF 등은 '—').
+    topThreeTimes: [
+      for (final e in topThree)
+        ((e.position == 1 ? e.time : e.gap) ?? '—').trim(),
+    ],
+    topThreeColors: [
+      for (final e in topThree)
+        _androidColorInt(getTeamColor(e.teamKo).toARGB32()),
+    ],
+  );
 }
 
 /// 다음 그랑프리와 세션 일정 행(최대 5개). 두 모드가 공유한다.
