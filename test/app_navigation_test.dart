@@ -20,9 +20,10 @@ void main() {
           find.text('진행중').evaluate().isNotEmpty,
       isTrue,
     );
-    // 다음 세션 정보는 히어로 카드 내부 세션 박스로 통합됨(별도 카드 제거).
-    await tester.scrollUntilVisible(find.text('이번 주말 일정'), 200);
-    expect(find.text('이번 주말 일정'), findsOneWidget);
+    // 주말 일정은 히어로 카드에 통합됨(별도 '이번 주말 일정' 카드 제거).
+    expect(find.text('이번 주말 일정'), findsNothing);
+    await tester.scrollUntilVisible(find.text('한국 시간 (KST) 기준'), 200);
+    expect(find.text('한국 시간 (KST) 기준'), findsOneWidget);
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();

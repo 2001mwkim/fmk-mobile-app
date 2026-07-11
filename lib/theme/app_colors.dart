@@ -55,4 +55,18 @@ class AppColors {
 
   // 일부 화면이 진한 배경(#090b12)을 참조할 때 쓰는 별칭.
   static const Color black = background;
+
+  // ---- 홈 '최근 레이스 결과' 카드 (디자인 핸드오프 recent_race_result_card.html) ----
+  // 카드보다 살짝 밝은 순위 행 타일 배경 (#1c2030)
+  static const Color resultRowSurface = Color(0xFF1C2030);
+  // 원형 chevron 버튼 배경 (#232838)
+  static const Color resultChipSurface = Color(0xFF232838);
+  // 2·3위 드라이버명 등 부드러운 본문 텍스트 (#e9eaf0)
+  static const Color textSoft = Color(0xFFE9EAF0);
+
+  // ---- 홈 리디자인 (디자인 핸드오프 home_screen_2a.html) — 히어로 일정 리스트 ----
+  // 예정 세션 도트 (#3a4054)
+  static const Color dotInactive = Color(0xFF3A4054);
+  // 예정 세션 라벨 텍스트 (#c6c9d4)
+  static const Color scheduleText = Color(0xFFC6C9D4);
 }

@@ -4,10 +4,11 @@ import '../theme/app_colors.dart';
 
 /// 웹 components/BottomNav.tsx 의 Flutter 포팅.
 ///
-/// 웹 nav: h-[86px] border-t border-white/10 bg-[#0c0e18] px-4 pt-3, items-start
-///   - 활성: font-extrabold text-red-500
-///   - 비활성: font-semibold text-[#959bb6]
-///   - 아이콘 25px, 라벨 10px, 아이콘-라벨 gap 6
+/// 웹 nav: border-t border-white/10 bg-[#0c0e18] px-4, 아이콘 25px, 라벨 10px.
+/// 웹의 고정 h-[86px] 는 모바일에서 옮기지 않는다 — 시스템 제스처 인셋이
+/// SafeArea 로 별도 추가되므로 고정 높이를 쓰면 내용물(~55px) 아래 죽은
+/// 여백이 기기 공통으로 생긴다. 높이는 내용물 기준으로 잡고, 제스처 영역은
+/// SafeArea 가 기기별로 알아서 확보한다(3버튼 내비 폰에선 인셋 0).
 ///
 /// 탭 구조(홈 / 일정 / 순위 / 소식)와 (currentIndex, onTap) 시그니처는 유지.
 /// 항목 순서는 app.dart 의 MainShell._screens 인덱스와 1:1 이므로 함께 수정할 것.
@@ -33,23 +34,20 @@ class BottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 86,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < _items.length; i++)
-                  Expanded(
-                    child: _NavButton(
-                      item: _items[i],
-                      isActive: i == currentIndex,
-                      onTap: () => onTap(i),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < _items.length; i++)
+                Expanded(
+                  child: _NavButton(
+                    item: _items[i],
+                    isActive: i == currentIndex,
+                    onTap: () => onTap(i),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),

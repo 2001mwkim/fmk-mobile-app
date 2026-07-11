@@ -51,39 +51,43 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('최근 레이스 결과'), 200);
     expect(find.text('최근 레이스 결과'), findsOneWidget);
-    expect(find.text('호주 그랑프리'), findsOneWidget); // raceId → 앱 레이스명
-    expect(find.text('공식 결과'), findsOneWidget);
+    // 서브타이틀: "그랑프리명 · 결과 상태" 한 줄(디자인 핸드오프)
+    expect(find.text('호주 그랑프리 · 공식 결과'), findsOneWidget);
     // Top 3 드라이버/팀 — 4위 이하는 홈 카드에 없다
     expect(find.text('샤를 르클레르'), findsOneWidget);
     expect(find.text('조지 러셀'), findsOneWidget);
     expect(find.text('랜도 노리스'), findsOneWidget);
+    expect(find.text('페라리'), findsOneWidget);
     expect(find.text('드라이버4'), findsNothing);
-    expect(find.text('전체 보기'), findsOneWidget);
+    // 하단 '전체 보기' 버튼은 디자인에서 제거 — 우상단 chevron 이 대체
+    expect(find.text('전체 보기'), findsNothing);
+    expect(find.byKey(const Key('recent-result-chevron')), findsOneWidget);
   });
 
   testWidgets('잠정 결과 status 는 잠정 결과로 표시된다', (tester) async {
     await pumpHome(tester, _FakeRepo(latest(status: 'provisional')));
 
     await tester.scrollUntilVisible(find.text('최근 레이스 결과'), 200);
-    expect(find.text('잠정 결과'), findsOneWidget);
-    expect(find.text('공식 결과'), findsNothing);
+    expect(find.text('호주 그랑프리 · 잠정 결과'), findsOneWidget);
+    expect(find.textContaining('공식 결과'), findsNothing);
   });
 
   testWidgets('결과가 없으면(null) 홈에 카드가 표시되지 않는다', (tester) async {
     await pumpHome(tester, _FakeRepo(null));
 
     expect(find.text('최근 레이스 결과'), findsNothing);
-    expect(find.text('전체 보기'), findsNothing);
+    expect(find.byKey(const Key('recent-result-chevron')), findsNothing);
   });
 
-  testWidgets('전체 보기를 누르면 해당 GP 상세 화면으로 이동한다', (tester) async {
+  testWidgets('우상단 chevron 을 누르면 해당 GP 상세 화면으로 이동한다', (tester) async {
     await pumpHome(tester, _FakeRepo(latest()));
 
-    await tester.scrollUntilVisible(find.text('전체 보기'), 200);
+    final chevron = find.byKey(const Key('recent-result-chevron'));
+    await tester.scrollUntilVisible(chevron, 200);
     // 카드가 리스트 맨 아래라 일부만 노출될 수 있어 완전히 스크롤해 탭한다.
-    await tester.ensureVisible(find.text('전체 보기'));
+    await tester.ensureVisible(chevron);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('전체 보기'));
+    await tester.tap(chevron);
     await tester.pumpAndSettle();
 
     expect(find.byType(RaceDetailScreen), findsOneWidget);

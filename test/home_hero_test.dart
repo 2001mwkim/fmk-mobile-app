@@ -124,6 +124,20 @@ void main() {
     expect(find.text('진행중인 세션'), findsNothing);
   });
 
+  testWidgets('home hero integrates weekend schedule list and KST note', (
+    tester,
+  ) async {
+    await _pumpHome(tester, now: _beforeBritishSprint);
+
+    // 별도 '이번 주말 일정' 카드 대신 히어로 안에 나머지 세션 리스트가 있다.
+    expect(find.text('이번 주말 일정'), findsNothing);
+    expect(find.text('레이스'), findsOneWidget); // 레이스 강조 행
+    expect(find.text('한국 시간 (KST) 기준'), findsOneWidget);
+    // 세션 박스에 표시된 '다음 세션'은 리스트에서 중복 표기하지 않는다 —
+    // 영국 스프린트 주말 세션 5개 중 박스 1개를 뺀 4개가 리스트에 남는다.
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
   testWidgets('home hero uses schedule live status when snapshot is absent', (
     tester,
   ) async {

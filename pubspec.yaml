@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # Play ?대? ?뚯뒪??珥덇린 踰꾩쟾. ?낅줈?쒕쭏??+N(versionCode)??1???щ┛??
-version: 0.1.0+5
+version: 0.1.0+6
 
 environment:
   sdk: ^3.12.0
@@ -60,6 +60,10 @@ flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
   remove_alpha_ios: true
+  # Android 8+ 어댑티브 아이콘: 원형/스쿼클 마스크로 잘려도 흰 마크가
+  # 안전 영역(중앙 66%) 안에 있고, 배경은 로고와 동일한 블랙으로 채운다.
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -77,7 +77,7 @@ class _SeasonHomeContent extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(child: _HomeHeader()),
               const SizedBox(width: 12),
@@ -109,8 +109,7 @@ class _SeasonHomeContent extends StatelessWidget {
                     now: now,
                     liveSnapshot: liveSnapshot,
                   ),
-                  const SizedBox(height: 12),
-                  _WeekendScheduleCard(race: nextRace, now: now),
+                  // 주말 일정은 히어로 카드에 통합됨(별도 카드 제거).
                   // 최근 레이스 결과 Top 3 (결과 없으면 아무것도 렌더 안 함).
                   HomeRecentResultCard(repository: resultsRepository),
                 ],
@@ -128,24 +127,15 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '2026 시즌',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '다가오는 그랑프리와 세션을 확인하세요.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-        ),
-      ],
+    // 리디자인(home_screen_2a): 서브카피 없이 타이틀만 크게(26/900).
+    return const Text(
+      '2026 시즌',
+      style: TextStyle(
+        fontSize: 26,
+        height: 1,
+        color: AppColors.white,
+        fontWeight: FontWeight.w900,
+      ),
     );
   }
 }
@@ -207,6 +197,14 @@ class _NextRaceCard extends StatelessWidget {
         ? '진행중'
         : '다음 그랑프리';
 
+    // 리디자인(home_screen_2a): 별도 '이번 주말 일정' 카드를 없애고 히어로가
+    // [뱃지 → 그랑프리명 → 서킷 → 다음 세션 박스 → 나머지 세션 리스트 → KST]
+    // 를 한 카드로 담는다. 세션 박스에 나온 세션은 리스트에서 제외(중복 방지).
+    final boxedSession = session;
+    final listSessions = race.sessions
+        .where((s) => s.id != boxedSession?.id)
+        .toList();
+
     return HeroCard(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
@@ -214,19 +212,18 @@ class _NextRaceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 리디자인: 'R12' 라운드 뱃지는 제거하고 상태 뱃지만 남긴다.
           Row(
-            children: [
-              AppChip(label: statusLabel, variant: AppChipVariant.red),
-              const SizedBox(width: 6),
-              AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
-            ],
+            children: [AppChip(label: statusLabel, variant: AppChipVariant.red)],
           ),
           const SizedBox(height: 14),
           Text(
             race.nameKo,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            style: const TextStyle(
+              fontSize: 26,
+              height: 1.15,
               color: AppColors.white,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
@@ -241,13 +238,112 @@ class _NextRaceCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           // 다음/진행 중/최근 세션 정보를 히어로 내부 박스로 표시(웹 hero 의 세션 박스)
           _HeroSessionBox(
             race: race,
             session: session,
             now: now,
             liveSnapshot: liveSnapshot,
+          ),
+          // 나머지 주말 세션 리스트 (박스 없는 플레인 행 — 기존 주말 일정 카드 대체)
+          if (listSessions.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            for (final s in listSessions)
+              _HeroScheduleRow(race: race, session: s, now: now),
+          ],
+          const SizedBox(height: 4),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '한국 시간 (KST) 기준',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textEnded,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 히어로 내부 주말 세션 한 줄: 상태 도트 · 세션명 · 날짜/시간.
+/// 상태별 표기(디자인 home_screen_2a):
+/// - 완료: 체크 아이콘 + 흐린 텍스트
+/// - 레이스(미완료): 레드 도트 + 흰색 강조
+/// - 예정: 회색 도트 + 목록 톤 텍스트
+class _HeroScheduleRow extends StatelessWidget {
+  const _HeroScheduleRow({
+    required this.race,
+    required this.session,
+    required this.now,
+  });
+
+  final Race race;
+  final RaceSession session;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = getSessionStatus(race, session, now);
+    final isDone = status == SessionStatus.ended;
+    final isRace = session.id == 'race' && !isDone;
+
+    final nameColor = isDone
+        ? AppColors.textEnded
+        : isRace
+        ? AppColors.white
+        : AppColors.scheduleText;
+    final timeColor = isDone
+        ? AppColors.textEnded
+        : isRace
+        ? AppColors.white
+        : AppColors.muted;
+    final weight = isRace ? FontWeight.w700 : FontWeight.w500;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        children: [
+          // 상태 도트: 완료는 체크, 레이스는 레드, 예정은 비활성 톤.
+          if (isDone)
+            const Icon(Icons.check, size: 11, color: AppColors.textEnded)
+          else
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: isRace ? AppColors.red : AppColors.dotInactive,
+                shape: BoxShape.circle,
+              ),
+            ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              session.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.2,
+                color: nameColor,
+                fontWeight: weight,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${session.date} ${session.time}',
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.2,
+              color: timeColor,
+              fontWeight: weight,
+            ),
           ),
         ],
       ),
@@ -474,141 +570,6 @@ String _liveValue(LiveSessionSnapshot snapshot) {
   return 'LIVE';
 }
 
-class _WeekendScheduleCard extends StatelessWidget {
-  const _WeekendScheduleCard({required this.race, required this.now});
-
-  final Race race;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
-        );
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-              child: Row(
-                children: [
-                  const Expanded(child: _SectionHeader(label: '이번 주말 일정')),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 15,
-                    color: AppColors.red,
-                  ),
-                ],
-              ),
-            ),
-            if (race.sessions.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Text(
-                  race.cancelNote ?? '세션 일정이 없습니다.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-                ),
-              )
-            else
-              ...race.sessions.map(
-                (session) =>
-                    _WeekendSessionRow(race: race, session: session, now: now),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WeekendSessionRow extends StatelessWidget {
-  const _WeekendSessionRow({
-    required this.race,
-    required this.session,
-    required this.now,
-  });
-
-  final Race race;
-  final RaceSession session;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final status = getSessionStatus(race, session, now);
-    // 강조는 진행중(라이브) 세션에만 적용 — 레이스 상시 강조는 다음/진행중
-    // 세션 강조와 겹쳐 혼란을 줘서 제거했다.
-    final isLive = status == SessionStatus.live;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
-        color: isLive ? AppColors.red.withValues(alpha: 0.08) : null,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: isLive ? AppColors.red : AppColors.textMuted,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    session.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 14.5,
-                      height: 1.2,
-                      color: isLive ? AppColors.red : AppColors.white,
-                      fontWeight: isLive ? FontWeight.w900 : FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (isLive) ...[
-                  const SizedBox(width: 8),
-                  const AppChip(label: 'LIVE', variant: AppChipVariant.red),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${session.date} / ${session.time}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 13.5,
-              height: 1.2,
-              color: isLive ? AppColors.white : AppColors.textMuted,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _EmptyHomeContent extends StatelessWidget {
   const _EmptyHomeContent();
 
@@ -648,23 +609,6 @@ class _EmptyHomeContent extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: AppColors.red,
-        fontWeight: FontWeight.w800,
       ),
     );
   }
