@@ -214,7 +214,9 @@ class _NextRaceCard extends StatelessWidget {
         children: [
           // 리디자인: 'R12' 라운드 뱃지는 제거하고 상태 뱃지만 남긴다.
           Row(
-            children: [AppChip(label: statusLabel, variant: AppChipVariant.red)],
+            children: [
+              AppChip(label: statusLabel, variant: AppChipVariant.red),
+            ],
           ),
           const SizedBox(height: 14),
           Text(
@@ -252,18 +254,6 @@ class _NextRaceCard extends StatelessWidget {
             for (final s in listSessions)
               _HeroScheduleRow(race: race, session: s, now: now),
           ],
-          const SizedBox(height: 4),
-          const Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '한국 시간 (KST) 기준',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textEnded,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
         ],
       ),
     );

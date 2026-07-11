@@ -16,6 +16,11 @@ void main() {
     'teamKo': '팀$position',
     'teamEn': 'Team $position',
     'points': points,
+    'positionChange': position == 1
+        ? 2
+        : position == 2
+        ? -1
+        : 0,
   };
 
   Map<String, dynamic> teamRow(int position, String teamKo, num points) => {
@@ -23,6 +28,7 @@ void main() {
     'teamKo': teamKo,
     'teamEn': 'Team $position',
     'points': points,
+    'positionChange': position == 1 ? 0 : null,
   };
 
   Map<String, dynamic> validBody({num p1Points = 179}) => {
@@ -61,6 +67,8 @@ void main() {
     expect(snapshot, isNotNull);
     expect(snapshot!.driverStandings.first.driverKo, '키미 안토넬리');
     expect(snapshot.driverStandings.first.points, 179);
+    expect(snapshot.driverStandings.first.positionChange, 2);
+    expect(snapshot.constructorStandings.first.positionChange, 0);
     expect(snapshot.constructorStandings.first.teamKo, '메르세데스');
   });
 
@@ -96,7 +104,9 @@ void main() {
         ).fetchLatest();
 
     expect(
-      await fetchWith(MockClient((_) async => throw http.ClientException('down'))),
+      await fetchWith(
+        MockClient((_) async => throw http.ClientException('down')),
+      ),
       isNull,
     );
     expect(
@@ -124,6 +134,8 @@ void main() {
 
     expect(find.text('키미 안토넬리'), findsOneWidget);
     expect(find.text('179'), findsOneWidget); // 서버 값(정적 데이터는 156)
+    expect(find.text('▲2'), findsOneWidget);
+    expect(find.text('▼1'), findsOneWidget);
     expect(find.text('156'), findsNothing);
   });
 

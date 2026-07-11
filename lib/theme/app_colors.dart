@@ -24,6 +24,7 @@ class AppColors {
   // 웹 red-500 / red-400 (Tailwind)
   static const Color red = Color(0xFFEF4444);
   static const Color redSoft = Color(0xFFF87171);
+  static const Color greenSoft = Color(0xFF4ADE80);
   // 웹 blue-400 (Tailwind) — blue 칩 텍스트
   static const Color blueSoft = Color(0xFF60A5FA);
   // 웹 mono 칩 텍스트 (slate-300)

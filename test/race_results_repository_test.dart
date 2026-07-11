@@ -27,24 +27,25 @@ void main() {
     'timeOrStatus': position == 1 ? '1:27:11.335' : '+$position.0',
   };
 
-  Map<String, dynamic> validBody(String raceId, {String status = 'official'}) => {
-    'generatedAt': '2026-07-10T04:00:00.000Z',
-    'season': 2026,
-    'f1dbTag': 'v2026.9.1',
-    'races': [
+  Map<String, dynamic> validBody(String raceId, {String status = 'official'}) =>
       {
-        'raceId': raceId,
-        'round': 9,
-        'grandPrixName': 'British Grand Prix',
-        'raceName': 'FORMULA 1 BRITISH GRAND PRIX 2026',
-        'status': status,
-        'results': [
-          resultRow(1, '샤를 르클레르', 25),
-          for (var i = 2; i <= 12; i++) resultRow(i, '드라이버$i', 30 - i),
+        'generatedAt': '2026-07-10T04:00:00.000Z',
+        'season': 2026,
+        'f1dbTag': 'v2026.9.1',
+        'races': [
+          {
+            'raceId': raceId,
+            'round': 9,
+            'grandPrixName': 'British Grand Prix',
+            'raceName': 'FORMULA 1 BRITISH GRAND PRIX 2026',
+            'status': status,
+            'results': [
+              resultRow(1, '샤를 르클레르', 25),
+              for (var i = 2; i <= 12; i++) resultRow(i, '드라이버$i', 30 - i),
+            ],
+          },
         ],
-      },
-    ],
-  };
+      };
 
   http.Response jsonResponse(Object data) => http.Response.bytes(
     utf8.encode(jsonEncode(data)),
@@ -108,7 +109,9 @@ void main() {
         ).fetchResult(raceId: 'gb');
 
     expect(
-      await fetchWith(MockClient((_) async => throw http.ClientException('down'))),
+      await fetchWith(
+        MockClient((_) async => throw http.ClientException('down')),
+      ),
       isNull,
     );
     expect(
@@ -119,6 +122,24 @@ void main() {
       await fetchWith(MockClient((_) async => http.Response('not json', 200))),
       isNull,
     );
+  });
+
+  test('가장 최근 레이스의 마지막 세션 결과를 선택한다', () {
+    final body = validBody('great-britain-2026');
+    final race = (body['races'] as List).first as Map<String, dynamic>;
+    race['sessions'] = [
+      {'sessionType': 'FP1', 'status': 'official', 'results': race['results']},
+      {
+        'sessionType': 'QUALIFYING',
+        'status': 'official',
+        'results': race['results'],
+      },
+    ];
+
+    final latest = parseLatestRaceResultJson(jsonEncode(body));
+    expect(latest, isNotNull);
+    expect(latest!.raceId, 'great-britain-2026');
+    expect(latest.sessionType, 'QUALIFYING');
   });
 
   // ---- 상세 화면 위젯 테스트 ----
@@ -145,9 +166,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('서버 결과가 오면 준비 중 카드 대신 순위와 공식 결과 라벨을 표시한다', (
-    tester,
-  ) async {
+  testWidgets('서버 결과가 오면 준비 중 카드 대신 순위와 공식 결과 라벨을 표시한다', (tester) async {
     final race = endedRaceWithoutStaticResults();
     final data = parseRaceResultJson(
       jsonEncode(validBody(race.id)),
@@ -171,9 +190,7 @@ void main() {
     expect(find.text('공식 결과'), findsNothing);
   });
 
-  testWidgets('저장소가 예외를 던져도 앱이 깨지지 않고 준비 중 카드를 유지한다', (
-    tester,
-  ) async {
+  testWidgets('저장소가 예외를 던져도 앱이 깨지지 않고 준비 중 카드를 유지한다', (tester) async {
     final race = endedRaceWithoutStaticResults();
 
     await pumpDetail(tester, race, _ThrowingRaceResultsRepository());

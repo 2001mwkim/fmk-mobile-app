@@ -21,10 +21,15 @@ class RaceResultData {
 
 /// 가장 최근에 결과가 존재하는 레이스(홈 "최근 레이스 결과" 카드용).
 class LatestRaceResult {
-  const LatestRaceResult({required this.raceId, required this.data});
+  const LatestRaceResult({
+    required this.raceId,
+    required this.data,
+    this.sessionType = 'RACE',
+  });
 
   final String raceId;
   final RaceResultData data;
+  final String sessionType;
 }
 
 /// 레이스 결과 공급 계층.
@@ -47,7 +52,10 @@ abstract class RaceResultsRepository {
 /// 실서버 구현(앱 기본값). origin 은 뉴스/순위와 같은 Vercel 도메인
 /// ([kNewsApiBaseUrl] 공용 — `--dart-define=NEWS_API_BASE_URL` 로 재정의).
 class HttpRaceResultsRepository implements RaceResultsRepository {
-  const HttpRaceResultsRepository({this.baseUrl = kNewsApiBaseUrl, this.client});
+  const HttpRaceResultsRepository({
+    this.baseUrl = kNewsApiBaseUrl,
+    this.client,
+  });
 
   final String baseUrl;
 
@@ -65,10 +73,15 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
         path: '/api/race-results',
         queryParameters: {'season': '$season', 'raceId': raceId},
       );
-      final response = await httpClient.get(uri).timeout(kRaceResultsFetchTimeout);
+      final response = await httpClient
+          .get(uri)
+          .timeout(kRaceResultsFetchTimeout);
       if (response.statusCode != 200) return null;
       // JSON 은 UTF-8 (RFC 8259) — 한글 이름 깨짐 방지(뉴스와 동일 규칙).
-      return parseRaceResultJson(utf8.decode(response.bodyBytes), raceId: raceId);
+      return parseRaceResultJson(
+        utf8.decode(response.bodyBytes),
+        raceId: raceId,
+      );
     } catch (_) {
       // 네트워크/타임아웃/파싱 오류 → null(기존 카드 유지).
       return null;
@@ -86,7 +99,9 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
         path: '/api/race-results',
         queryParameters: {'season': '$season'},
       );
-      final response = await httpClient.get(uri).timeout(kRaceResultsFetchTimeout);
+      final response = await httpClient
+          .get(uri)
+          .timeout(kRaceResultsFetchTimeout);
       if (response.statusCode != 200) return null;
       return parseLatestRaceResultJson(utf8.decode(response.bodyBytes));
     } catch (_) {
@@ -108,13 +123,46 @@ LatestRaceResult? parseLatestRaceResultJson(String body) {
     for (final rawRace in decoded['races'] as List) {
       if (rawRace is! Map || rawRace['raceId'] is! String) continue;
       final raceId = rawRace['raceId'] as String;
-      final data = parseRaceResultJson(body, raceId: raceId);
-      if (data != null) latest = LatestRaceResult(raceId: raceId, data: data);
+      if (rawRace['sessions'] is List) {
+        for (final rawSession in rawRace['sessions'] as List) {
+          if (rawSession is! Map || rawSession['sessionType'] is! String) {
+            continue;
+          }
+          final data = _parseResultData(rawSession);
+          if (data != null) {
+            latest = LatestRaceResult(
+              raceId: raceId,
+              data: data,
+              sessionType: rawSession['sessionType'] as String,
+            );
+          }
+        }
+      } else {
+        final data = parseRaceResultJson(body, raceId: raceId);
+        if (data != null) latest = LatestRaceResult(raceId: raceId, data: data);
+      }
     }
     return latest;
   } catch (_) {
     return null;
   }
+}
+
+RaceResultData? _parseResultData(Map rawResult) {
+  final entries = <RaceResultEntry>[];
+  if (rawResult['results'] is List) {
+    for (final rawRow in rawResult['results'] as List) {
+      if (rawRow is! Map) continue;
+      final row = RaceResultEntry.fromJson(rawRow.cast<String, dynamic>());
+      if (row != null) entries.add(row);
+    }
+  }
+  if (entries.length < 10) return null;
+  entries.sort((a, b) => a.position.compareTo(b.position));
+  return RaceResultData(
+    status: rawResult['status'] == 'provisional' ? 'provisional' : 'official',
+    entries: entries,
+  );
 }
 
 /// 응답에서 [raceId] 의 결과를 찾아 파싱한다. 깨진 행은 건너뛰되,
@@ -127,20 +175,7 @@ RaceResultData? parseRaceResultJson(String body, {required String raceId}) {
     for (final rawRace in decoded['races'] as List) {
       if (rawRace is! Map || rawRace['raceId'] != raceId) continue;
 
-      final entries = <RaceResultEntry>[];
-      if (rawRace['results'] is List) {
-        for (final rawRow in rawRace['results'] as List) {
-          if (rawRow is! Map) continue;
-          final row = RaceResultEntry.fromJson(rawRow.cast<String, dynamic>());
-          if (row != null) entries.add(row);
-        }
-      }
-      if (entries.length < 10) return null;
-      entries.sort((a, b) => a.position.compareTo(b.position));
-      return RaceResultData(
-        status: rawRace['status'] == 'provisional' ? 'provisional' : 'official',
-        entries: entries,
-      );
+      return _parseResultData(rawRace);
     }
     return null; // 해당 raceId 결과 없음(아직 미개최 등)
   } catch (_) {

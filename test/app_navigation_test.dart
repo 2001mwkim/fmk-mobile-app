@@ -22,8 +22,7 @@ void main() {
     );
     // 주말 일정은 히어로 카드에 통합됨(별도 '이번 주말 일정' 카드 제거).
     expect(find.text('이번 주말 일정'), findsNothing);
-    await tester.scrollUntilVisible(find.text('한국 시간 (KST) 기준'), 200);
-    expect(find.text('한국 시간 (KST) 기준'), findsOneWidget);
+    expect(find.text('한국 시간 (KST) 기준'), findsNothing);
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();

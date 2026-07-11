@@ -6,6 +6,7 @@ class DriverStanding {
     required this.teamKo,
     required this.teamEn,
     required this.points,
+    this.positionChange,
     this.note,
   });
 
@@ -15,6 +16,7 @@ class DriverStanding {
   final String teamKo;
   final String teamEn;
   final num points;
+  final int? positionChange;
   final String? note;
 
   /// 서버 /api/standings JSON 파싱. 필수 필드가 깨져 있으면 null(항목 skip).
@@ -22,7 +24,10 @@ class DriverStanding {
     final position = json['position'];
     final driverKo = json['driverKo'];
     final points = json['points'];
-    if (position is! int || driverKo is! String || driverKo.isEmpty || points is! num) {
+    if (position is! int ||
+        driverKo is! String ||
+        driverKo.isEmpty ||
+        points is! num) {
       return null;
     }
     return DriverStanding(
@@ -32,6 +37,9 @@ class DriverStanding {
       teamKo: json['teamKo'] is String ? json['teamKo'] as String : '',
       teamEn: json['teamEn'] is String ? json['teamEn'] as String : '',
       points: points,
+      positionChange: json['positionChange'] is int
+          ? json['positionChange'] as int
+          : null,
     );
   }
 }
@@ -42,6 +50,7 @@ class ConstructorStanding {
     required this.teamKo,
     required this.teamEn,
     required this.points,
+    this.positionChange,
     this.note,
   });
 
@@ -49,6 +58,7 @@ class ConstructorStanding {
   final String teamKo;
   final String teamEn;
   final num points;
+  final int? positionChange;
   final String? note;
 
   /// 서버 /api/standings JSON 파싱. 필수 필드가 깨져 있으면 null(항목 skip).
@@ -56,7 +66,10 @@ class ConstructorStanding {
     final position = json['position'];
     final teamKo = json['teamKo'];
     final points = json['points'];
-    if (position is! int || teamKo is! String || teamKo.isEmpty || points is! num) {
+    if (position is! int ||
+        teamKo is! String ||
+        teamKo.isEmpty ||
+        points is! num) {
       return null;
     }
     return ConstructorStanding(
@@ -64,6 +77,9 @@ class ConstructorStanding {
       teamKo: teamKo,
       teamEn: json['teamEn'] is String ? json['teamEn'] as String : '',
       points: points,
+      positionChange: json['positionChange'] is int
+          ? json['positionChange'] as int
+          : null,
     );
   }
 }

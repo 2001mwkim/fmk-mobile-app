@@ -17,6 +17,8 @@ class RaceResultClassificationPanel extends StatelessWidget {
     super.key,
     required this.results,
     this.statusLabel,
+    this.title = '레이스 결과',
+    this.showDriverCount = true,
   });
 
   final List<RaceResultEntry> results;
@@ -24,6 +26,8 @@ class RaceResultClassificationPanel extends StatelessWidget {
   /// 서버 결과 상태 표기('공식 결과'/'잠정 결과'). null 이면 표시하지 않음
   /// (번들 정적 데이터로 그릴 때).
   final String? statusLabel;
+  final String title;
+  final bool showDriverCount;
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +76,9 @@ class RaceResultClassificationPanel extends StatelessWidget {
       emphasized: false,
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
-              '레이스 결과',
+              title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -96,17 +100,19 @@ class RaceResultClassificationPanel extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(width: 10),
-          Text(
-            '$driverCount DRIVERS',
-            style: const TextStyle(
-              fontSize: 10,
-              fontFamily: 'Pretendard',
-              color: AppColors.faint,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+          if (showDriverCount) ...[
+            const SizedBox(width: 10),
+            Text(
+              '$driverCount DRIVERS',
+              style: const TextStyle(
+                fontSize: 10,
+                fontFamily: 'Pretendard',
+                color: AppColors.faint,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

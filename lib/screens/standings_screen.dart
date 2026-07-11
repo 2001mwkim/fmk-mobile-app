@@ -12,7 +12,6 @@ const Color _muted = AppColors.muted; // #7880a0
 const Color _navMuted = AppColors.textMuted; // 비활성 탭 텍스트
 const Color _hairline = AppColors.hairline; // white/8 (알약 보더)
 const Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
-const Color _track = AppColors.faintBorder; // white/6 (진행 막대 배경)
 
 enum _StandingsTab { drivers, constructors }
 
@@ -32,7 +31,8 @@ class _StandingsScreenState extends State<StandingsScreen> {
   // 첫 프레임은 번들된 정적 순위로 그리고(로딩 화면 없음), 서버 응답이
   // 오면 최신 순위로 교체한다. 서버 실패 시 정적 데이터가 그대로 남는다.
   List<DriverStanding> _drivers = static_standings.driverStandings;
-  List<ConstructorStanding> _constructors = static_standings.constructorStandings;
+  List<ConstructorStanding> _constructors =
+      static_standings.constructorStandings;
 
   @override
   void initState() {
@@ -108,7 +108,6 @@ class _StandingsScreenState extends State<StandingsScreen> {
 
   List<_RowData> _driverRows(List<DriverStanding> standings) {
     if (standings.isEmpty) return const [];
-    final leader = standings.first.points;
     return [
       for (final d in standings)
         _RowData(
@@ -117,14 +116,13 @@ class _StandingsScreenState extends State<StandingsScreen> {
           title: d.driverKo,
           teamLabel: d.teamKo,
           points: d.points,
-          leaderPoints: leader,
+          positionChange: d.positionChange,
         ),
     ];
   }
 
   List<_RowData> _constructorRows(List<ConstructorStanding> standings) {
     if (standings.isEmpty) return const [];
-    final leader = standings.first.points;
     return [
       for (final c in standings)
         _RowData(
@@ -133,7 +131,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           title: c.teamKo,
           teamLabel: null,
           points: c.points,
-          leaderPoints: leader,
+          positionChange: c.positionChange,
         ),
     ];
   }
@@ -262,9 +260,6 @@ class _StandingRow extends StatelessWidget {
     final teamColor = getTeamColor(
       data.teamKo,
     ).withValues(alpha: isLightTeamColor(data.teamKo) ? 0.7 : 1.0);
-    final pct = data.leaderPoints <= 0
-        ? 0.0
-        : (data.points / data.leaderPoints).clamp(0.0, 1.0).toDouble();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -276,7 +271,7 @@ class _StandingRow extends StatelessWidget {
       child: Row(
         children: [
           _RankBadge(position: data.position),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Container(
             width: 3,
             height: 32,
@@ -285,55 +280,48 @@ class _StandingRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        data.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _PointsLabel(points: data.points),
-                  ],
+                Text(
+                  data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    if (data.teamLabel != null) ...[
-                      SizedBox(
-                        width: 62,
-                        child: Text(
-                          data.teamLabel!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: _muted,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: _PointsBar(pct: pct, color: teamColor),
+                if (data.teamLabel != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    data.teamLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: _muted,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 36,
+            child: _PositionChange(change: data.positionChange),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 92,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _PointsLabel(points: data.points),
             ),
           ),
         ],
@@ -406,24 +394,32 @@ class _PointsLabel extends StatelessWidget {
   }
 }
 
-class _PointsBar extends StatelessWidget {
-  const _PointsBar({required this.pct, required this.color});
+class _PositionChange extends StatelessWidget {
+  const _PositionChange({required this.change});
 
-  final double pct;
-  final Color color;
+  final int? change;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: Container(
-        height: 3,
-        color: _track,
-        child: FractionallySizedBox(
-          alignment: Alignment.centerLeft,
-          widthFactor: pct,
-          child: Container(color: color),
-        ),
+    if (change == null) return const SizedBox.shrink();
+
+    final isUp = change! > 0;
+    final isDown = change! < 0;
+    return Text(
+      isUp
+          ? '▲$change'
+          : isDown
+          ? '▼${change!.abs()}'
+          : '—',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 11,
+        color: isUp
+            ? AppColors.greenSoft
+            : isDown
+            ? AppColors.redSoft
+            : _muted,
+        fontWeight: FontWeight.w800,
       ),
     );
   }
@@ -478,7 +474,7 @@ class _RowData {
     required this.title,
     required this.teamLabel,
     required this.points,
-    required this.leaderPoints,
+    required this.positionChange,
   });
 
   final int position;
@@ -486,7 +482,7 @@ class _RowData {
   final String title;
   final String? teamLabel;
   final num points;
-  final num leaderPoints;
+  final int? positionChange;
 }
 
 // 웹 getRankColor. P1은 노란색 대신 레드 톤 사용(앱 규칙상 노란색 금지).
