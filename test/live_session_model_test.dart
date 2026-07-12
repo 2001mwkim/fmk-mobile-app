@@ -68,6 +68,26 @@ void main() {
     expect(snapshot!.classification.length, 40);
   });
 
+  test('parseLiveJson maps live center details', () {
+    const body = '''
+{"snapshot":{"status":"live","updatedAt":"2026-07-12T01:00:00Z",
+"trackStatus":"6","remainingTime":"12:34",
+"weather":{"airTemp":"24.5","trackTemp":38.2,"humidity":61,"rainfall":"false","windSpeed":2.8},
+"classification":[{"position":1,"code":"NOR","displayName":"Lando Norris","compound":"MEDIUM","tyreAge":12,"pitStops":1,"sector1":"28.101","sector2":"35.202","sector3":"24.303"}],
+"raceControlMessages":[{"Utc":"2026-07-12T01:01:00Z","Category":"Flag","Flag":"YELLOW","Message":"YELLOW FLAG IN TURN 3"}]}}
+''';
+
+    final snapshot = parseLiveJson(body)!;
+    expect(snapshot.trackStatus, '6');
+    expect(snapshot.remainingTime, '12:34');
+    expect(snapshot.weather!.airTemperature, 24.5);
+    expect(snapshot.weather!.rainfall, isFalse);
+    expect(snapshot.classification.single.compound, 'MEDIUM');
+    expect(snapshot.classification.single.tyreAge, 12);
+    expect(snapshot.classification.single.sector2, '35.202');
+    expect(snapshot.raceControlMessages.single.flag, 'YELLOW');
+  });
+
   test('ended race is not treated live within its scheduled window', () {
     // 레이스가 스케줄상 종료 창(시작+3시간)보다 일찍 끝난 상황.
     final snapshot = LiveSessionSnapshot(

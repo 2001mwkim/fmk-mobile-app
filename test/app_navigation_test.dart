@@ -13,7 +13,7 @@ void main() {
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
-    expect(find.text('소식'), findsOneWidget);
+    expect(find.text('라이브'), findsOneWidget);
     // 히어로 상태 칩은 시점에 따라 '다음 그랑프리' 또는 '진행중'으로 표시된다.
     expect(
       find.text('다음 그랑프리').evaluate().isNotEmpty ||
@@ -62,16 +62,14 @@ void main() {
     expect(find.text('키미 안토넬리'), findsNothing);
     expect(find.text('메르세데스'), findsWidgets);
 
-    // 직관 탭은 MVP 범위 제외로 소식 탭으로 교체됨.
-    // 기본 저장소가 실서버(HttpNewsRepository)라 네트워크가 차단된 테스트
-    // 환경에서는 빈 상태 카드가 뜬다(크래시 없음 검증). 카드 렌더링은
-    // mock 저장소를 주입하는 news_screen_test 가 담당한다.
-    await tester.tap(find.text('소식'));
+    // 소식 탭을 라이브 센터로 교체했다. 비라이브 때는 다음 세션을 작게
+    // 안내하고, 직전 세션 결과(FP/퀄리 포함)를 중심 콘텐츠로 보여준다.
+    await tester.tap(find.text('라이브'));
     await tester.pumpAndSettle();
     expect(find.text('직관'), findsNothing);
-    expect(find.text('F1 NEWS BRIEFING'), findsOneWidget);
-    expect(find.text('해외 F1 주요 소식을 한국어 브리핑으로 빠르게 확인하세요.'), findsOneWidget);
-    expect(find.text('표시할 소식이 없습니다'), findsOneWidget);
+    expect(find.text('라이브 센터'), findsOneWidget);
+    expect(find.text('다음 라이브'), findsOneWidget);
+    expect(find.text('직전 세션 결과'), findsOneWidget);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();

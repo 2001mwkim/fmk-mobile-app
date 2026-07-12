@@ -91,7 +91,7 @@
 | 변수 | 기본값 | 용도 |
 |---|---|---|
 | `NEWS_COLLECT_INTERVAL_MINUTES` | `30` | RSS 수집 주기(분). `0` 이하 = 뉴스 수집 비활성 |
-| `NEWS_AI_INTERVAL_MINUTES` | `360` | **AI 호출 허용 주기(분)** — RSS 와 분리. 첫 수집에서는 1회 허용(캐시가 중복 과금 방지). `0` = 매 수집마다 허용 |
+| `NEWS_AI_INTERVAL_MINUTES` | `0` (매 수집마다) | **AI 호출 허용 주기(분)**. 기본 0 — hash 캐시가 재과금을 막으므로 새 기사가 다음 RSS 주기(≤30분) 안에 브리핑된다. 양수로 설정하면 그 주기로만 허용(비용 조임 — 대신 새 기사가 그 시간만큼 fallback 문구로 노출됨) |
 | `NEWS_AI_ENABLED` | (비활성) | `true` 일 때만 AI 제목/요약 생성 |
 | `ANTHROPIC_API_KEY` | — | AI 용. 없으면 fallback 문구로 동작(missing_api_key 로그) |
 | `NEWS_AI_MODEL` | `claude-haiku-4-5` | AI 모델. 기본은 가성비 Haiku — 품질 필요 시 상위 모델로 교체 |

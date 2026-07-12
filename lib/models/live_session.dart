@@ -27,6 +27,16 @@ class LiveDriverPosition {
     this.lastLapTime,
     this.bestLapTime,
     this.personalBestLapTime,
+    this.sector1,
+    this.sector2,
+    this.sector3,
+    this.compound,
+    this.tyreAge,
+    this.stint,
+    this.pitStops,
+    this.inPit = false,
+    this.retired = false,
+    this.speedTrap,
   });
 
   final int position;
@@ -40,6 +50,16 @@ class LiveDriverPosition {
   final String? lastLapTime;
   final String? bestLapTime;
   final String? personalBestLapTime;
+  final String? sector1;
+  final String? sector2;
+  final String? sector3;
+  final String? compound;
+  final int? tyreAge;
+  final int? stint;
+  final int? pitStops;
+  final bool inPit;
+  final bool retired;
+  final String? speedTrap;
 
   /// 웹과 동일한 갭 선택 규칙.
   /// race/sprint: interval 우선, 그 외: gapToLeader 우선. 둘 다 없으면 '—'.
@@ -55,6 +75,44 @@ class LiveDriverPosition {
     if (raceLike) return gap(raceLike: true);
     return displayTime ?? lapTime ?? '—';
   }
+}
+
+class LiveWeather {
+  const LiveWeather({
+    this.airTemperature,
+    this.trackTemperature,
+    this.humidity,
+    this.pressure,
+    this.rainfall,
+    this.windSpeed,
+    this.windDirection,
+  });
+
+  final double? airTemperature;
+  final double? trackTemperature;
+  final double? humidity;
+  final double? pressure;
+  final bool? rainfall;
+  final double? windSpeed;
+  final int? windDirection;
+}
+
+class LiveRaceControlMessage {
+  const LiveRaceControlMessage({
+    required this.message,
+    this.timestamp,
+    this.category,
+    this.flag,
+    this.scope,
+    this.racingNumber,
+  });
+
+  final String message;
+  final DateTime? timestamp;
+  final String? category;
+  final String? flag;
+  final String? scope;
+  final String? racingNumber;
 }
 
 /// 웹 LiveSessionSnapshot 대응(표시에 필요한 필드만).
@@ -74,6 +132,11 @@ class LiveSessionSnapshot {
     this.countryFlag,
     this.endedAt,
     this.visibleUntil,
+    this.trackStatus,
+    this.trackStatusMessage,
+    this.remainingTime,
+    this.weather,
+    this.raceControlMessages = const [],
   });
 
   final LiveSessionStatus status;
@@ -99,6 +162,11 @@ class LiveSessionSnapshot {
 
   /// 종료 후 최종 결과를 노출하는 마감 시각(endedAt + 30분). 웹 visibleUntil 대응.
   final DateTime? visibleUntil;
+  final String? trackStatus;
+  final String? trackStatusMessage;
+  final String? remainingTime;
+  final LiveWeather? weather;
+  final List<LiveRaceControlMessage> raceControlMessages;
 
   bool get isEnded => status == LiveSessionStatus.ended;
 

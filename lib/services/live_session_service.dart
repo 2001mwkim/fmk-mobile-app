@@ -102,6 +102,15 @@ LiveSessionSnapshot? parseLiveJson(String body) {
       classification: _parseDrivers(map['classification']),
       endedAt: _dateTime(map['endedAt']),
       visibleUntil: _dateTime(map['visibleUntil']),
+      trackStatus: _string(map['trackStatus'] ?? map['trackStatusCode']),
+      trackStatusMessage: _string(
+        map['trackStatusMessage'] ?? map['trackStatusLabel'],
+      ),
+      remainingTime: _string(map['remainingTime'] ?? map['sessionTimeLeft']),
+      weather: _parseWeather(map['weather'] ?? map['weatherData']),
+      raceControlMessages: _parseRaceControlMessages(
+        map['raceControlMessages'] ?? map['raceControl'],
+      ),
     );
   } catch (_) {
     return null;
@@ -136,10 +145,81 @@ List<LiveDriverPosition> _parseDrivers(dynamic value) {
         lastLapTime: _string(m['lastLapTime']),
         bestLapTime: _string(m['bestLapTime']),
         personalBestLapTime: _string(m['personalBestLapTime']),
+        sector1: _string(m['sector1'] ?? m['sector1Time']),
+        sector2: _string(m['sector2'] ?? m['sector2Time']),
+        sector3: _string(m['sector3'] ?? m['sector3Time']),
+        compound: _string(m['compound'] ?? m['tyreCompound']),
+        tyreAge: _int(m['tyreAge'] ?? m['tyreLaps']),
+        stint: _int(m['stint']),
+        pitStops: _int(m['pitStops'] ?? m['numberOfPitStops']),
+        inPit: _bool(m['inPit'] ?? m['pit']) ?? false,
+        retired: _bool(m['retired'] ?? m['stopped']) ?? false,
+        speedTrap: _string(m['speedTrap'] ?? m['speed']),
       ),
     );
   }
   return result;
+}
+
+LiveWeather? _parseWeather(dynamic value) {
+  if (value is! Map) return null;
+  final map = value.cast<String, dynamic>();
+  final weather = LiveWeather(
+    airTemperature: _double(
+      map['airTemperature'] ?? map['airTemp'] ?? map['AirTemp'],
+    ),
+    trackTemperature: _double(
+      map['trackTemperature'] ?? map['trackTemp'] ?? map['TrackTemp'],
+    ),
+    humidity: _double(map['humidity'] ?? map['Humidity']),
+    pressure: _double(map['pressure'] ?? map['Pressure']),
+    rainfall: _bool(map['rainfall'] ?? map['Rainfall']),
+    windSpeed: _double(map['windSpeed'] ?? map['WindSpeed']),
+    windDirection: _int(map['windDirection'] ?? map['WindDirection']),
+  );
+  if (weather.airTemperature == null &&
+      weather.trackTemperature == null &&
+      weather.humidity == null &&
+      weather.pressure == null &&
+      weather.rainfall == null &&
+      weather.windSpeed == null) {
+    return null;
+  }
+  return weather;
+}
+
+List<LiveRaceControlMessage> _parseRaceControlMessages(dynamic value) {
+  final rawItems = value is List
+      ? value
+      : value is Map
+      ? value.values.toList()
+      : const <dynamic>[];
+  final result = <LiveRaceControlMessage>[];
+  for (final item in rawItems) {
+    if (item is! Map) continue;
+    final map = item.cast<String, dynamic>();
+    final message = _string(map['message'] ?? map['Message']);
+    if (message == null) continue;
+    result.add(
+      LiveRaceControlMessage(
+        message: message,
+        timestamp: _dateTime(map['timestamp'] ?? map['utc'] ?? map['Utc']),
+        category: _string(map['category'] ?? map['Category']),
+        flag: _string(map['flag'] ?? map['Flag']),
+        scope: _string(map['scope'] ?? map['Scope']),
+        racingNumber: _string(map['racingNumber'] ?? map['RacingNumber']),
+      ),
+    );
+  }
+  result.sort((a, b) {
+    final aTime = a.timestamp;
+    final bTime = b.timestamp;
+    if (aTime == null && bTime == null) return 0;
+    if (aTime == null) return 1;
+    if (bTime == null) return -1;
+    return bTime.compareTo(aTime);
+  });
+  return result.take(30).toList(growable: false);
 }
 
 LiveSessionStatus _parseStatus(dynamic value) {
@@ -166,6 +246,30 @@ int? _int(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value.trim());
+  return null;
+}
+
+double? _double(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value.trim());
+  return null;
+}
+
+bool? _bool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    switch (value.trim().toLowerCase()) {
+      case 'true':
+      case '1':
+      case 'yes':
+        return true;
+      case 'false':
+      case '0':
+      case 'no':
+        return false;
+    }
+  }
   return null;
 }
 

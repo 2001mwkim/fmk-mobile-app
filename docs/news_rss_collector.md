@@ -56,7 +56,7 @@ npm run news-collector
 | `NEWS_AI_ENABLED` | (비활성) | `true`/`1` 일 때만 AI 호출. 비활성이면 placeholder 유지 |
 | `ANTHROPIC_API_KEY` | — | 없으면 AI 호출 없이 fallback 문구 사용 |
 | `NEWS_AI_MODEL` | `claude-haiku-4-5` | 사용할 Claude 모델(가성비 기본값) |
-| `NEWS_AI_INTERVAL_MINUTES` | `360` | 스케줄러의 AI 호출 허용 주기(RSS 주기와 분리) |
+| `NEWS_AI_INTERVAL_MINUTES` | `0` (매 수집마다) | AI 호출 허용 주기. 캐시가 재과금을 막아 기본은 매 수집 — 양수로 조이면 새 기사가 그만큼 fallback 노출 |
 | `NEWS_AI_MAX_CALLS_PER_RUN` | `20` | 실행당 실제 API 호출 상한(캐시 hit 제외) |
 | `NEWS_AI_DEBUG` | (비활성) | `true` 면 항목별 fallback 사유 로그 |
 

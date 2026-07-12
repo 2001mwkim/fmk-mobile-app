@@ -9,25 +9,15 @@ import '../models/race_session.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
-import '../services/race_results_repository.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/home_live_top_three_card.dart';
-import '../widgets/home_recent_result_card.dart';
 import '../widgets/live_session_builder.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    this.nowOverride,
-    this.liveSnapshotOverride,
-    this.resultsRepository,
-  });
+  const HomeScreen({super.key, this.nowOverride, this.liveSnapshotOverride});
 
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
-
-  /// 최근 레이스 결과 카드용 — 테스트/개발 주입 지점.
-  final RaceResultsRepository? resultsRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -37,22 +27,16 @@ class HomeScreen extends StatelessWidget {
           : _SeasonHomeContent(
               nowOverride: nowOverride,
               liveSnapshotOverride: liveSnapshotOverride,
-              resultsRepository: resultsRepository,
             ),
     );
   }
 }
 
 class _SeasonHomeContent extends StatelessWidget {
-  const _SeasonHomeContent({
-    this.nowOverride,
-    this.liveSnapshotOverride,
-    this.resultsRepository,
-  });
+  const _SeasonHomeContent({this.nowOverride, this.liveSnapshotOverride});
 
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
-  final RaceResultsRepository? resultsRepository;
 
   /// 스케줄 기준 다음 그랑프리. 다만 라이브 데이터가 레이스의 실제 종료를
   /// 알려주면(스케줄 종료 창보다 일찍 체커기), 그 시점부터 다음 그랑프리로
@@ -110,8 +94,6 @@ class _SeasonHomeContent extends StatelessWidget {
                     liveSnapshot: liveSnapshot,
                   ),
                   // 주말 일정은 히어로 카드에 통합됨(별도 카드 제거).
-                  // 최근 레이스 결과 Top 3 (결과 없으면 아무것도 렌더 안 함).
-                  HomeRecentResultCard(repository: resultsRepository),
                 ],
               );
             },

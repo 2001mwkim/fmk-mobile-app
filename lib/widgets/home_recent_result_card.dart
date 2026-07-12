@@ -10,9 +10,14 @@ import 'race_result_classification_panel.dart';
 
 /// 홈에서 가장 최근에 종료된 세션의 전체 분류표를 보여준다.
 class HomeRecentResultCard extends StatefulWidget {
-  const HomeRecentResultCard({super.key, this.repository});
+  const HomeRecentResultCard({
+    super.key,
+    this.repository,
+    this.topPadding = 12,
+  });
 
   final RaceResultsRepository? repository;
+  final double topPadding;
 
   @override
   State<HomeRecentResultCard> createState() => _HomeRecentResultCardState();
@@ -69,7 +74,7 @@ class _HomeRecentResultCardState extends State<HomeRecentResultCard> {
     if (latest == null || race == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: EdgeInsets.only(top: widget.topPadding),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _openDetail,
