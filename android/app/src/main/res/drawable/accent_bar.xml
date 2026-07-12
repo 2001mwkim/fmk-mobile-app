@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 팀컬러/브랜드 세로 바. 흰색 기본에 RemoteViews setColorFilter 로 색을
+     입힌다(배경색 대입은 라운딩이 불가능해서 src+컬러필터 방식 사용). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/fmk_white" />
+    <corners android:radius="2dp" />
+</shape>

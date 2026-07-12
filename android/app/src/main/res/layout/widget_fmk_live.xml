@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 4x2 라이브/결과 화면. 헤더(뱃지 + GP명 + 랩 + 토글) / Top3 카드 3행.
+     순위 숫자는 bold|italic — F1 레이싱 넘버 무드. 팀컬러 바는
+     src(accent_bar)+setColorFilter 로 라운딩을 유지한 채 색만 입힌다. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root_live"
     android:layout_width="match_parent"
@@ -22,6 +25,7 @@
             android:background="@drawable/live_badge_bg"
             android:fontFamily="sans-serif-medium"
             android:includeFontPadding="false"
+            android:letterSpacing="0.08"
             android:paddingHorizontal="7dp"
             android:paddingVertical="3dp"
             android:textColor="@color/fmk_white"
@@ -34,12 +38,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="sans-serif-black"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/fmk_white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textSize="18sp" />
 
         <LinearLayout
             android:id="@+id/lap_group"
@@ -53,11 +56,11 @@
                 android:id="@+id/tv_lap_cur"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif-black"
                 android:includeFontPadding="false"
                 android:textColor="@color/fmk_white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="17sp"
+                android:textStyle="italic" />
 
             <TextView
                 android:id="@+id/tv_lap_total"
@@ -67,7 +70,7 @@
                 android:fontFamily="sans-serif"
                 android:includeFontPadding="false"
                 android:textColor="@color/fmk_faint"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -75,9 +78,10 @@
                 android:layout_marginStart="5dp"
                 android:fontFamily="sans-serif-medium"
                 android:includeFontPadding="false"
+                android:letterSpacing="0.1"
                 android:text="LAP"
                 android:textColor="@color/fmk_dim"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -130,7 +134,7 @@
             android:id="@+id/row_p1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginBottom="7dp"
+            android:layout_marginBottom="6dp"
             android:layout_weight="1"
             android:background="@drawable/card_live_top"
             android:gravity="center_vertical"
@@ -140,22 +144,23 @@
 
             <TextView
                 android:id="@+id/tv_p1_pos"
-                android:layout_width="32dp"
+                android:layout_width="30dp"
                 android:layout_height="match_parent"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif-black"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textColor="@color/fmk_red"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:textSize="21sp"
+                android:textStyle="bold|italic" />
 
             <ImageView
                 android:id="@+id/view_p1_accent"
                 android:layout_width="4dp"
                 android:layout_height="match_parent"
-                android:layout_marginStart="3dp"
+                android:layout_marginStart="4dp"
                 android:layout_marginEnd="12dp"
-                android:background="@color/fmk_red"
+                android:scaleType="fitXY"
+                android:src="@drawable/accent_bar"
                 android:contentDescription="@null" />
 
             <TextView
@@ -180,7 +185,7 @@
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:textColor="@color/fmk_white"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -188,7 +193,7 @@
             android:id="@+id/row_p2"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginBottom="7dp"
+            android:layout_marginBottom="6dp"
             android:layout_weight="1"
             android:background="@drawable/card_live_top"
             android:gravity="center_vertical"
@@ -198,22 +203,23 @@
 
             <TextView
                 android:id="@+id/tv_p2_pos"
-                android:layout_width="32dp"
+                android:layout_width="30dp"
                 android:layout_height="match_parent"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif-black"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textColor="@color/fmk_dim"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:textSize="21sp"
+                android:textStyle="bold|italic" />
 
             <ImageView
                 android:id="@+id/view_p2_accent"
                 android:layout_width="4dp"
                 android:layout_height="match_parent"
-                android:layout_marginStart="3dp"
+                android:layout_marginStart="4dp"
                 android:layout_marginEnd="12dp"
-                android:background="@color/fmk_dim"
+                android:scaleType="fitXY"
+                android:src="@drawable/accent_bar"
                 android:contentDescription="@null" />
 
             <TextView
@@ -238,7 +244,7 @@
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:textColor="@color/fmk_white"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -255,22 +261,23 @@
 
             <TextView
                 android:id="@+id/tv_p3_pos"
-                android:layout_width="32dp"
+                android:layout_width="30dp"
                 android:layout_height="match_parent"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif-black"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textColor="@color/fmk_dim"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:textSize="21sp"
+                android:textStyle="bold|italic" />
 
             <ImageView
                 android:id="@+id/view_p3_accent"
                 android:layout_width="4dp"
                 android:layout_height="match_parent"
-                android:layout_marginStart="3dp"
+                android:layout_marginStart="4dp"
                 android:layout_marginEnd="12dp"
-                android:background="@color/fmk_faint"
+                android:scaleType="fitXY"
+                android:src="@drawable/accent_bar"
                 android:contentDescription="@null" />
 
             <TextView
@@ -295,7 +302,7 @@
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:textColor="@color/fmk_white"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

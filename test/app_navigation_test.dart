@@ -23,6 +23,9 @@ void main() {
     // 주말 일정은 히어로 카드에 통합됨(별도 '이번 주말 일정' 카드 제거).
     expect(find.text('이번 주말 일정'), findsNothing);
     expect(find.text('한국 시간 (KST) 기준'), findsNothing);
+    // 홈 하단: 챔피언십 TOP 3 미리보기 + 빠른 설정(알림/위젯 진입점).
+    expect(find.text('챔피언십 TOP 3'), findsOneWidget);
+    expect(find.text('위젯 추가'), findsOneWidget);
 
     await tester.tap(find.text('일정'));
     await tester.pumpAndSettle();

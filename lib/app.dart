@@ -33,11 +33,12 @@ class _MainShellState extends State<MainShell> {
 
   // 하단 탭과 1:1 인덱스 매핑(BottomNav._items 순서와 함께 수정할 것).
   // 소식/직관 화면 파일은 유지하되, 하단 탭은 라이브 센터를 사용한다.
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    CalendarScreen(),
-    StandingsScreen(),
-    LiveCenterScreen(),
+  // 홈의 TOP 3 카드가 순위 탭(인덱스 2)으로 점프할 수 있게 콜백을 연결한다.
+  late final List<Widget> _screens = <Widget>[
+    HomeScreen(onOpenStandings: () => _onTabSelected(2)),
+    const CalendarScreen(),
+    const StandingsScreen(),
+    const LiveCenterScreen(),
   ];
 
   void _onTabSelected(int index) {

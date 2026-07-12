@@ -6,18 +6,33 @@ import '../data/races.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
+import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/home_live_top_three_card.dart';
+import '../widgets/home_quick_actions_card.dart';
+import '../widgets/home_standings_card.dart';
 import '../widgets/live_session_builder.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, this.nowOverride, this.liveSnapshotOverride});
+  const HomeScreen({
+    super.key,
+    this.nowOverride,
+    this.liveSnapshotOverride,
+    this.onOpenStandings,
+    this.standingsRepository,
+  });
 
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
+
+  /// 순위 탭으로 전환(TOP 3 카드 탭). MainShell 이 연결한다.
+  final VoidCallback? onOpenStandings;
+
+  /// TOP 3 카드용 — 테스트/개발 주입 지점.
+  final StandingsRepository? standingsRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -27,16 +42,25 @@ class HomeScreen extends StatelessWidget {
           : _SeasonHomeContent(
               nowOverride: nowOverride,
               liveSnapshotOverride: liveSnapshotOverride,
+              onOpenStandings: onOpenStandings,
+              standingsRepository: standingsRepository,
             ),
     );
   }
 }
 
 class _SeasonHomeContent extends StatelessWidget {
-  const _SeasonHomeContent({this.nowOverride, this.liveSnapshotOverride});
+  const _SeasonHomeContent({
+    this.nowOverride,
+    this.liveSnapshotOverride,
+    this.onOpenStandings,
+    this.standingsRepository,
+  });
 
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
+  final VoidCallback? onOpenStandings;
+  final StandingsRepository? standingsRepository;
 
   /// 스케줄 기준 다음 그랑프리. 다만 라이브 데이터가 레이스의 실제 종료를
   /// 알려주면(스케줄 종료 창보다 일찍 체커기), 그 시점부터 다음 그랑프리로
@@ -94,6 +118,14 @@ class _SeasonHomeContent extends StatelessWidget {
                     liveSnapshot: liveSnapshot,
                   ),
                   // 주말 일정은 히어로 카드에 통합됨(별도 카드 제거).
+                  // 챔피언십 TOP 3 — 순위 탭과 같은 데이터의 미리보기.
+                  HomeStandingsCard(
+                    repository: standingsRepository,
+                    onOpenStandings: onOpenStandings,
+                  ),
+                  // 빠른 설정: 알림 + 위젯(메인 기능) 진입점.
+                  const SizedBox(height: 12),
+                  const HomeQuickActionsCard(),
                 ],
               );
             },

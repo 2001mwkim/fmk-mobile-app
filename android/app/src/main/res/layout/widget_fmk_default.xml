@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 4x2 일정 화면. 헤더(브랜드 바 + GP명 + KST + 토글) / 헤어라인 / 세션 5행.
+     GP명은 sans-serif-black — 앱 히어로 카드의 900 웨이트와 톤을 맞춘다. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root_default"
     android:layout_width="match_parent"
@@ -12,14 +14,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingBottom="8dp">
+        android:orientation="horizontal">
 
         <ImageView
             android:layout_width="3dp"
             android:layout_height="16dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/fmk_red"
+            android:src="@drawable/accent_bar"
+            android:scaleType="fitXY"
+            android:tint="@color/fmk_red"
             android:contentDescription="@null" />
 
         <TextView
@@ -27,6 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="6dp"
+            android:includeFontPadding="false"
             android:textColor="@color/fmk_white"
             android:textSize="15sp" />
 
@@ -36,19 +40,22 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="sans-serif-black"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/fmk_white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textSize="18sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.12"
             android:text="KST"
             android:textColor="@color/fmk_faint"
-            android:textSize="11sp" />
+            android:textSize="9sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:id="@+id/toggle_group_default"
@@ -88,6 +95,14 @@
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="9dp"
+        android:layout_marginBottom="5dp"
+        android:background="@color/fmk_divider"
+        android:contentDescription="@null" />
 
     <LinearLayout
         android:layout_width="match_parent"

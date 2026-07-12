@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/models/race_result.dart';
 import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
@@ -20,6 +21,19 @@ void main() {
       matches(RegExp(r'^\d{1,2}\.\d{1,2} [월화수목금토일]$')),
     );
     expect(payload.sessions.first.time, matches(RegExp(r'^\d{2}:\d{2}$')));
+    // 주말 시작 전에는 첫 세션이 '다음 세션' 하이라이트.
+    expect(payload.sessionHighlightIndex, 1);
+  });
+
+  test('세션이 지나면 하이라이트가 다음 세션으로 넘어간다', () {
+    final race = getNextRace(DateTime.parse('2026-03-01T12:00:00+09:00'));
+    final firstStart = getSessionDate(race, race.sessions.first);
+
+    final payload = buildFmkHomeWidgetPayload(
+      now: firstStart.add(const Duration(minutes: 1)),
+    );
+
+    expect(payload.sessionHighlightIndex, 2);
   });
 
   test('home widget live payload shows lap and top three', () {

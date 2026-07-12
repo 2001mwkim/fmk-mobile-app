@@ -31,6 +31,7 @@ class FmkHomeWidgetPayload {
     required this.scheduleGpFlag,
     required this.scheduleGpName,
     required this.sessions,
+    required this.sessionHighlightIndex,
     required this.liveBadge,
     required this.lapCurrent,
     required this.lapTotal,
@@ -52,6 +53,10 @@ class FmkHomeWidgetPayload {
 
   /// 다음 그랑프리 세션 일정(최대 5개). 모드와 무관하게 항상 채운다.
   final List<FmkHomeWidgetSessionRow> sessions;
+
+  /// 아직 시작 전인 첫 세션(1-based). 0이면 하이라이트 없음(주말 종료 등).
+  /// 위젯이 이 행에 레드 도트를 찍고 지난 세션을 가라앉힌다.
+  final int sessionHighlightIndex;
   final String liveBadge;
   final int lapCurrent;
   final int lapTotal;
@@ -140,6 +145,21 @@ class FmkHomeWidgetBridge {
     }
   }
 
+  /// 런처에 위젯 고정(pin) 다이얼로그를 요청한다. 다이얼로그를 띄웠으면 true,
+  /// 미지원 런처/플랫폼이면 false — 호출부가 수동 추가 안내를 띄운다.
+  static Future<bool> requestPinWidget() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      if (await HomeWidget.isRequestPinWidgetSupported() != true) return false;
+      await HomeWidget.requestPinWidget(
+        qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// 백그라운드(WorkManager)에서 호출 — 앱이 실행 중이 아니어도 라이브
   /// 스냅샷과 확정 결과를 직접 받아 위젯 데이터를 갱신한다.
   static Future<void> refreshFromNetwork() async {
@@ -171,6 +191,10 @@ class FmkHomeWidgetBridge {
       HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
       HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
       HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
+      HomeWidget.saveWidgetData<int>(
+        'sessionHighlightIndex',
+        payload.sessionHighlightIndex,
+      ),
     ];
 
     for (var i = 0; i < 5; i++) {
@@ -261,6 +285,7 @@ FmkHomeWidgetPayload _buildResultPayload(LatestRaceResult latest, DateTime now) 
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
     sessions: schedule.rows,
+    sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: 'RESULT',
     lapCurrent: 0,
     lapTotal: 0,
@@ -281,19 +306,26 @@ FmkHomeWidgetPayload _buildResultPayload(LatestRaceResult latest, DateTime now) 
 }
 
 /// 다음 그랑프리와 세션 일정 행(최대 5개). 두 모드가 공유한다.
-({Race race, List<FmkHomeWidgetSessionRow> rows}) _nextRaceSchedule(
-  DateTime now,
-) {
+/// highlightIndex 는 아직 시작 전인 첫 세션(1-based, 없으면 0) — 진행 중
+/// 세션은 위젯이 라이브 모드로 전환되므로 여기서 따로 다루지 않는다.
+({Race race, List<FmkHomeWidgetSessionRow> rows, int highlightIndex})
+_nextRaceSchedule(DateTime now) {
   final race = getNextRace(now);
-  final rows = race.sessions.take(5).map((session) {
-    final start = getSessionDate(race, session);
-    return FmkHomeWidgetSessionRow(
-      name: _sessionName(session),
-      date: _formatDateKst(start),
-      time: _formatTimeKst(start),
+  final sessions = race.sessions.take(5).toList();
+  var highlightIndex = 0;
+  final rows = <FmkHomeWidgetSessionRow>[];
+  for (var i = 0; i < sessions.length; i++) {
+    final start = getSessionDate(race, sessions[i]);
+    if (highlightIndex == 0 && start.isAfter(now)) highlightIndex = i + 1;
+    rows.add(
+      FmkHomeWidgetSessionRow(
+        name: _sessionName(sessions[i]),
+        date: _formatDateKst(start),
+        time: _formatTimeKst(start),
+      ),
     );
-  }).toList();
-  return (race: race, rows: rows);
+  }
+  return (race: race, rows: rows, highlightIndex: highlightIndex);
 }
 
 FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
@@ -306,6 +338,7 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
     sessions: schedule.rows,
+    sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: 'LIVE',
     lapCurrent: 0,
     lapTotal: 0,
@@ -359,6 +392,7 @@ FmkHomeWidgetPayload _buildLivePayload(
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
     sessions: schedule.rows,
+    sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: snapshot.isEnded && !isLiveSnapshotSessionActive(snapshot, now)
         ? 'RESULT'
         : 'LIVE',

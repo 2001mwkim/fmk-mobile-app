@@ -7,8 +7,10 @@
     <color name="fmk_faint">#71717A</color>
     <color name="fmk_ghost">#52525B</color>
     <color name="fmk_divider">#14FFFFFF</color>
-    <color name="fmk_bg_top">#161618</color>
-    <color name="fmk_bg_bottom">#0E0E10</color>
+    <!-- 위젯 배경: 앱 카드(#141828)/배경(#090b12)과 같은 네이비 계열로 통일.
+         중성 그레이(#161618)는 앱과 톤이 어긋나 위젯만 따로 놀아 보였다. -->
+    <color name="fmk_bg_top">#171B2C</color>
+    <color name="fmk_bg_bottom">#0B0D16</color>
     <color name="fmk_stroke">#12FFFFFF</color>
     <color name="fmk_track">#14FFFFFF</color>
     <color name="fmk_card">#0AFFFFFF</color>
