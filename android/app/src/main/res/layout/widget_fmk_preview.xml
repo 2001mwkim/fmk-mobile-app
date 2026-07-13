@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 위젯 피커 미리보기 전용(런처가 데이터 없이 inflate 하므로 샘플을 하드코딩).
+     실제 위젯(widget_fmk_default)과 같은 디자인: 지난 세션 ghost, 다음 세션
+     레드 도트 + 레드 시간. Provider 코드가 돌지 않으니 id 는 불필요. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="3dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/accent_bar"
+                android:scaleType="fitXY"
+                android:tint="@color/fmk_red"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:includeFontPadding="false"
+                android:text="🇦🇺"
+                android:textColor="@color/fmk_white"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-black"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="호주 그랑프리"
+                android:textColor="@color/fmk_white"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.12"
+                android:text="KST"
+                android:textColor="@color/fmk_faint"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/widget_toggle_bg"
+                android:orientation="horizontal"
+                android:padding="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/widget_toggle_active_bg"
+                    android:fontFamily="sans-serif-medium"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="일정"
+                    android:textColor="@color/fmk_white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="결과"
+                    android:textColor="@color/fmk_dim"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="9dp"
+            android:layout_marginBottom="5dp"
+            android:background="@color/fmk_divider"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- 지난 세션(ghost) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="8dp" android:background="@drawable/dot_red" android:visibility="invisible" android:contentDescription="@null" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif" android:includeFontPadding="false" android:maxLines="1" android:text="연습 1" android:textColor="@color/fmk_ghost" android:textSize="13sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="3.13 금" android:textColor="@color/fmk_ghost" android:textSize="11sp" />
+                <TextView android:layout_width="52dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:gravity="end" android:includeFontPadding="false" android:text="10:30" android:textColor="@color/fmk_ghost" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="8dp" android:background="@drawable/dot_red" android:visibility="invisible" android:contentDescription="@null" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif" android:includeFontPadding="false" android:maxLines="1" android:text="연습 2" android:textColor="@color/fmk_ghost" android:textSize="13sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="3.13 금" android:textColor="@color/fmk_ghost" android:textSize="11sp" />
+                <TextView android:layout_width="52dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:gravity="end" android:includeFontPadding="false" android:text="14:00" android:textColor="@color/fmk_ghost" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="8dp" android:background="@drawable/dot_red" android:visibility="invisible" android:contentDescription="@null" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif" android:includeFontPadding="false" android:maxLines="1" android:text="연습 3" android:textColor="@color/fmk_ghost" android:textSize="13sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="3.14 토" android:textColor="@color/fmk_ghost" android:textSize="11sp" />
+                <TextView android:layout_width="52dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:gravity="end" android:includeFontPadding="false" android:text="10:30" android:textColor="@color/fmk_ghost" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- 다음 세션(레드 도트 + 레드 시간) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="8dp" android:background="@drawable/dot_red" android:contentDescription="@null" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif" android:includeFontPadding="false" android:maxLines="1" android:text="퀄리파잉" android:textColor="@color/fmk_white" android:textSize="13sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="3.14 토" android:textColor="@color/fmk_dim" android:textSize="11sp" />
+                <TextView android:layout_width="52dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:gravity="end" android:includeFontPadding="false" android:text="14:00" android:textColor="@color/fmk_red" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="8dp" android:background="@drawable/dot_red" android:visibility="invisible" android:contentDescription="@null" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="sans-serif" android:includeFontPadding="false" android:maxLines="1" android:text="레이스" android:textColor="@color/fmk_text" android:textSize="13sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:fontFamily="sans-serif" android:includeFontPadding="false" android:text="3.15 일" android:textColor="@color/fmk_dim" android:textSize="11sp" />
+                <TextView android:layout_width="52dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:gravity="end" android:includeFontPadding="false" android:text="13:00" android:textColor="@color/fmk_white" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

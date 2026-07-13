@@ -18,4 +18,14 @@
     <color name="fmk_p2">#A1A1AA</color>
     <color name="fmk_p3">#71717A</color>
 	<color name="ic_launcher_background">#000000</color>
+
+    <!-- 위젯 피커 미리보기 전용 팀 컬러(lib/data/team_colors.dart 와 동일 값).
+         실제 위젯은 앱이 내려주는 색을 쓰고, 이 값들은 preview 레이아웃에서만 쓴다. -->
+    <color name="fmk_preview_mercedes">#00D2BE</color>
+    <color name="fmk_preview_ferrari">#E80020</color>
+    <color name="fmk_preview_mclaren">#FF8700</color>
+    <color name="fmk_preview_redbull">#1E41FF</color>
+    <color name="fmk_preview_williams">#00A3FF</color>
+    <color name="fmk_preview_up">#4ADE80</color>
+    <color name="fmk_preview_down">#F87171</color>
 </resources>

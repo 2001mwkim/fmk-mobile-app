@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 순위 위젯 피커 미리보기 전용(샘플 하드코딩 — widget_fmk_standings 와 동일 디자인).
+     드라이버 이름·순위는 사실정보 표기라 라이선스 문제 없음. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="3dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/accent_bar"
+            android:scaleType="fitXY"
+            android:tint="@color/fmk_red"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-black"
+            android:includeFontPadding="false"
+            android:text="챔피언십"
+            android:textColor="@color/fmk_white"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_toggle_bg"
+            android:orientation="horizontal"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_toggle_active_bg"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="드라이버"
+                android:textColor="@color/fmk_white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="팀"
+                android:textColor="@color/fmk_dim"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="9dp"
+        android:layout_marginBottom="5dp"
+        android:background="@color/fmk_divider"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-black" android:gravity="center" android:includeFontPadding="false" android:text="1" android:textColor="@color/fmk_red" android:textSize="14sp" android:textStyle="bold|italic" />
+            <ImageView android:layout_width="3dp" android:layout_height="match_parent" android:layout_marginVertical="5dp" android:layout_marginStart="2dp" android:scaleType="fitXY" android:src="@drawable/accent_bar" android:tint="@color/fmk_preview_mercedes" android:contentDescription="@null" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:maxLines="1" android:text="키미 안토넬리" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="—" android:textColor="@color/fmk_dim" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="179" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-black" android:gravity="center" android:includeFontPadding="false" android:text="2" android:textColor="@color/fmk_dim" android:textSize="14sp" android:textStyle="bold|italic" />
+            <ImageView android:layout_width="3dp" android:layout_height="match_parent" android:layout_marginVertical="5dp" android:layout_marginStart="2dp" android:scaleType="fitXY" android:src="@drawable/accent_bar" android:tint="@color/fmk_preview_mercedes" android:contentDescription="@null" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:maxLines="1" android:text="조지 러셀" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="—" android:textColor="@color/fmk_dim" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="154" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-black" android:gravity="center" android:includeFontPadding="false" android:text="3" android:textColor="@color/fmk_dim" android:textSize="14sp" android:textStyle="bold|italic" />
+            <ImageView android:layout_width="3dp" android:layout_height="match_parent" android:layout_marginVertical="5dp" android:layout_marginStart="2dp" android:scaleType="fitXY" android:src="@drawable/accent_bar" android:tint="@color/fmk_preview_ferrari" android:contentDescription="@null" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:maxLines="1" android:text="샤를 르클레르" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="▲1" android:textColor="@color/fmk_preview_up" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="128" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-black" android:gravity="center" android:includeFontPadding="false" android:text="4" android:textColor="@color/fmk_dim" android:textSize="14sp" android:textStyle="bold|italic" />
+            <ImageView android:layout_width="3dp" android:layout_height="match_parent" android:layout_marginVertical="5dp" android:layout_marginStart="2dp" android:scaleType="fitXY" android:src="@drawable/accent_bar" android:tint="@color/fmk_preview_ferrari" android:contentDescription="@null" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:maxLines="1" android:text="루이스 해밀턴" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="▼1" android:textColor="@color/fmk_preview_down" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="112" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="22dp" android:layout_height="wrap_content" android:fontFamily="sans-serif-black" android:gravity="center" android:includeFontPadding="false" android:text="5" android:textColor="@color/fmk_dim" android:textSize="14sp" android:textStyle="bold|italic" />
+            <ImageView android:layout_width="3dp" android:layout_height="match_parent" android:layout_marginVertical="5dp" android:layout_marginStart="2dp" android:scaleType="fitXY" android:src="@drawable/accent_bar" android:tint="@color/fmk_preview_mclaren" android:contentDescription="@null" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:maxLines="1" android:text="랜도 노리스" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="10dp" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="—" android:textColor="@color/fmk_dim" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:includeFontPadding="false" android:text="98" android:textColor="@color/fmk_white" android:textSize="13sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
