@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../data/circuit_info.dart';
-import '../theme/app_typography.dart';
 import '../widgets/flag_icon.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
@@ -42,9 +41,12 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
   Race get race => widget.race;
 
   // 첫 프레임은 번들된 정적 결과(없으면 빈 목록 → "준비 중" 카드)로 그리고,
-  // 서버 결과가 오면 교체한다. 서버 실패/미존재 시 기존 상태 유지(크래시 없음).
+  // 서버 결과(세션별)가 오면 교체한다. 서버 실패/미존재 시 기존 상태 유지.
   late List<RaceResultEntry> _results;
-  String? _resultStatusLabel; // '공식 결과'/'잠정 결과' — 서버 결과일 때만
+
+  /// 서버가 내려준 세션별 결과(FP1~레이스, 주말 순서). null 이면 정적 경로.
+  List<SessionResultData>? _sessions;
+  String? _selectedSessionType;
 
   @override
   void initState() {
@@ -58,16 +60,19 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
   Future<void> _refreshResults() async {
     final repository =
         widget.resultsRepository ?? const HttpRaceResultsRepository();
-    RaceResultData? data;
+    List<SessionResultData>? sessions;
     try {
-      data = await repository.fetchResult(raceId: race.id);
+      sessions = await repository.fetchSessionResults(raceId: race.id);
     } catch (_) {
       return; // 어떤 실패도 화면을 깨지 않는다 — 기존 카드 유지.
     }
-    if (data == null || !mounted) return;
+    if (sessions == null || sessions.isEmpty || !mounted) return;
     setState(() {
-      _results = data!.entries;
-      _resultStatusLabel = data.isOfficial ? '공식 결과' : '잠정 결과';
+      _sessions = sessions;
+      // 기본 선택: 레이스(주말의 결론). 아직 레이스 전이면 가장 최근 세션.
+      _selectedSessionType = sessions!.any((s) => s.sessionType == 'RACE')
+          ? 'RACE'
+          : sessions.last.sessionType;
     });
   }
 
@@ -112,15 +117,14 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
             _HeroCard(race: race, status: status),
             if (showResultCard) ...[
               const SizedBox(height: 12),
-              // 결과가 있으면 라이브 순위 패널과 같은 UI로 전체 순위를 보여주고,
-              // 아직 없으면 기존 placeholder 카드를 유지한다.
-              if (results.isEmpty)
+              // 서버 세션별 결과가 있으면 세션 선택 탭 + 패널.
+              // 없으면 번들 정적 레이스 결과, 그마저 없으면 placeholder 유지.
+              if (_sessions != null)
+                _buildSessionResults()
+              else if (results.isEmpty)
                 const _RaceResultsPlaceholderCard()
               else
-                RaceResultClassificationPanel(
-                  results: results,
-                  statusLabel: _resultStatusLabel,
-                ),
+                RaceResultClassificationPanel(results: results),
             ],
             if (raceSession != null) ...[
               const SizedBox(height: 12),
@@ -133,6 +137,96 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
               _CircuitInfoCard(race: race, info: circuitInfo),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 세션 선택 탭 + 선택된 세션의 결과 패널.
+  Widget _buildSessionResults() {
+    final sessions = _sessions!;
+    final selected = sessions.firstWhere(
+      (s) => s.sessionType == _selectedSessionType,
+      orElse: () => sessions.last,
+    );
+    // 레이스/스프린트만 갭 기반 표기(연습·퀄리는 행별 랩타임).
+    final gapBased =
+        selected.sessionType == 'RACE' || selected.sessionType == 'SPRINT';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (sessions.length > 1) ...[
+          _SessionResultTabs(
+            types: [for (final s in sessions) s.sessionType],
+            selected: selected.sessionType,
+            onChanged: (type) => setState(() => _selectedSessionType = type),
+          ),
+          const SizedBox(height: 10),
+        ],
+        RaceResultClassificationPanel(
+          results: selected.data.entries,
+          statusLabel: selected.data.isOfficial ? '공식 결과' : '잠정 결과',
+          title: '${raceSessionTypeLabel(selected.sessionType)} 결과',
+          gapBased: gapBased,
+        ),
+      ],
+    );
+  }
+}
+
+/// 세션별 결과 선택 탭(FP1 | 퀄리파잉 | 레이스 …). 순위 탭 토글과 같은
+/// 알약 스타일 — 활성 칩은 레드 배경.
+class _SessionResultTabs extends StatelessWidget {
+  const _SessionResultTabs({
+    required this.types,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<String> types;
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final type in types) ...[
+            _chip(type),
+            if (type != types.last) const SizedBox(width: 6),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String type) {
+    final isActive = type == selected;
+    return Material(
+      color: isActive ? AppColors.red : AppColors.card,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => onChanged(type),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isActive ? Colors.transparent : AppColors.hairline,
+            ),
+          ),
+          child: Text(
+            raceSessionTypeLabel(type),
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? AppColors.white : AppColors.textMuted,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
       ),
     );
@@ -335,7 +429,7 @@ class _RoundPill extends StatelessWidget {
         'ROUND $round',
         style: const TextStyle(
           fontSize: 11,
-          fontFamily: kDisplayFontFamily,
+          fontFamily: 'Pretendard',
           color: AppColors.slate300,
           fontWeight: FontWeight.w700,
         ),
@@ -413,7 +507,7 @@ class _RaceStartCard extends StatelessWidget {
                 session.time,
                 style: const TextStyle(
                   fontSize: 27,
-                  fontFamily: kDisplayFontFamily,
+                  fontFamily: 'Pretendard',
                   height: 1,
                   color: AppColors.redSoft,
                   fontWeight: FontWeight.w800,
@@ -538,7 +632,7 @@ class _SessionTimelineRow extends StatelessWidget {
     );
     final timeStyle = TextStyle(
       fontSize: emphasize ? 17 : 15,
-      fontFamily: kDisplayFontFamily,
+      fontFamily: 'Pretendard',
       color: emphasize ? AppColors.redSoft : _nameMuted,
       fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
     );

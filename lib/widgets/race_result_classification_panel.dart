@@ -19,6 +19,7 @@ class RaceResultClassificationPanel extends StatelessWidget {
     this.statusLabel,
     this.title = '레이스 결과',
     this.showDriverCount = true,
+    this.gapBased = true,
   });
 
   final List<RaceResultEntry> results;
@@ -28,6 +29,11 @@ class RaceResultClassificationPanel extends StatelessWidget {
   final String? statusLabel;
   final String title;
   final bool showDriverCount;
+
+  /// true(레이스/스프린트): 1위 총 시간 + 이후는 갭.
+  /// false(연습/퀄리파잉): 순위와 무관하게 각자의 랩타임을 보여준다 —
+  /// 갭 규칙을 그대로 쓰면 2위 이하가 전부 '—'가 된다(갭 없음).
+  final bool gapBased;
 
   @override
   Widget build(BuildContext context) {
@@ -58,8 +64,11 @@ class RaceResultClassificationPanel extends StatelessWidget {
     final teamColor = getTeamColor(
       entry.teamKo,
     ).withValues(alpha: isLightTeamColor(entry.teamKo) ? 0.7 : 1.0);
-    // 1위는 총 시간, 이후는 갭. DNF/DNS 등은 POS 라벨이 사유를 보여준다.
-    final time = (entry.position == 1 ? entry.time : entry.gap) ?? '—';
+    // 레이스류: 1위 총 시간 + 이후 갭(DNF/DNS 는 POS 라벨이 사유 표시).
+    // 연습/퀄리: 행별 랩타임.
+    final time = gapBased
+        ? (entry.position == 1 ? entry.time : entry.gap) ?? '—'
+        : entry.time ?? entry.gap ?? '—';
 
     return ClassificationRow(
       position: entry.position,

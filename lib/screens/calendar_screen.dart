@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_typography.dart';
 import '../widgets/flag_icon.dart';
 import '../data/races.dart';
 import '../models/race.dart';
@@ -289,7 +288,7 @@ class _SubHeader extends StatelessWidget {
             '$count',
             style: const TextStyle(
               fontSize: 12,
-              fontFamily: kDisplayFontFamily,
+              fontFamily: 'Pretendard',
               color: _muted,
               fontWeight: FontWeight.w700,
             ),
@@ -441,7 +440,7 @@ class _ActiveRaceCard extends StatelessWidget {
             venueText: '${race.circuitKo} · ${race.cityKo}',
             dateStyle: const TextStyle(
               fontSize: 15,
-              fontFamily: kDisplayFontFamily,
+              fontFamily: 'Pretendard',
               color: AppColors.redSoft,
               fontWeight: FontWeight.w800,
               height: 1.2,
@@ -506,7 +505,7 @@ class _RaceInfoLine extends StatelessWidget {
               dateStyle ??
               const TextStyle(
                 fontSize: 15,
-                fontFamily: kDisplayFontFamily,
+                fontFamily: 'Pretendard',
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
                 height: 1.2,
@@ -558,7 +557,7 @@ class _CompactRaceCard extends StatelessWidget {
                         'R${race.round}',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontFamily: kDisplayFontFamily,
+                          fontFamily: 'Pretendard',
                           color: AppColors.textEnded,
                           fontWeight: FontWeight.w700,
                         ),

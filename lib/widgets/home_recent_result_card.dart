@@ -81,20 +81,14 @@ class _HomeRecentResultCardState extends State<HomeRecentResultCard> {
         child: RaceResultClassificationPanel(
           results: latest.data.entries,
           title:
-              '최근 세션 결과 (${race.nameKo} ${_sessionLabel(latest.sessionType)})',
+              '최근 세션 결과 (${race.nameKo} '
+              '${raceSessionTypeLabel(latest.sessionType)})',
           showDriverCount: false,
+          // 연습/퀄리 세션은 행별 랩타임 표기(레이스류만 갭 기반).
+          gapBased:
+              latest.sessionType == 'RACE' || latest.sessionType == 'SPRINT',
         ),
       ),
     );
   }
 }
-
-String _sessionLabel(String type) => switch (type) {
-  'FP1' => 'FP1',
-  'FP2' => 'FP2',
-  'FP3' => 'FP3',
-  'SPRINT_QUALIFYING' => '스프린트 퀄리파잉',
-  'SPRINT' => '스프린트',
-  'QUALIFYING' => '퀄리파잉',
-  _ => '레이스',
-};

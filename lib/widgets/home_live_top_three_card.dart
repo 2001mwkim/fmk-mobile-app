@@ -6,7 +6,6 @@ import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
 import 'flag_icon.dart';
 
 /// 웹 components/live/HomeLiveTopThreeCard.tsx 의 Flutter 이식.
@@ -191,7 +190,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               lapText,
               style: const TextStyle(
                 fontSize: 11,
-                fontFamily: kDisplayFontFamily,
+                fontFamily: 'Pretendard',
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
               ),
@@ -413,7 +412,7 @@ class _TopThreeRow extends StatelessWidget {
               driver.code,
               style: const TextStyle(
                 fontSize: 14,
-                fontFamily: kDisplayFontFamily,
+                fontFamily: 'Pretendard',
                 color: Color(0xFFE8EDF6),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
@@ -438,7 +437,7 @@ class _TopThreeRow extends StatelessWidget {
             gap,
             style: TextStyle(
               fontSize: 12,
-              fontFamily: kDisplayFontFamily,
+              fontFamily: 'Pretendard',
               color: gap == '—' ? AppColors.faint : AppColors.nameMuted,
               fontWeight: FontWeight.w700,
             ),
@@ -474,7 +473,7 @@ class _RankBadge extends StatelessWidget {
         '$position',
         style: TextStyle(
           fontSize: 12,
-          fontFamily: kDisplayFontFamily,
+          fontFamily: 'Pretendard',
           color: podium.foreground,
           fontWeight: FontWeight.w800,
         ),

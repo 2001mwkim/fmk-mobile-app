@@ -5,7 +5,6 @@ import '../data/team_colors.dart';
 import '../models/standing.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
 import '../widgets/app_card.dart';
 
 // 웹 순위 페이지 전용 색.
@@ -349,7 +348,7 @@ class _RankBadge extends StatelessWidget {
         '$position',
         style: TextStyle(
           fontSize: 13,
-          fontFamily: kDisplayFontFamily,
+          fontFamily: 'Pretendard',
           color: spec.foreground,
           fontWeight: FontWeight.w800,
         ),
@@ -373,7 +372,7 @@ class _PointsLabel extends StatelessWidget {
           _formatPoints(points),
           style: const TextStyle(
             fontSize: 18,
-            fontFamily: kDisplayFontFamily,
+            fontFamily: 'Pretendard',
             color: AppColors.white,
             fontWeight: FontWeight.w800,
           ),

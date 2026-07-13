@@ -81,6 +81,12 @@ class _FakeRepo implements RaceResultsRepository {
   }) async => null;
 
   @override
+  Future<List<SessionResultData>?> fetchSessionResults({
+    required String raceId,
+    int season = 2026,
+  }) async => null;
+
+  @override
   Future<LatestRaceResult?> fetchLatest({int season = 2026}) async =>
       latestResult;
 }

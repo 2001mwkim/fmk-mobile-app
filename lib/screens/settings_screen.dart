@@ -611,9 +611,7 @@ class _AppInfoCard extends StatelessWidget {
               showTopBorder: false,
               onTap: () => _openExternalUri(context, Uri.parse(_f1dbUrl)),
             ),
-            // 번들 자산 라이선스 표기(폰트 전문: assets/fonts/OFL.txt,
-            // 국기 전문: assets/flags/LICENSE.md).
-            const _DlRow(label: '서체', value: 'Titillium Web · SIL OFL'),
+            // 번들 자산 라이선스 표기(전문: assets/flags/LICENSE.md).
             const _DlRow(label: '국기 아이콘', value: 'circle-flags · MIT'),
             const _DlRow(label: '시간 기준', value: '한국시간 KST'),
             _DlRow(

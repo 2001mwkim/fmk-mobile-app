@@ -19,6 +19,26 @@ class RaceResultData {
   bool get isOfficial => status == 'official';
 }
 
+/// 한 세션(FP1~레이스)의 결과 — GP 상세의 세션 선택 탭용.
+class SessionResultData {
+  const SessionResultData({required this.sessionType, required this.data});
+
+  /// 서버 계약의 세션 타입: FP1/FP2/FP3/SPRINT_QUALIFYING/SPRINT/QUALIFYING/RACE.
+  final String sessionType;
+  final RaceResultData data;
+}
+
+/// 서버 sessionType → 한글 표시 라벨(GP 상세 탭 · 최근 결과 카드 공용).
+String raceSessionTypeLabel(String type) => switch (type) {
+  'FP1' => 'FP1',
+  'FP2' => 'FP2',
+  'FP3' => 'FP3',
+  'SPRINT_QUALIFYING' => '스프린트 퀄리파잉',
+  'SPRINT' => '스프린트',
+  'QUALIFYING' => '퀄리파잉',
+  _ => '레이스',
+};
+
 /// 가장 최근에 결과가 존재하는 레이스(홈 "최근 레이스 결과" 카드용).
 class LatestRaceResult {
   const LatestRaceResult({
@@ -44,6 +64,13 @@ class LatestRaceResult {
 /// 앱과 같은 raceId 를 내려준다).
 abstract class RaceResultsRepository {
   Future<RaceResultData?> fetchResult({required String raceId, int season});
+
+  /// 해당 GP의 세션별 결과(주말 진행 순서). 실패/미존재면 null.
+  /// 구버전 응답(sessions 없음)은 레이스 결과 1개짜리 목록으로 정규화된다.
+  Future<List<SessionResultData>?> fetchSessionResults({
+    required String raceId,
+    int season,
+  });
 
   /// 가장 최근 결과가 있는 레이스 1개(홈 카드용). 없거나 실패하면 null.
   Future<LatestRaceResult?> fetchLatest({int season});
@@ -85,6 +112,32 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
     } catch (_) {
       // 네트워크/타임아웃/파싱 오류 → null(기존 카드 유지).
       return null;
+    } finally {
+      if (client == null) httpClient.close();
+    }
+  }
+
+  @override
+  Future<List<SessionResultData>?> fetchSessionResults({
+    required String raceId,
+    int season = 2026,
+  }) async {
+    final httpClient = client ?? http.Client();
+    try {
+      final uri = Uri.parse(baseUrl).replace(
+        path: '/api/race-results',
+        queryParameters: {'season': '$season', 'raceId': raceId},
+      );
+      final response = await httpClient
+          .get(uri)
+          .timeout(kRaceResultsFetchTimeout);
+      if (response.statusCode != 200) return null;
+      return parseRaceSessionResultsJson(
+        utf8.decode(response.bodyBytes),
+        raceId: raceId,
+      );
+    } catch (_) {
+      return null; // 실패 → 화면은 정적 결과/준비 중 카드 유지.
     } finally {
       if (client == null) httpClient.close();
     }
@@ -163,6 +216,50 @@ RaceResultData? _parseResultData(Map rawResult) {
     status: rawResult['status'] == 'provisional' ? 'provisional' : 'official',
     entries: entries,
   );
+}
+
+/// 응답에서 [raceId] 의 세션별 결과 목록을 파싱한다(주말 진행 순서 유지).
+/// sessions 배열이 없는 구버전 응답은 최상위 results(레이스)로 폴백.
+/// 유효 세션이 하나도 없으면 null(호출부는 기존 카드 유지).
+List<SessionResultData>? parseRaceSessionResultsJson(
+  String body, {
+  required String raceId,
+}) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map || decoded['races'] is! List) return null;
+
+    for (final rawRace in decoded['races'] as List) {
+      if (rawRace is! Map || rawRace['raceId'] != raceId) continue;
+
+      final sessions = <SessionResultData>[];
+      if (rawRace['sessions'] is List) {
+        for (final rawSession in rawRace['sessions'] as List) {
+          if (rawSession is! Map || rawSession['sessionType'] is! String) {
+            continue;
+          }
+          final data = _parseResultData(rawSession);
+          if (data == null) continue;
+          sessions.add(
+            SessionResultData(
+              sessionType: rawSession['sessionType'] as String,
+              data: data,
+            ),
+          );
+        }
+      }
+      if (sessions.isEmpty) {
+        final data = _parseResultData(rawRace);
+        if (data != null) {
+          sessions.add(SessionResultData(sessionType: 'RACE', data: data));
+        }
+      }
+      return sessions.isEmpty ? null : sessions;
+    }
+    return null; // 해당 raceId 결과 없음(아직 미개최 등)
+  } catch (_) {
+    return null;
+  }
 }
 
 /// 응답에서 [raceId] 의 결과를 찾아 파싱한다. 깨진 행은 건너뛰되,

@@ -1,9 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
-// 서킷 배경 PNG 캡처(renderFlutterWidget)에 Widget/Color/Size 가 필요.
-import 'package:flutter/widgets.dart' show Color, Size;
 import 'package:home_widget/home_widget.dart';
 
 import '../data/country_flags.dart';
@@ -15,7 +12,6 @@ import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../models/standing.dart';
-import '../widgets/circuit_map.dart';
 import 'live_session_controller.dart';
 import 'live_session_service.dart';
 import 'race_results_repository.dart';
@@ -165,7 +161,6 @@ class FmkHomeWidgetBridge {
 
     await _ensureLatestResult();
     await _ensureStandings();
-    await _ensureCircuitImage(getNextRace(now ?? DateTime.now()).id);
     final payload = buildFmkHomeWidgetPayload(
       snapshot: snapshot,
       latestResult: _latestResult,
@@ -184,34 +179,6 @@ class FmkHomeWidgetBridge {
     } catch (error, stackTrace) {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
-    }
-  }
-
-  /// 위젯 배경용 서킷 아웃라인 PNG 캡처 상태 — 다음 GP가 바뀔 때만 다시 그린다.
-  static String? _renderedCircuitRaceId;
-
-  /// 다음 GP 서킷 아웃라인을 PNG 로 캡처해 'circuitImage' 키(파일 경로)로
-  /// 저장한다. 실패(에셋 없음, 백그라운드 렌더 제약)는 무시 — 위젯은 배경
-  /// 없이 그려지고 다음 갱신에서 재시도한다.
-  static Future<void> _ensureCircuitImage(String raceId) async {
-    if (_renderedCircuitRaceId == raceId) return;
-    try {
-      // 오프스크린 캡처는 비동기 에셋 로드를 기다려주지 않으므로
-      // SVG 소스를 먼저 읽어 동기 렌더 위젯에 넘긴다.
-      final source = await rootBundle.loadString('assets/circuits/$raceId.svg');
-      await HomeWidget.renderFlutterWidget(
-        CircuitOutlineFromSource(
-          source: source,
-          // 위젯 네이비 배경 위 은은한 레드 아웃라인(내용 가독성 우선).
-          color: const Color(0x30EF4444),
-        ),
-        key: 'circuitImage',
-        logicalSize: const Size(340, 170),
-        pixelRatio: 2,
-      );
-      _renderedCircuitRaceId = raceId;
-    } catch (_) {
-      // 배경 없이 유지.
     }
   }
 

@@ -198,12 +198,90 @@ void main() {
     expect(find.text('결과 데이터 준비 중'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  test('세션별 결과 파싱: sessions 순서 유지 + 구버전(sessions 없음) 폴백', () {
+    // sessions 배열이 있으면 주말 순서대로 전부 파싱한다.
+    final body = validBody('gb');
+    final race = (body['races'] as List).first as Map<String, dynamic>;
+    race['sessions'] = [
+      {'sessionType': 'FP1', 'status': 'official', 'results': race['results']},
+      {
+        'sessionType': 'QUALIFYING',
+        'status': 'official',
+        'results': race['results'],
+      },
+      {'sessionType': 'RACE', 'status': 'official', 'results': race['results']},
+    ];
+    final sessions = parseRaceSessionResultsJson(jsonEncode(body), raceId: 'gb');
+    expect(sessions, isNotNull);
+    expect([for (final s in sessions!) s.sessionType], [
+      'FP1',
+      'QUALIFYING',
+      'RACE',
+    ]);
+    expect(sessions.first.data.entries.length, 12);
+
+    // 구버전 응답(sessions 없음) → 레이스 1개짜리 목록으로 정규화.
+    final legacy = parseRaceSessionResultsJson(
+      jsonEncode(validBody('gb')),
+      raceId: 'gb',
+    );
+    expect(legacy!.single.sessionType, 'RACE');
+  });
+
+  testWidgets('세션 탭으로 퀄리파잉 결과(행별 랩타임)를 볼 수 있다', (tester) async {
+    final race = endedRaceWithoutStaticResults();
+    final raceData = parseRaceResultJson(
+      jsonEncode(validBody(race.id)),
+      raceId: race.id,
+    )!;
+    // 퀄리 결과: 갭 없이 행별 랩타임만 있는 형태.
+    final qualiBody = validBody(race.id);
+    final qualiRows =
+        ((qualiBody['races'] as List).first['results'] as List)
+            .cast<Map<String, dynamic>>();
+    for (final row in qualiRows) {
+      row['time'] = '1:2${row['position']}.00${row['position']}';
+      row['gap'] = null;
+      row['points'] = 0;
+    }
+    final qualiData = parseRaceResultJson(
+      jsonEncode(qualiBody),
+      raceId: race.id,
+    )!;
+
+    await pumpDetail(
+      tester,
+      race,
+      _FakeRaceResultsRepository(
+        raceData,
+        sessions: [
+          SessionResultData(sessionType: 'QUALIFYING', data: qualiData),
+          SessionResultData(sessionType: 'RACE', data: raceData),
+        ],
+      ),
+    );
+
+    // 기본 선택은 레이스(주말의 결론).
+    expect(find.text('레이스 결과'), findsOneWidget);
+    expect(find.text('퀄리파잉'), findsOneWidget); // 세션 탭 칩
+
+    await tester.tap(find.text('퀄리파잉'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('퀄리파잉 결과'), findsOneWidget);
+    // 갭 기반이 아니라 행별 랩타임 표기 — 2위도 자기 기록이 보인다.
+    expect(find.text('1:22.002'), findsOneWidget);
+  });
 }
 
 class _FakeRaceResultsRepository implements RaceResultsRepository {
-  _FakeRaceResultsRepository(this.data);
+  _FakeRaceResultsRepository(this.data, {this.sessions});
 
   final RaceResultData? data;
+
+  /// 지정하면 세션별 결과로 이 목록을 돌려준다(미지정 시 레이스 1개로 정규화).
+  final List<SessionResultData>? sessions;
 
   @override
   Future<RaceResultData?> fetchResult({
@@ -212,12 +290,28 @@ class _FakeRaceResultsRepository implements RaceResultsRepository {
   }) async => data;
 
   @override
+  Future<List<SessionResultData>?> fetchSessionResults({
+    required String raceId,
+    int season = 2026,
+  }) async {
+    if (sessions != null) return sessions;
+    if (data == null) return null;
+    return [SessionResultData(sessionType: 'RACE', data: data!)];
+  }
+
+  @override
   Future<LatestRaceResult?> fetchLatest({int season = 2026}) async => null;
 }
 
 class _ThrowingRaceResultsRepository implements RaceResultsRepository {
   @override
   Future<RaceResultData?> fetchResult({
+    required String raceId,
+    int season = 2026,
+  }) async => throw Exception('boom');
+
+  @override
+  Future<List<SessionResultData>?> fetchSessionResults({
     required String raceId,
     int season = 2026,
   }) async => throw Exception('boom');
