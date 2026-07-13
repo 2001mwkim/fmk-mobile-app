@@ -72,6 +72,11 @@ void main() {
     expect(find.text('직관'), findsNothing);
     expect(find.text('라이브 센터'), findsOneWidget);
     expect(find.text('다음 라이브'), findsOneWidget);
+    // 비라이브에도 라이브 카드 틀(실시간 순위/날씨/레이스 컨트롤)을 빈
+    // 상태로 유지한다 — 세션 중 무엇이 표시되는지 구조로 보여주기 위함.
+    expect(find.text('실시간 순위'), findsOneWidget);
+    expect(find.text('트랙 & 날씨'), findsOneWidget);
+    expect(find.text('레이스 컨트롤'), findsOneWidget);
     expect(find.text('직전 세션 결과'), findsOneWidget);
 
     await tester.tap(find.text('홈'));

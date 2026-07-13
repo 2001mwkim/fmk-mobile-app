@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/races.dart';
 import '../models/live_session.dart';
+import '../models/race_session.dart';
 import '../services/live_session_controller.dart';
 import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
@@ -96,6 +97,9 @@ class _OfflineCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     final race = getNextRace(now);
     final session = getNextSession(race, now);
+    // 비라이브에도 라이브 때 나타날 카드들을 빈 상태(안내 문구 + '—')로
+    // 유지한다 — 처음 들어온 사용자가 "세션 중에 여기서 뭘 보게 되는지"를
+    // 화면 구조만으로 알 수 있게(숨기면 결과 다시보기 화면처럼 보인다).
     return Column(
       children: [
         AppCard(
@@ -137,6 +141,12 @@ class _OfflineCenter extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        _TimingPreviewCard(session: session),
+        const SizedBox(height: 12),
+        const _WeatherPreviewCard(),
+        const SizedBox(height: 12),
+        const _RaceControlPreviewCard(),
+        const SizedBox(height: 16),
         const Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -152,6 +162,131 @@ class _OfflineCenter extends StatelessWidget {
         ),
         HomeRecentResultCard(repository: resultsRepository, topPadding: 10),
       ],
+    );
+  }
+}
+
+/// 비라이브용 실시간 순위 자리 카드 — 라이브 때와 같은 헤더에 안내만 채운다.
+class _TimingPreviewCard extends StatelessWidget {
+  const _TimingPreviewCard({this.session});
+
+  final RaceSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    final startLabel = session == null
+        ? null
+        : '${session!.date} ${session!.time} 세션 시작과 함께 표시됩니다.';
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '실시간 순위',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Text(
+                  'TIME / GAP',
+                  style: const TextStyle(
+                    color: AppColors.faint,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 18),
+            child: Text(
+              '전체 드라이버 순위와 랩타임·타이어·섹터가 실시간으로 올라옵니다.'
+              '${startLabel == null ? '' : '\n$startLabel'}',
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 비라이브용 트랙 & 날씨 자리 카드 — 메트릭 틀을 '—'로 유지.
+class _WeatherPreviewCard extends StatelessWidget {
+  const _WeatherPreviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '트랙 & 날씨',
+            style: TextStyle(
+              color: AppColors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Row(
+            children: [
+              _Metric(label: '대기', value: '—'),
+              _Metric(label: '트랙', value: '—'),
+              _Metric(label: '습도', value: '—'),
+              _Metric(label: '바람', value: '—'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 비라이브용 레이스 컨트롤 자리 카드.
+class _RaceControlPreviewCard extends StatelessWidget {
+  const _RaceControlPreviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '레이스 컨트롤',
+            style: TextStyle(
+              color: AppColors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            '세이프티카·깃발 등 FIA 심판진 메시지가 세션 중 실시간으로 표시됩니다.',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
