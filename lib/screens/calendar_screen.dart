@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../data/country_flags.dart';
+import '../theme/app_typography.dart';
+import '../widgets/flag_icon.dart';
 import '../data/races.dart';
 import '../models/race.dart';
 import '../theme/app_colors.dart';
@@ -288,7 +289,7 @@ class _SubHeader extends StatelessWidget {
             '$count',
             style: const TextStyle(
               fontSize: 12,
-              fontFamily: 'Pretendard',
+              fontFamily: kDisplayFontFamily,
               color: _muted,
               fontWeight: FontWeight.w700,
             ),
@@ -440,7 +441,7 @@ class _ActiveRaceCard extends StatelessWidget {
             venueText: '${race.circuitKo} · ${race.cityKo}',
             dateStyle: const TextStyle(
               fontSize: 15,
-              fontFamily: 'Pretendard',
+              fontFamily: kDisplayFontFamily,
               color: AppColors.redSoft,
               fontWeight: FontWeight.w800,
               height: 1.2,
@@ -505,7 +506,7 @@ class _RaceInfoLine extends StatelessWidget {
               dateStyle ??
               const TextStyle(
                 fontSize: 15,
-                fontFamily: 'Pretendard',
+                fontFamily: kDisplayFontFamily,
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
                 height: 1.2,
@@ -557,7 +558,7 @@ class _CompactRaceCard extends StatelessWidget {
                         'R${race.round}',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontFamily: 'Pretendard',
+                          fontFamily: kDisplayFontFamily,
                           color: AppColors.textEnded,
                           fontWeight: FontWeight.w700,
                         ),
@@ -632,11 +633,10 @@ class _Flag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flag = getCountryFlag(countryKo);
-    if (flag.isEmpty) return const SizedBox.shrink();
+    // 이모지 대신 벡터 국기(FlagIcon) — 기기별 이모지 룩 편차 제거.
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Text(flag, style: TextStyle(fontSize: size, height: 1)),
+      child: FlagIcon(countryKo: countryKo, size: size),
     );
   }
 }

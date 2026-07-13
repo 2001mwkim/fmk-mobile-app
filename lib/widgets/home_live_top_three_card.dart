@@ -6,6 +6,8 @@ import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
+import 'flag_icon.dart';
 
 /// 웹 components/live/HomeLiveTopThreeCard.tsx 의 Flutter 이식.
 ///
@@ -136,7 +138,11 @@ class HomeLiveTopThreeCard extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            if (flag != null) ...[
+            // 매핑되는 국가는 벡터 국기, 라이브 피드가 준 이모지만 폴백.
+            if (race != null) ...[
+              FlagIcon(countryKo: race.countryKo, size: 18),
+              const SizedBox(width: 8),
+            ] else if (flag != null) ...[
               Text(flag, style: const TextStyle(fontSize: 18, height: 1)),
               const SizedBox(width: 8),
             ],
@@ -185,7 +191,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               lapText,
               style: const TextStyle(
                 fontSize: 11,
-                fontFamily: 'Pretendard',
+                fontFamily: kDisplayFontFamily,
                 color: AppColors.white,
                 fontWeight: FontWeight.w800,
               ),
@@ -407,7 +413,7 @@ class _TopThreeRow extends StatelessWidget {
               driver.code,
               style: const TextStyle(
                 fontSize: 14,
-                fontFamily: 'Pretendard',
+                fontFamily: kDisplayFontFamily,
                 color: Color(0xFFE8EDF6),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
@@ -432,7 +438,7 @@ class _TopThreeRow extends StatelessWidget {
             gap,
             style: TextStyle(
               fontSize: 12,
-              fontFamily: 'Pretendard',
+              fontFamily: kDisplayFontFamily,
               color: gap == '—' ? AppColors.faint : AppColors.nameMuted,
               fontWeight: FontWeight.w700,
             ),
@@ -468,7 +474,7 @@ class _RankBadge extends StatelessWidget {
         '$position',
         style: TextStyle(
           fontSize: 12,
-          fontFamily: 'Pretendard',
+          fontFamily: kDisplayFontFamily,
           color: podium.foreground,
           fontWeight: FontWeight.w800,
         ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/circuit_info.dart';
-import '../data/country_flags.dart';
+import '../theme/app_typography.dart';
+import '../widgets/flag_icon.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
 import '../models/circuit_info.dart';
@@ -334,7 +335,7 @@ class _RoundPill extends StatelessWidget {
         'ROUND $round',
         style: const TextStyle(
           fontSize: 11,
-          fontFamily: 'Pretendard',
+          fontFamily: kDisplayFontFamily,
           color: AppColors.slate300,
           fontWeight: FontWeight.w700,
         ),
@@ -351,11 +352,10 @@ class _Flag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flag = getCountryFlag(countryKo);
-    if (flag.isEmpty) return const SizedBox.shrink();
+    // 이모지 대신 벡터 국기(FlagIcon) — 기기별 이모지 룩 편차 제거.
     return Padding(
       padding: const EdgeInsets.only(right: 10),
-      child: Text(flag, style: TextStyle(fontSize: size, height: 1)),
+      child: FlagIcon(countryKo: countryKo, size: size),
     );
   }
 }
@@ -413,7 +413,7 @@ class _RaceStartCard extends StatelessWidget {
                 session.time,
                 style: const TextStyle(
                   fontSize: 27,
-                  fontFamily: 'Pretendard',
+                  fontFamily: kDisplayFontFamily,
                   height: 1,
                   color: AppColors.redSoft,
                   fontWeight: FontWeight.w800,
@@ -538,7 +538,7 @@ class _SessionTimelineRow extends StatelessWidget {
     );
     final timeStyle = TextStyle(
       fontSize: emphasize ? 17 : 15,
-      fontFamily: 'Pretendard',
+      fontFamily: kDisplayFontFamily,
       color: emphasize ? AppColors.redSoft : _nameMuted,
       fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
     );

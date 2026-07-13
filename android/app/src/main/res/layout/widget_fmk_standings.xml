@@ -1,29 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 4x2 일정 화면. 헤더(브랜드 바 + GP명 + KST + 토글) / 헤어라인 / 세션 5행.
-     GP명은 sans-serif-black — 앱 히어로 카드의 900 웨이트와 톤을 맞춘다. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root_default"
+<!-- 4x2 챔피언십 순위 위젯: 헤더(브랜드 바 + 타이틀 + 드라이버/팀 토글) /
+     헤어라인 / 순위 5행. 순위 탭과 같은 데이터·표기(▲▼ 변동). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_standings"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg">
-
-    <!-- 다음 GP 서킷 아웃라인(앱이 캡처한 PNG). 없으면 Provider 가 숨긴다. -->
-    <ImageView
-        android:id="@+id/iv_circuit_bg_default"
-        android:layout_width="185dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="end"
-        android:paddingVertical="10dp"
-        android:scaleType="fitCenter"
-        android:visibility="gone"
-        android:contentDescription="@null" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp">
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -41,16 +26,6 @@
             android:contentDescription="@null" />
 
         <TextView
-            android:id="@+id/tv_gp_flag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp"
-            android:includeFontPadding="false"
-            android:textColor="@color/fmk_white"
-            android:textSize="15sp" />
-
-        <TextView
-            android:id="@+id/tv_gp_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -58,32 +33,21 @@
             android:fontFamily="sans-serif-black"
             android:includeFontPadding="false"
             android:maxLines="1"
+            android:text="챔피언십"
             android:textColor="@color/fmk_white"
             android:textSize="18sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:includeFontPadding="false"
-            android:letterSpacing="0.12"
-            android:text="KST"
-            android:textColor="@color/fmk_faint"
-            android:textSize="9sp"
-            android:textStyle="bold" />
-
         <LinearLayout
-            android:id="@+id/toggle_group_default"
+            android:id="@+id/toggle_group_standings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:background="@drawable/widget_toggle_bg"
             android:orientation="horizontal"
-            android:padding="2dp"
-            android:visibility="gone">
+            android:padding="2dp">
 
             <TextView
-                android:id="@+id/btn_toggle_schedule_default"
+                android:id="@+id/btn_st_drivers"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_toggle_active_bg"
@@ -91,20 +55,20 @@
                 android:includeFontPadding="false"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="일정"
+                android:text="드라이버"
                 android:textColor="@color/fmk_white"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/btn_toggle_live_default"
+                android:id="@+id/btn_st_teams"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
                 android:includeFontPadding="false"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:text="결과"
+                android:text="팀"
                 android:textColor="@color/fmk_dim"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -125,11 +89,10 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <include layout="@layout/widget_fmk_session_row_1" />
-        <include layout="@layout/widget_fmk_session_row_2" />
-        <include layout="@layout/widget_fmk_session_row_3" />
-        <include layout="@layout/widget_fmk_session_row_4" />
-        <include layout="@layout/widget_fmk_session_row_5" />
+        <include layout="@layout/widget_fmk_standings_row_1" />
+        <include layout="@layout/widget_fmk_standings_row_2" />
+        <include layout="@layout/widget_fmk_standings_row_3" />
+        <include layout="@layout/widget_fmk_standings_row_4" />
+        <include layout="@layout/widget_fmk_standings_row_5" />
     </LinearLayout>
-    </LinearLayout>
-</FrameLayout>
+</LinearLayout>

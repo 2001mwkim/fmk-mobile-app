@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/live_session.dart' show livePodiumColors;
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// 라이브 순위 패널과 최종 결과 패널이 공유하는 시각 요소 모음.
 ///
@@ -85,7 +86,7 @@ class ClassificationColumnHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     const style = TextStyle(
       fontSize: 9,
-      fontFamily: 'Pretendard',
+      fontFamily: kDisplayFontFamily,
       color: AppColors.faint,
       fontWeight: FontWeight.w800,
       letterSpacing: 0.8,
@@ -170,7 +171,7 @@ class ClassificationRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: isNumericLabel ? 12 : 8,
-                fontFamily: 'Pretendard',
+                fontFamily: kDisplayFontFamily,
                 color: podium.foreground,
                 fontWeight: FontWeight.w800,
               ),
@@ -193,7 +194,7 @@ class ClassificationRow extends StatelessWidget {
                 code!,
                 style: TextStyle(
                   fontSize: 13,
-                  fontFamily: 'Pretendard',
+                  fontFamily: kDisplayFontFamily,
                   color: isTopThree
                       ? const Color(0xFFE8EDF6)
                       : AppColors.slate300,
@@ -238,7 +239,7 @@ class ClassificationRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: TextStyle(
               fontSize: 12,
-              fontFamily: 'Pretendard',
+              fontFamily: kDisplayFontFamily,
               color: trailing == '—'
                   ? AppColors.faint
                   : (isTopThree ? AppColors.nameMuted : AppColors.muted),

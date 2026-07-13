@@ -5,6 +5,7 @@ import '../data/team_colors.dart';
 import '../models/standing.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 import 'app_card.dart';
 
 /// 홈 "챔피언십 TOP 3" 미니 카드. 순위 탭과 같은 데이터(정적 초기값 →
@@ -115,6 +116,7 @@ class _DriverRow extends StatelessWidget {
                     ? AppColors.redSoft
                     : AppColors.slate300,
                 fontSize: 14,
+                fontFamily: kDisplayFontFamily,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -147,6 +149,7 @@ class _DriverRow extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.white,
               fontSize: 13,
+              fontFamily: kDisplayFontFamily,
               fontWeight: FontWeight.w800,
             ),
           ),

@@ -3,14 +3,29 @@
      · 일정: VIA FORMULA 킥커 / GP명 / 다음 세션명(레드) / 시간(대형) / 날짜
      · 라이브·결과: LIVE·결과 뱃지 / GP명 / P1(레드) / 드라이버명(대형) / 랩·기록
      공간이 좁아 토글은 없다 — 탭하면 앱이 열린다. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root_compact"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
-    android:orientation="vertical"
-    android:paddingHorizontal="14dp"
-    android:paddingVertical="12dp">
+    android:background="@drawable/widget_bg">
+
+    <!-- 다음 GP 서킷 아웃라인(앱이 캡처한 PNG). 없으면 Provider 가 숨긴다. -->
+    <ImageView
+        android:id="@+id/iv_circuit_bg_compact"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:paddingVertical="12dp"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -101,4 +116,5 @@
         android:maxLines="1"
         android:textColor="@color/fmk_dim"
         android:textSize="11sp" />
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>

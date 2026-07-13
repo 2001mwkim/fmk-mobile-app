@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'circuit_map.dart';
+
 /// 웹 app/page.tsx 의 "다음/진행중 그랑프리 히어로" 표면을 Flutter로 재현.
 ///
 /// 웹 클래스:
@@ -17,6 +19,7 @@ class HeroCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.onTap,
+    this.circuitAssetPath,
   });
 
   final Widget child;
@@ -24,6 +27,10 @@ class HeroCard extends StatelessWidget {
 
   /// 탭 시 동작(예: 상세 이동). null 이면 비탭(시각 변화 없음).
   final VoidCallback? onTap;
+
+  /// 지정 시 우측에 해당 서킷 아웃라인을 배경 장식으로 깐다
+  /// (assets/circuits/*.svg — F1DB CC BY 4.0, 설정 화면에 출처 표기).
+  final String? circuitAssetPath;
 
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(24));
 
@@ -52,6 +59,20 @@ class HeroCard extends StatelessWidget {
             const Positioned.fill(
               child: CustomPaint(painter: _DiagonalStripesPainter()),
             ),
+            // 서킷 아웃라인 — 우측에 낮은 알파 레드로 은은하게(내용 가독성 우선).
+            if (circuitAssetPath != null)
+              Positioned(
+                right: -28,
+                top: 8,
+                bottom: 8,
+                width: 210,
+                child: IgnorePointer(
+                  child: CircuitOutline(
+                    assetPath: circuitAssetPath!,
+                    color: const Color(0x21EF4444),
+                  ),
+                ),
+              ),
             // 우상단 라디얼 글로우
             Positioned(
               right: -40,

@@ -5,6 +5,7 @@ import '../models/live_session.dart';
 import '../services/live_session_controller.dart';
 import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 import '../widgets/app_card.dart';
 import '../widgets/home_recent_result_card.dart';
 import '../widgets/live_session_builder.dart';
@@ -286,9 +287,11 @@ class _Metric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            // 랩/남은 시간/트랙 상태 — 라틴 표기라 디스플레이 폰트 적용.
             style: TextStyle(
               color: valueColor ?? AppColors.white,
               fontSize: 14,
+              fontFamily: kDisplayFontFamily,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -396,6 +399,7 @@ class _DriverRow extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.slate300,
                 fontSize: 13,
+                fontFamily: kDisplayFontFamily,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -416,6 +420,7 @@ class _DriverRow extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.white,
                 fontSize: 13,
+                fontFamily: kDisplayFontFamily,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -456,6 +461,7 @@ class _DriverRow extends StatelessWidget {
                   ? AppColors.redSoft
                   : AppColors.slate300,
               fontSize: 11,
+              fontFamily: kDisplayFontFamily,
               fontWeight: FontWeight.w800,
             ),
           ),

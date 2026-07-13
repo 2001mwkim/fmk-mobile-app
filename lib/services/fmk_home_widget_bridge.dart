@@ -1,21 +1,32 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+// 서킷 배경 PNG 캡처(renderFlutterWidget)에 Widget/Color/Size 가 필요.
+import 'package:flutter/widgets.dart' show Color, Size;
 import 'package:home_widget/home_widget.dart';
 
 import '../data/country_flags.dart';
 import '../data/drivers.dart';
 import '../data/races.dart';
+import '../data/standings.dart' as static_standings;
 import '../data/team_colors.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
+import '../models/standing.dart';
+import '../widgets/circuit_map.dart';
 import 'live_session_controller.dart';
 import 'live_session_service.dart';
 import 'race_results_repository.dart';
+import 'standings_repository.dart';
 
 const String fmkHomeWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkHomeWidgetProvider';
+
+/// 챔피언십 순위 위젯(별도 위젯 종류)의 Provider.
+const String fmkStandingsWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
 
 const String _modeDefault = 'default';
 const String _modeLive = 'live';
@@ -97,6 +108,15 @@ class FmkHomeWidgetBridge {
   static RaceResultsRepository resultsRepository =
       const HttpRaceResultsRepository();
 
+  /// 챔피언십 순위 캐시 — 순위 위젯 데이터. 서버 실패 시 번들 정적 순위 사용.
+  static StandingsSnapshot? _standings;
+  static DateTime? _standingsFetchedAt;
+
+  /// 테스트 주입 지점(기본은 실서버 /api/standings).
+  @visibleForTesting
+  static StandingsRepository standingsRepository =
+      const HttpStandingsRepository();
+
   static void bindTo(LiveSessionController controller) {
     if (_bound) return;
     _bound = true;
@@ -121,6 +141,22 @@ class FmkHomeWidgetBridge {
     }
   }
 
+  /// 챔피언십 순위 갱신(최대 6시간에 한 번 — 서버 갱신 주기와 동일).
+  /// 실패는 무시: 기존 캐시, 그것도 없으면 번들 정적 순위로 그린다.
+  static Future<void> _ensureStandings() async {
+    final now = DateTime.now();
+    if (_standingsFetchedAt != null &&
+        now.difference(_standingsFetchedAt!) < const Duration(hours: 6)) {
+      return;
+    }
+    _standingsFetchedAt = now;
+    try {
+      _standings = await standingsRepository.fetchLatest() ?? _standings;
+    } catch (_) {
+      // 유지.
+    }
+  }
+
   static Future<void> update({
     LiveSessionSnapshot? snapshot,
     DateTime? now,
@@ -128,6 +164,8 @@ class FmkHomeWidgetBridge {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
 
     await _ensureLatestResult();
+    await _ensureStandings();
+    await _ensureCircuitImage(getNextRace(now ?? DateTime.now()).id);
     final payload = buildFmkHomeWidgetPayload(
       snapshot: snapshot,
       latestResult: _latestResult,
@@ -136,12 +174,44 @@ class FmkHomeWidgetBridge {
 
     try {
       await _savePayload(payload);
+      await _saveStandingsPayload(_standings);
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
       );
     } catch (error, stackTrace) {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  /// 위젯 배경용 서킷 아웃라인 PNG 캡처 상태 — 다음 GP가 바뀔 때만 다시 그린다.
+  static String? _renderedCircuitRaceId;
+
+  /// 다음 GP 서킷 아웃라인을 PNG 로 캡처해 'circuitImage' 키(파일 경로)로
+  /// 저장한다. 실패(에셋 없음, 백그라운드 렌더 제약)는 무시 — 위젯은 배경
+  /// 없이 그려지고 다음 갱신에서 재시도한다.
+  static Future<void> _ensureCircuitImage(String raceId) async {
+    if (_renderedCircuitRaceId == raceId) return;
+    try {
+      // 오프스크린 캡처는 비동기 에셋 로드를 기다려주지 않으므로
+      // SVG 소스를 먼저 읽어 동기 렌더 위젯에 넘긴다.
+      final source = await rootBundle.loadString('assets/circuits/$raceId.svg');
+      await HomeWidget.renderFlutterWidget(
+        CircuitOutlineFromSource(
+          source: source,
+          // 위젯 네이비 배경 위 은은한 레드 아웃라인(내용 가독성 우선).
+          color: const Color(0x30EF4444),
+        ),
+        key: 'circuitImage',
+        logicalSize: const Size(340, 170),
+        pixelRatio: 2,
+      );
+      _renderedCircuitRaceId = raceId;
+    } catch (_) {
+      // 배경 없이 유지.
     }
   }
 
@@ -251,6 +321,138 @@ class FmkHomeWidgetBridge {
 
     await Future.wait(writes);
   }
+
+  /// 순위 위젯 데이터 저장. 서버 순위가 없으면 번들 정적 순위(초기값)로
+  /// 채워서, 위젯을 추가한 직후에도 빈 화면이 나오지 않게 한다.
+  static Future<void> _saveStandingsPayload(StandingsSnapshot? snapshot) async {
+    final drivers = buildFmkStandingsWidgetRows(
+      driverStandings:
+          snapshot?.driverStandings ?? static_standings.driverStandings,
+    );
+    final teams = buildFmkStandingsWidgetRows(
+      constructorStandings:
+          snapshot?.constructorStandings ?? static_standings.constructorStandings,
+    );
+
+    final writes = <Future<bool?>>[];
+    void writeRows(String prefix, List<FmkStandingsWidgetRow> rows) {
+      for (var i = 0; i < 5; i++) {
+        final row = i < rows.length ? rows[i] : null;
+        final key = '$prefix${i + 1}';
+        writes.addAll([
+          HomeWidget.saveWidgetData<int>('${key}Visible', row == null ? 0 : 1),
+          HomeWidget.saveWidgetData<int>('${key}Pos', row?.position ?? i + 1),
+          HomeWidget.saveWidgetData<String>('${key}Name', row?.name ?? ''),
+          HomeWidget.saveWidgetData<String>('${key}Pts', row?.points ?? ''),
+          HomeWidget.saveWidgetData<String>('${key}Change', row?.changeLabel ?? ''),
+          HomeWidget.saveWidgetData<int>(
+            '${key}ChangeColor',
+            _androidColorInt(row?.changeColor ?? 0xFF7880A0),
+          ),
+          HomeWidget.saveWidgetData<int>(
+            '${key}Color',
+            _androidColorInt(row?.teamColor ?? 0xFFEF4444),
+          ),
+        ]);
+      }
+    }
+
+    writeRows('stDriver', drivers);
+    writeRows('stTeam', teams);
+    await Future.wait(writes);
+  }
+}
+
+/// 순위 위젯 한 행의 표시 데이터(색상은 ARGB, 라벨은 표시 문자열 그대로).
+class FmkStandingsWidgetRow {
+  const FmkStandingsWidgetRow({
+    required this.position,
+    required this.name,
+    required this.points,
+    required this.changeLabel,
+    required this.changeColor,
+    required this.teamColor,
+  });
+
+  final int position;
+  final String name;
+  final String points;
+
+  /// 순위 탭과 같은 표기: '▲2'/'▼1'/'—', 변동 정보 없으면 빈 문자열.
+  final String changeLabel;
+  final int changeColor;
+  final int teamColor;
+}
+
+/// 드라이버 또는 컨스트럭터 순위 상위 5개를 위젯 행으로 변환한다.
+/// (둘 중 하나만 넘길 것 — 드라이버가 우선.)
+List<FmkStandingsWidgetRow> buildFmkStandingsWidgetRows({
+  List<DriverStanding>? driverStandings,
+  List<ConstructorStanding>? constructorStandings,
+}) {
+  FmkStandingsWidgetRow row({
+    required int position,
+    required String name,
+    required String teamKo,
+    required num points,
+    required int? change,
+  }) {
+    // 순위 탭 _PositionChange 와 같은 규칙/색(green/redSoft/muted).
+    final String label;
+    final int color;
+    if (change == null) {
+      label = '';
+      color = 0xFF7880A0;
+    } else if (change > 0) {
+      label = '▲$change';
+      color = 0xFF4ADE80;
+    } else if (change < 0) {
+      label = '▼${change.abs()}';
+      color = 0xFFF87171;
+    } else {
+      label = '—';
+      color = 0xFF7880A0;
+    }
+    return FmkStandingsWidgetRow(
+      position: position,
+      name: name,
+      points: _formatWidgetPoints(points),
+      changeLabel: label,
+      changeColor: color,
+      teamColor: getTeamColor(teamKo).toARGB32(),
+    );
+  }
+
+  if (driverStandings != null) {
+    return [
+      for (final d in driverStandings.take(5))
+        row(
+          position: d.position,
+          name: d.driverKo,
+          teamKo: d.teamKo,
+          points: d.points,
+          change: d.positionChange,
+        ),
+    ];
+  }
+  return [
+    for (final c in (constructorStandings ?? const <ConstructorStanding>[])
+        .take(5))
+      row(
+        position: c.position,
+        name: c.teamKo,
+        teamKo: c.teamKo,
+        points: c.points,
+        change: c.positionChange,
+      ),
+  ];
+}
+
+String _formatWidgetPoints(num points) {
+  if (points is int || points == points.roundToDouble()) {
+    return points.toInt().toString();
+  }
+  return points.toString();
 }
 
 FmkHomeWidgetPayload buildFmkHomeWidgetPayload({

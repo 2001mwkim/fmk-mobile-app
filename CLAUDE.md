@@ -36,7 +36,8 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - `lib/models/live_session.dart` — 라이브 스냅샷 모델 + 표시 규칙(노출 기한, 세션 활성 판정 등 정책 함수 다수)
 - `lib/services/` — `live_session_service`(live.json fetch/파싱), `live_session_controller`(폴링·유지 정책), `notification_*`(로컬 알림), `fmk_home_widget_bridge`(Android 홈 위젯 데이터 저장)
 - `lib/screens/`, `lib/widgets/` — 화면/위젯. 순위 패널 공용 UI는 `widgets/classification_panel_parts.dart`, 트랙맵 SVG 렌더러는 `widgets/circuit_map.dart`
-- `android/.../FmkHomeWidgetProvider.kt` — 홈 위젯. 일정↔결과 토글은 상시(우측 화면 = 라이브 중 라이브 순위, 평상시 최근 확정 결과 Top3 — mode `live`/`result`). 위젯 데이터 키는 브리지와 Kotlin 양쪽에 문자열로 존재하므로 함께 수정. 백그라운드 자체 갱신은 WorkManager 30분 주기(`main.dart` 의 `fmkWidgetBackgroundDispatcher` → `FmkHomeWidgetBridge.refreshFromNetwork`)
+- `android/.../FmkHomeWidgetProvider.kt` — 홈 위젯. 일정↔결과 토글은 상시(우측 화면 = 라이브 중 라이브 순위, 평상시 최근 확정 결과 Top3 — mode `live`/`result`). 위젯 데이터 키는 브리지와 Kotlin 양쪽에 문자열로 존재하므로 함께 수정. 백그라운드 자체 갱신은 WorkManager 30분 주기(`main.dart` 의 `fmkWidgetBackgroundDispatcher` → `FmkHomeWidgetBridge.refreshFromNetwork`). 두 위젯 모두 2셀 폭(<180dp)이면 콤팩트 레이아웃으로 자동 전환(`onAppWidgetOptionsChanged`)
+- `android/.../FmkStandingsWidgetProvider.kt` — 챔피언십 순위 위젯(두 번째 위젯 종류). 드라이버↔팀 토글, Top 5(콤팩트는 Top 3) + ▲▼ 변동. 데이터 키 `stDriver*`/`stTeam*` 은 브리지 `_saveStandingsPayload` 와 수동 동기화, 순위 fetch 는 6시간 캐시(서버 갱신 주기와 동일, 실패 시 번들 정적 순위)
 - `test/` — 주제별 분리(app_navigation / live_widgets / home_hero / live_session_model / live_session_controller / notification / bridge)
 
 ## 컨벤션

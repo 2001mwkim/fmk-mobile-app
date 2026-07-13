@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/models/race_result.dart';
+import 'package:fmk_app/models/standing.dart';
 import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
 import 'package:fmk_app/services/race_results_repository.dart';
 
@@ -197,6 +198,93 @@ void main() {
 
     expect(payload.mode, 'live');
     expect(payload.liveBadge, 'LIVE');
+  });
+
+  test('순위 위젯 행: ▲▼— 라벨/색과 포인트 표기를 만든다', () {
+    final rows = buildFmkStandingsWidgetRows(
+      driverStandings: const [
+        DriverStanding(
+          position: 1,
+          driverKo: '드라이버A',
+          driverEn: 'A',
+          teamKo: '메르세데스',
+          teamEn: 'Mercedes',
+          points: 179,
+          positionChange: 0,
+        ),
+        DriverStanding(
+          position: 2,
+          driverKo: '드라이버B',
+          driverEn: 'B',
+          teamKo: '페라리',
+          teamEn: 'Ferrari',
+          points: 154.5,
+          positionChange: 2,
+        ),
+        DriverStanding(
+          position: 3,
+          driverKo: '드라이버C',
+          driverEn: 'C',
+          teamKo: '맥라렌',
+          teamEn: 'McLaren',
+          points: 120,
+          positionChange: -1,
+        ),
+        DriverStanding(
+          position: 4,
+          driverKo: '드라이버D',
+          driverEn: 'D',
+          teamKo: '윌리엄스',
+          teamEn: 'Williams',
+          points: 90,
+        ),
+        DriverStanding(
+          position: 5,
+          driverKo: '드라이버E',
+          driverEn: 'E',
+          teamKo: '하스',
+          teamEn: 'Haas',
+          points: 80,
+        ),
+        DriverStanding(
+          position: 6,
+          driverKo: '잘린 드라이버',
+          driverEn: 'F',
+          teamKo: '아우디',
+          teamEn: 'Audi',
+          points: 70,
+        ),
+      ],
+    );
+
+    expect(rows.length, 5); // Top 5 로 자른다
+    expect(rows.first.name, '드라이버A');
+    expect(rows.first.points, '179');
+    expect(rows.first.changeLabel, '—');
+    expect(rows[1].points, '154.5');
+    expect(rows[1].changeLabel, '▲2');
+    expect(rows[1].changeColor, 0xFF4ADE80); // green
+    expect(rows[2].changeLabel, '▼1');
+    expect(rows[2].changeColor, 0xFFF87171); // redSoft
+    expect(rows[3].changeLabel, ''); // null(정적 폴백)이면 미표시
+  });
+
+  test('순위 위젯 행: 컨스트럭터도 같은 규칙으로 변환한다', () {
+    final rows = buildFmkStandingsWidgetRows(
+      constructorStandings: const [
+        ConstructorStanding(
+          position: 1,
+          teamKo: '메르세데스',
+          teamEn: 'Mercedes',
+          points: 333,
+          positionChange: 0,
+        ),
+      ],
+    );
+
+    expect(rows.single.name, '메르세데스');
+    expect(rows.single.points, '333');
+    expect(rows.single.changeLabel, '—');
   });
 
   test('home widget expired live payload falls back to default', () {

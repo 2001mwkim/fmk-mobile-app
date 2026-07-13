@@ -8,6 +8,7 @@ import '../models/race.dart';
 import '../models/race_session.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/hero_card.dart';
@@ -220,6 +221,8 @@ class _NextRaceCard extends StatelessWidget {
         .toList();
 
     return HeroCard(
+      // 다음 GP 서킷 아웃라인을 배경 장식으로(에셋 없으면 자동 미표시).
+      circuitAssetPath: 'assets/circuits/${race.id}.svg',
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
       ),
@@ -503,9 +506,10 @@ class _HeroSessionBox extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
+                // 시간/LIVE/랩 카운트 — 라틴 표기라 디스플레이 폰트 적용.
                 style: TextStyle(
                   fontSize: 20,
-                  fontFamily: 'Pretendard',
+                  fontFamily: kDisplayFontFamily,
                   height: 1.1,
                   color: valueColor,
                   fontWeight: FontWeight.w800,

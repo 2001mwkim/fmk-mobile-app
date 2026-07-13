@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # Play ?대? ?뚯뒪??珥덇린 踰꾩쟾. ?낅줈?쒕쭏??+N(versionCode)??1???щ┛??
-version: 0.1.0+8
+version: 0.1.0+9
 
 environment:
   sdk: ^3.12.0
@@ -42,6 +42,9 @@ dependencies:
   timezone: ^0.11.1
   shared_preferences: ^2.5.5
   workmanager: ^0.9.0+3
+  # 국기 SVG(circle-flags) 렌더링용 — 이모지 국기는 기기/런처마다 룩이 달라
+  # 프리미엄 톤이 안 나온다(자산 출처: HatScripts/circle-flags, MIT).
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -80,8 +83,22 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/circuits/
+    - assets/flags/
 
   fonts:
+    # 디스플레이(숫자·타이밍) 전용 폰트 — SIL OFL(라이선스: assets/fonts/OFL.txt).
+    # 랩타임/포인트/시간 등 숫자 표기에만 쓴다(본문 한글은 Pretendard 유지).
+    - family: TitilliumWeb
+      fonts:
+        - asset: assets/fonts/TitilliumWeb-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/TitilliumWeb-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/TitilliumWeb-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/TitilliumWeb-Black.ttf
+          weight: 900
     - family: Pretendard
       fonts:
         - asset: assets/fonts/Pretendard-Regular.otf
