@@ -6,7 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -215,37 +215,18 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default)
   }
 
-  /**
-   * 앱이 캡처해 둔 다음 GP 서킷 아웃라인 PNG(circuitImage 키 = 파일 경로)를
-   * 배경 ImageView 에 바인딩한다. 파일이 없거나 못 읽으면 그냥 숨긴다.
-   */
-  private fun RemoteViews.bindCircuitBackground(data: SharedPreferences, viewId: Int) {
-    try {
-      val path = data.getString("circuitImage", null)
-      val bitmap = if (path.isNullOrBlank()) null else BitmapFactory.decodeFile(path)
-      if (bitmap != null) {
-        setImageViewBitmap(viewId, bitmap)
-        setViewVisibility(viewId, View.VISIBLE)
-      } else {
-        setViewVisibility(viewId, View.GONE)
-      }
-    } catch (error: Throwable) {
-      Log.e(TAG, "circuit background bind failed", error)
-      setViewVisibility(viewId, View.GONE)
-    }
-  }
-
   private fun buildDefault(
       context: Context,
       data: SharedPreferences,
       showLiveToggle: Boolean = false,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
+      // 일정 화면 탭 → 홈 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_default,
-          HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+          HomeWidgetLaunchIntent.getActivity(
+              context, MainActivity::class.java, Uri.parse("fmkwidget://home")),
       )
-      bindCircuitBackground(data, R.id.iv_circuit_bg_default)
 
       // live 모드에서 gpFlag/gpName 은 라이브 그랑프리 정보라서, 일정 화면은
       // 전용 키(scheduleGpFlag/scheduleGpName)를 우선 사용한다(없으면 기존 키).
@@ -332,9 +313,11 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
 
     return RemoteViews(context.packageName, R.layout.widget_fmk_live).apply {
+      // 라이브/결과 화면 탭 → 라이브 센터 탭.
       setOnClickPendingIntent(
           R.id.widget_root_live,
-          HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+          HomeWidgetLaunchIntent.getActivity(
+              context, MainActivity::class.java, Uri.parse("fmkwidget://live")),
       )
 
       bindToggleGroup(
@@ -379,11 +362,13 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       mode: String?,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_compact).apply {
+      // 콤팩트도 화면 내용에 맞춰: 라이브/결과 → 라이브 탭, 일정 → 홈 탭.
+      val target = if (mode == "live" || mode == "result") "live" else "home"
       setOnClickPendingIntent(
           R.id.widget_root_compact,
-          HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+          HomeWidgetLaunchIntent.getActivity(
+              context, MainActivity::class.java, Uri.parse("fmkwidget://$target")),
       )
-      bindCircuitBackground(data, R.id.iv_circuit_bg_compact)
 
       if (mode == "live" || mode == "result") {
         val flag = data.getString("gpFlag", "").orEmpty()

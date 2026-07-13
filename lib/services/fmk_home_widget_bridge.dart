@@ -24,6 +24,19 @@ const String fmkHomeWidgetProviderQualifiedName =
 const String fmkStandingsWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
 
+/// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
+/// 인덱스는 app.dart 의 MainShell._screens / BottomNav._items 순서와 1:1
+/// (홈 0 · 일정 1 · 순위 2 · 라이브 3). URI 는 Kotlin Provider 들이 만든다.
+int? fmkWidgetTabIndexForUri(Uri? uri) {
+  if (uri == null || uri.scheme != 'fmkwidget') return null;
+  return switch (uri.host) {
+    'home' => 0,
+    'standings' => 2,
+    'live' => 3,
+    _ => null,
+  };
+}
+
 const String _modeDefault = 'default';
 const String _modeLive = 'live';
 
@@ -182,14 +195,37 @@ class FmkHomeWidgetBridge {
     }
   }
 
+  /// 앱이 위젯 탭으로 "시작"됐을 때의 딥링크 URI. 아니거나 실패하면 null
+  /// (테스트/플러그인 미등록 환경 포함 — 절대 던지지 않는다).
+  static Future<Uri?> initialLaunchUri() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    try {
+      return await HomeWidget.initiallyLaunchedFromHomeWidget();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 앱 "실행 중" 위젯 탭 딥링크 스트림. 미지원 플랫폼이면 빈 스트림.
+  /// 채널 오류는 구독부에서 onError 로 무시할 것(테스트 환경 대비).
+  static Stream<Uri?> widgetClicks() {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return const Stream<Uri?>.empty();
+    }
+    return HomeWidget.widgetClicked;
+  }
+
   /// 런처에 위젯 고정(pin) 다이얼로그를 요청한다. 다이얼로그를 띄웠으면 true,
   /// 미지원 런처/플랫폼이면 false — 호출부가 수동 추가 안내를 띄운다.
-  static Future<bool> requestPinWidget() async {
+  /// [qualifiedAndroidName]으로 위젯 종류(메인/순위)를 고른다.
+  static Future<bool> requestPinWidget({
+    String qualifiedAndroidName = fmkHomeWidgetProviderQualifiedName,
+  }) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
     try {
       if (await HomeWidget.isRequestPinWidgetSupported() != true) return false;
       await HomeWidget.requestPinWidget(
-        qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
+        qualifiedAndroidName: qualifiedAndroidName,
       );
       return true;
     } catch (_) {

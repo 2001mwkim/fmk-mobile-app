@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/models/standing.dart';
 import 'package:fmk_app/screens/settings_screen.dart';
+import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
 import 'package:fmk_app/services/standings_repository.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/home_quick_actions_card.dart';
@@ -113,22 +114,44 @@ void main() {
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
 
-    testWidgets('pin 미지원이면 수동 추가 안내 스낵바를 띄운다', (tester) async {
-      await pump(tester, HomeQuickActionsCard(pinRequester: () async => false));
+    testWidgets('위젯 추가를 누르면 두 위젯 중 선택하는 시트가 뜬다', (tester) async {
+      String? requested;
+      await pump(
+        tester,
+        HomeQuickActionsCard(
+          pinRequester: (name) async {
+            requested = name;
+            return true;
+          },
+        ),
+      );
 
       await tester.tap(find.text('위젯 추가'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.textContaining('홈 화면을 길게 눌러'), findsOneWidget);
+      expect(find.text('추가할 위젯 선택'), findsOneWidget);
+      expect(find.text('일정 · 라이브 위젯'), findsOneWidget);
+      expect(find.text('챔피언십 순위 위젯'), findsOneWidget);
+
+      await tester.tap(find.text('챔피언십 순위 위젯'));
+      await tester.pumpAndSettle();
+
+      expect(requested, fmkStandingsWidgetProviderQualifiedName);
+      expect(find.byType(SnackBar), findsNothing); // 성공 → 안내 불필요
     });
 
-    testWidgets('pin 요청에 성공하면 스낵바를 띄우지 않는다', (tester) async {
-      await pump(tester, HomeQuickActionsCard(pinRequester: () async => true));
+    testWidgets('pin 미지원이면 수동 추가 안내 스낵바를 띄운다', (tester) async {
+      await pump(
+        tester,
+        HomeQuickActionsCard(pinRequester: (_) async => false),
+      );
 
       await tester.tap(find.text('위젯 추가'));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('일정 · 라이브 위젯'));
+      await tester.pumpAndSettle();
 
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.textContaining('홈 화면을 길게 눌러'), findsOneWidget);
     });
   });
 }

@@ -287,6 +287,16 @@ void main() {
     expect(rows.single.changeLabel, '—');
   });
 
+  test('위젯 딥링크 URI → 하단 탭 인덱스 매핑', () {
+    expect(fmkWidgetTabIndexForUri(Uri.parse('fmkwidget://home')), 0);
+    expect(fmkWidgetTabIndexForUri(Uri.parse('fmkwidget://standings')), 2);
+    expect(fmkWidgetTabIndexForUri(Uri.parse('fmkwidget://live')), 3);
+    // 모르는 대상/스킴/null 은 무시(현재 탭 유지).
+    expect(fmkWidgetTabIndexForUri(Uri.parse('fmkwidget://unknown')), isNull);
+    expect(fmkWidgetTabIndexForUri(Uri.parse('https://live')), isNull);
+    expect(fmkWidgetTabIndexForUri(null), isNull);
+  });
+
   test('home widget expired live payload falls back to default', () {
     final payload = buildFmkHomeWidgetPayload(
       now: DateTime.parse('2026-03-01T12:00:00+09:00'),

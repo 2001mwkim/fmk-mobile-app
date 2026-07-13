@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -130,9 +131,11 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       showTeams: Boolean,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings).apply {
+      // 순위 위젯 탭 → 순위 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_standings,
-          HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+          HomeWidgetLaunchIntent.getActivity(
+              context, MainActivity::class.java, Uri.parse("fmkwidget://standings")),
       )
 
       // 토글 활성/비활성 스타일 + 클릭 액션(FmkHomeWidgetProvider 와 동일 패턴).
@@ -184,7 +187,8 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings_compact).apply {
       setOnClickPendingIntent(
           R.id.widget_root_standings_compact,
-          HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+          HomeWidgetLaunchIntent.getActivity(
+              context, MainActivity::class.java, Uri.parse("fmkwidget://standings")),
       )
       setTextViewText(R.id.tv_stc_title, if (showTeams) "챔피언십 · 팀" else "챔피언십")
 
