@@ -243,7 +243,7 @@ class _RaceControlPreviewCard extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            '세이프티카·깃발 등 FIA 심판진 메시지가 세션 중 실시간으로 표시됩니다.',
+            '세이프티카, 플래그 등 스튜어드의 메시지가 실시간으로 표시됩니다.',
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 12,

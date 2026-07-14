@@ -262,22 +262,32 @@ class _ActiveRaceCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  if (race.hasSprint) ...[
-                    const SizedBox(width: 6),
-                    const AppChip(label: '스프린트', variant: AppChipVariant.blue),
-                  ],
                   const SizedBox(width: 8),
+                  // 스프린트 칩은 그랑프리 이름 "뒤"에 붙인다(이름 가독성 우선).
                   Expanded(
-                    child: Text(
-                      race.nameKo,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.25,
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            race.nameKo,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.25,
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (race.hasSprint) ...[
+                          const SizedBox(width: 6),
+                          const AppChip(
+                            label: '스프린트',
+                            variant: AppChipVariant.blue,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -325,15 +335,7 @@ class _ActiveRaceCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
-                if (race.hasSprint) ...[
-                  const SizedBox(width: 6),
-                  const AppChip(label: '스프린트', variant: AppChipVariant.blue),
-                ],
-              ],
-            ),
+            AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
             AppChip(label: status, variant: statusVariant),
           ],
         ),
@@ -341,17 +343,28 @@ class _ActiveRaceCard extends StatelessWidget {
         Row(
           children: [
             _Flag(race.countryKo, size: 22),
+            // 스프린트 칩은 그랑프리 이름 "뒤"에 붙인다(이름 가독성 우선).
             Expanded(
-              child: Text(
-                race.nameKo,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
-                ),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      race.nameKo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  if (race.hasSprint) ...[
+                    const SizedBox(width: 8),
+                    const AppChip(label: '스프린트', variant: AppChipVariant.blue),
+                  ],
+                ],
               ),
             ),
           ],

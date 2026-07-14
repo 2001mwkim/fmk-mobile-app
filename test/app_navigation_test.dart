@@ -8,7 +8,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const FmkApp());
 
-    expect(find.text('2026 시즌'), findsOneWidget);
+    expect(find.text('Via Formula'), findsOneWidget);
+    expect(find.text('F1 관련 정보를 내 손안에'), findsOneWidget);
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
