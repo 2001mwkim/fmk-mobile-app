@@ -17,9 +17,9 @@ void main() {
       ),
     );
 
-    expect(find.text('진행중인 세션'), findsOneWidget);
+    // 히어로 v2: 라이브 상태는 카운트다운 옆 하이라이트 타일이 표현한다.
+    expect(find.textContaining('진행중 · '), findsOneWidget);
     expect(find.text('LIVE'), findsWidgets);
-    expect(find.text('42 / 53 LAP'), findsOneWidget);
   });
 
   testWidgets('home hero ignores live snapshot for another race', (
@@ -34,8 +34,8 @@ void main() {
       ),
     );
 
-    expect(find.text('다음 세션'), findsOneWidget);
-    expect(find.text('진행중인 세션'), findsNothing);
+    expect(find.textContaining('다음 세션 · '), findsOneWidget);
+    expect(find.textContaining('진행중 · '), findsNothing);
   });
 
   testWidgets('home hero shows next session instead of ended snapshot', (
@@ -51,8 +51,8 @@ void main() {
       ),
     );
 
-    // 종료된 세션 결과는 세션 박스에 띄우지 않고 다음 세션으로 대체한다.
-    expect(find.text('다음 세션'), findsOneWidget);
+    // 종료된 세션 결과는 타일에 띄우지 않고 다음 세션으로 대체한다.
+    expect(find.textContaining('다음 세션 · '), findsOneWidget);
     expect(find.text('최근 종료된 세션'), findsNothing);
     expect(find.text('RESULT'), findsNothing);
   });
@@ -72,7 +72,7 @@ void main() {
       ),
     );
 
-    expect(find.text('진행중인 세션'), findsOneWidget);
+    expect(find.textContaining('진행중 · '), findsOneWidget);
     expect(find.text('LIVE'), findsWidgets);
     expect(find.text('최근 종료된 세션'), findsNothing);
     expect(find.text('RESULT'), findsNothing);
@@ -93,8 +93,8 @@ void main() {
     );
 
     // 히어로가 끝난 영국 GP를 '진행중'으로 붙잡지 않고 다음 GP로 넘어간다.
-    expect(find.text('진행중인 세션'), findsNothing);
-    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.textContaining('진행중 · '), findsNothing);
+    expect(find.textContaining('다음 세션 · '), findsOneWidget);
     expect(find.text('벨기에 그랑프리'), findsOneWidget);
   });
 
@@ -111,7 +111,7 @@ void main() {
       ),
     );
 
-    expect(find.text('다음 세션'), findsOneWidget);
+    expect(find.textContaining('다음 세션 · '), findsOneWidget);
     expect(find.text('최근 종료된 세션'), findsNothing);
   });
 
@@ -120,21 +120,23 @@ void main() {
   ) async {
     await _pumpHome(tester, now: _beforeBritishSprint);
 
-    expect(find.text('다음 세션'), findsOneWidget);
-    expect(find.text('진행중인 세션'), findsNothing);
+    expect(find.textContaining('다음 세션 · '), findsOneWidget);
+    expect(find.textContaining('진행중 · '), findsNothing);
   });
 
-  testWidgets('home hero integrates weekend schedule list without KST note', (
+  testWidgets('home hero shows countdown and full weekend schedule', (
     tester,
   ) async {
     await _pumpHome(tester, now: _beforeBritishSprint);
 
-    // 별도 '이번 주말 일정' 카드 대신 히어로 안에 나머지 세션 리스트가 있다.
+    // 히어로 v2: 카운트다운 3칸(DAYS/HRS/MIN)이 카드의 주인공.
+    expect(find.text('DAYS'), findsOneWidget);
+    expect(find.text('HRS'), findsOneWidget);
+    expect(find.text('MIN'), findsOneWidget);
+    // 별도 '이번 주말 일정' 카드 대신 히어로 안에 전체 세션 리스트가 있다.
     expect(find.text('이번 주말 일정'), findsNothing);
     expect(find.text('레이스'), findsOneWidget); // 레이스 강조 행
     expect(find.text('한국 시간 (KST) 기준'), findsNothing);
-    // 세션 박스에 표시된 '다음 세션'은 리스트에서 중복 표기하지 않는다 —
-    // 영국 스프린트 주말 세션 5개 중 박스 1개를 뺀 4개가 리스트에 남는다.
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
@@ -143,7 +145,7 @@ void main() {
   ) async {
     await _pumpHome(tester, now: _duringBritishSprint);
 
-    expect(find.text('진행중인 세션'), findsOneWidget);
+    expect(find.textContaining('진행중 · '), findsOneWidget);
     expect(find.text('LIVE'), findsWidgets);
   });
 }

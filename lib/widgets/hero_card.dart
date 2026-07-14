@@ -2,17 +2,19 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import 'circuit_map.dart';
 
-/// 웹 app/page.tsx 의 "다음/진행중 그랑프리 히어로" 표면을 Flutter로 재현.
+/// 홈 "다음 그랑프리" 히어로 표면 — 디자인 핸드오프 Home v2.dc.html(1a).
 ///
-/// 웹 클래스:
-///   rounded-3xl border border-red-500/30
-///   bg-[linear-gradient(to_bottom_right,#1c0f0e,#1a1030,#141828)] p-5
-///   + 대각선 반복 줄무늬(rgba(239,68,68,0.06), 108deg)
-///   + 우상단 라디얼 글로우(rgba(239,68,68,0.18))
+/// 웹 원본 스펙:
+///   border-radius 22 / border 1px rgba(242,92,92,0.22)
+///   background linear-gradient(160deg, #221018 0%, #16121C 55%, #121218 100%)
+///   box-shadow 0 12px 36px rgba(226,54,68,0.12)
+///   + 대각선 핀스트라이프(115deg, rgba(242,92,92,0.05), 26px 간격)
 ///
-/// 일반 카드(AppCard)와 구분되는 히어로 전용 표면. 내용은 child 로 받는다.
+/// 내용은 child 로 받는다. 시안의 텍스처는 아이덴티티 영역에만 깔리지만,
+/// 알파가 낮아 카드 전체에 깔아도 시각 차가 없어 전면 페인트로 단순화.
 class HeroCard extends StatelessWidget {
   const HeroCard({
     super.key,
@@ -32,34 +34,48 @@ class HeroCard extends StatelessWidget {
   /// (assets/circuits/*.svg — F1DB CC BY 4.0, 설정 화면에 출처 표기).
   final String? circuitAssetPath;
 
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(24));
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(22));
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         borderRadius: _radius,
-        // to bottom right: #1c0f0e -> #1a1030 -> #141828
+        // 160deg ≈ 위에서 아래로 살짝 좌측 기울기 — stop 0/0.55/1.
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C0F0E), Color(0xFF1A1030), Color(0xFF141828)],
+          begin: Alignment(0.35, -1),
+          end: Alignment(-0.35, 1),
+          stops: [0.0, 0.55, 1.0],
+          colors: [
+            AppColors.heroGradTop,
+            AppColors.heroGradMid,
+            AppColors.heroGradBottom,
+          ],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x1FE23644), // rgba(226,54,68,0.12)
+            blurRadius: 36,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
-      // 테두리는 내용 위에 그려 모서리에서 가려지지 않게 한다 (red-500/30).
+      // 테두리는 내용 위에 그려 모서리에서 가려지지 않게 한다.
       foregroundDecoration: const BoxDecoration(
         borderRadius: _radius,
-        border: Border.fromBorderSide(BorderSide(color: Color(0x4DEF4444))),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x38F25C5C)), // rgba(242,92,92,0.22)
+        ),
       ),
       child: ClipRRect(
         borderRadius: _radius,
         child: Stack(
           children: [
-            // 대각선 반복 줄무늬
+            // 대각선 레드 핀스트라이프
             const Positioned.fill(
               child: CustomPaint(painter: _DiagonalStripesPainter()),
             ),
-            // 서킷 아웃라인 — 우측에 낮은 알파 레드로 은은하게(내용 가독성 우선).
+            // 서킷 아웃라인 — 우측에 낮은 알파 레드(내용 가독성 우선).
             if (circuitAssetPath != null)
               Positioned(
                 right: -28,
@@ -69,26 +85,10 @@ class HeroCard extends StatelessWidget {
                 child: IgnorePointer(
                   child: CircuitOutline(
                     assetPath: circuitAssetPath!,
-                    color: const Color(0x21EF4444),
+                    color: const Color(0x21F25C5C),
                   ),
                 ),
               ),
-            // 우상단 라디얼 글로우
-            Positioned(
-              right: -40,
-              top: -32,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x2EEF4444), Color(0x00EF4444)],
-                    stops: [0.0, 0.7],
-                  ),
-                ),
-              ),
-            ),
             Material(
               type: MaterialType.transparency,
               child: InkWell(
@@ -103,20 +103,20 @@ class HeroCard extends StatelessWidget {
   }
 }
 
-/// 웹 repeating-linear-gradient(108deg, transparent 0 26px,
-/// rgba(239,68,68,0.06) 26px 27px) 근사: 108° 방향 1px 줄을 27px 간격으로.
+/// 웹 repeating-linear-gradient(115deg, transparent 0 26px,
+/// rgba(242,92,92,0.05) 26px 28px) 근사: 115° 방향 2px 줄을 28px 간격으로.
 class _DiagonalStripesPainter extends CustomPainter {
   const _DiagonalStripesPainter();
 
-  static const double _spacing = 27;
-  static const double _angle = 108 * math.pi / 180;
+  static const double _spacing = 28;
+  static const double _angle = 115 * math.pi / 180;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color =
-          const Color(0x0FEF4444) // rgba(239,68,68,~0.06)
-      ..strokeWidth = 1;
+          const Color(0x0DF25C5C) // rgba(242,92,92,~0.05)
+      ..strokeWidth = 2;
 
     canvas.save();
     canvas.clipRect(Offset.zero & size);

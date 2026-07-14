@@ -74,4 +74,23 @@ class AppColors {
   static const Color dotInactive = Color(0xFF3A4054);
   // 예정 세션 라벨 텍스트 (#c6c9d4)
   static const Color scheduleText = Color(0xFFC6C9D4);
+
+  // ---- 히어로 v2: 카운트다운 히어로 (디자인 핸드오프 Home v2.dc.html 1a) ----
+  // 레드 액센트(#F25C5C)와 밝은 변형(#F58A8A) — 기존 red(#EF4444)보다 살짝 웜톤
+  static const Color heroAccent = Color(0xFFF25C5C);
+  static const Color heroAccentBright = Color(0xFFF58A8A);
+  // 카드 그라데이션 3단(160deg #221018 → #16121C → #121218)
+  static const Color heroGradTop = Color(0xFF221018);
+  static const Color heroGradMid = Color(0xFF16121C);
+  static const Color heroGradBottom = Color(0xFF121218);
+  // 날짜 범위·카운트다운 라벨 (#8B8B99)
+  static const Color heroMeta = Color(0xFF8B8B99);
+  // 서킷 서브텍스트 (#9A9AA8)
+  static const Color heroSubText = Color(0xFF9A9AA8);
+  // 세션 행 요일 컬럼 (#6E6E7C)
+  static const Color heroDim = Color(0xFF6E6E7C);
+  // 일반 세션 행 텍스트 (#A8A8B6)
+  static const Color heroRowText = Color(0xFFA8A8B6);
+  // 비활성 세션 도트 (#3A3A46)
+  static const Color heroDotIdle = Color(0xFF3A3A46);
 }

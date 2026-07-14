@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'race_detail_screen.dart';
@@ -9,7 +11,6 @@ import '../models/race_session.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
-import '../widgets/app_chip.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/home_live_top_three_card.dart';
 import '../widgets/home_quick_actions_card.dart';
@@ -116,6 +117,9 @@ class _SeasonHomeContent extends StatelessWidget {
                     session: nextSession,
                     now: now,
                     liveSnapshot: liveSnapshot,
+                    // nowOverride(테스트) 주입 시 카운트다운 타이머를 멈춰
+                    // 시각을 결정적으로 만든다.
+                    ticking: nowOverride == null,
                   ),
                   // 주말 일정은 히어로 카드에 통합됨(별도 카드 제거).
                   // 챔피언십 TOP 3 — 순위 탭과 같은 데이터의 미리보기.
@@ -194,12 +198,16 @@ class _NextRaceCard extends StatelessWidget {
     required this.session,
     required this.now,
     required this.liveSnapshot,
+    this.ticking = true,
   });
 
   final Race race;
   final RaceSession? session;
   final DateTime now;
   final LiveSessionSnapshot? liveSnapshot;
+
+  /// false 면 카운트다운 타이머를 돌리지 않는다(nowOverride 주입 시 결정성).
+  final bool ticking;
 
   @override
   Widget build(BuildContext context) {
@@ -211,15 +219,13 @@ class _NextRaceCard extends StatelessWidget {
         ? '진행중'
         : '다음 그랑프리';
 
-    // 리디자인(home_screen_2a): 별도 '이번 주말 일정' 카드를 없애고 히어로가
-    // [뱃지 → 그랑프리명 → 서킷 → 다음 세션 박스 → 나머지 세션 리스트 → KST]
-    // 를 한 카드로 담는다. 세션 박스에 나온 세션은 리스트에서 제외(중복 방지).
+    // 히어로 v2(디자인 핸드오프 Home v2.dc.html 1a): 카운트다운이 주인공.
+    // [뱃지·날짜범위 → GP명 → 서킷 → 카운트다운 3칸 + 다음 세션 타일 →
+    //  세션 리스트(다음 세션 하이라이트/레이스 강조/완료 체크)]
     final boxedSession = session;
-    final listSessions = race.sessions
-        .where((s) => s.id != boxedSession?.id)
-        .toList();
 
     return HeroCard(
+      padding: EdgeInsets.zero,
       // 다음 GP 서킷 아웃라인을 배경 장식으로(에셋 없으면 자동 미표시).
       circuitAssetPath: 'assets/circuits/${race.id}.svg',
       onTap: () => Navigator.of(context).push(
@@ -228,108 +234,442 @@ class _NextRaceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 리디자인: 'R12' 라운드 뱃지는 제거하고 상태 뱃지만 남긴다.
-          Row(
-            children: [
-              AppChip(label: statusLabel, variant: AppChipVariant.red),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            race.nameKo,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 26,
-              height: 1.15,
-              color: AppColors.white,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
+          // ── 아이덴티티: 뱃지 + 날짜 범위 / GP명 / 서킷 ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _HeroBadge(label: statusLabel),
+                    const Spacer(),
+                    Text(
+                      _heroDateRange(race),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.heroMeta,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  race.nameKo,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    height: 1.1,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.heroSubText,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
-            // 웹 hero 서브텍스트 색 (#8088a8)
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.heroSub,
-              fontWeight: FontWeight.w500,
-            ),
+          const SizedBox(height: 16),
+          // ── 카운트다운 3칸 + 다음 세션 타일 (취소 GP 는 안내 텍스트) ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: boxedSession == null
+                ? Text(
+                    race.cancelNote ?? '세션 정보가 아직 준비되지 않았습니다.',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  )
+                : _HeroCountdownRow(
+                    race: race,
+                    session: boxedSession,
+                    now: now,
+                    liveSnapshot: liveSnapshot,
+                    ticking: ticking,
+                  ),
           ),
           const SizedBox(height: 14),
-          // 다음/진행 중/최근 세션 정보를 히어로 내부 박스로 표시(웹 hero 의 세션 박스)
-          _HeroSessionBox(
-            race: race,
-            session: session,
-            now: now,
-            liveSnapshot: liveSnapshot,
+          // ── 세션 리스트 (어두운 내부 컨테이너) ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0x40000000), // black/25
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                children: [
+                  for (final s in race.sessions)
+                    _HeroSessionRow(
+                      race: race,
+                      session: s,
+                      now: now,
+                      isNext: s.id == boxedSession?.id,
+                    ),
+                ],
+              ),
+            ),
           ),
-          // 나머지 주말 세션 리스트 (박스 없는 플레인 행 — 기존 주말 일정 카드 대체)
-          if (listSessions.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            for (final s in listSessions)
-              _HeroScheduleRow(race: race, session: s, now: now),
-          ],
         ],
       ),
     );
   }
 }
 
-/// 히어로 내부 주말 세션 한 줄: 상태 도트 · 세션명 · 날짜/시간.
-/// 상태별 표기(디자인 home_screen_2a):
-/// - 완료: 체크 아이콘 + 흐린 텍스트
-/// - 레이스(미완료): 레드 도트 + 흰색 강조
-/// - 예정: 회색 도트 + 목록 톤 텍스트
-class _HeroScheduleRow extends StatelessWidget {
-  const _HeroScheduleRow({
+/// 히어로 상태 뱃지("다음 그랑프리"/"진행중"/"취소") — 레드 필 아웃라인.
+class _HeroBadge extends StatelessWidget {
+  const _HeroBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.heroAccent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.25)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: AppColors.heroAccent,
+        ),
+      ),
+    );
+  }
+}
+
+/// 카운트다운 3칸(DAYS/HRS/MIN) + 다음 세션 하이라이트 타일.
+///
+/// 타일은 기존 세션 박스의 상태 정책을 그대로 잇는다:
+/// 라이브 스냅샷(이 GP + 활성) > 스케줄상 라이브 > 최근/다음 세션.
+class _HeroCountdownRow extends StatefulWidget {
+  const _HeroCountdownRow({
     required this.race,
     required this.session,
     required this.now,
+    required this.liveSnapshot,
+    required this.ticking,
   });
 
   final Race race;
   final RaceSession session;
   final DateTime now;
+  final LiveSessionSnapshot? liveSnapshot;
+  final bool ticking;
+
+  @override
+  State<_HeroCountdownRow> createState() => _HeroCountdownRowState();
+}
+
+class _HeroCountdownRowState extends State<_HeroCountdownRow> {
+  Timer? _timer;
+  late DateTime _now;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = widget.now;
+    if (widget.ticking) {
+      // 표시 최소 단위가 분이므로 1분 주기면 충분하다.
+      _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (mounted) setState(() => _now = DateTime.now());
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HeroCountdownRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.now != widget.now) _now = widget.now;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = getSessionDate(widget.race, widget.session);
+    // 시작이 지나면(라이브/직후) 0으로 클램프 — 상태는 타일이 표현한다.
+    final diff = target.difference(_now);
+    final clamped = diff.isNegative ? Duration.zero : diff;
+    final days = clamped.inDays;
+    final hours = clamped.inHours % 24;
+    final minutes = clamped.inMinutes % 60;
+    String pad(int v) => v.toString().padLeft(2, '0');
+
+    final tile = _resolveTile();
+
+    // IntrinsicHeight: 세그먼트/타일이 같은 높이로 늘어나되(stretch),
+    // 세로 무한 제약(ListView 내 Column)에서도 안전하게 동작한다.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            child: _HeroCountSeg(value: pad(days), label: 'DAYS'),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 5,
+            child: _HeroCountSeg(value: pad(hours), label: 'HRS'),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 5,
+            child: _HeroCountSeg(value: pad(minutes), label: 'MIN'),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 7,
+            child: _HeroNextTile(label: tile.label, value: tile.value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ({String label, String value}) _resolveTile() {
+    final race = widget.race;
+    final session = widget.session;
+
+    // 이 GP의 활성 라이브 스냅샷이 있으면 '진행중'이 최우선.
+    final snapshot = _matchingDisplayableSnapshot(
+      widget.liveSnapshot,
+      race,
+      _now,
+    );
+    if (snapshot != null && isLiveSnapshotSessionActive(snapshot, _now)) {
+      final mapped = liveRaceSessionForSnapshot(snapshot, race) ?? session;
+      return (
+        label: '진행중 · ${_snapshotSessionTitle(snapshot, mapped)}',
+        value: 'LIVE',
+      );
+    }
+
+    final status = getSessionStatus(race, session, _now);
+    if (status == SessionStatus.live) {
+      return (label: '진행중 · ${session.label}', value: 'LIVE');
+    }
+
+    final raceEnded = getRaceStatus(race, _now) == RaceStatus.ended;
+    final prefix = raceEnded ? '최근 세션' : '다음 세션';
+    // '금 20:30' — 날짜('7.17 금')에서 요일만 취해 시간과 붙인다.
+    final parts = session.date.split(' ');
+    final value = parts.length > 1
+        ? '${parts.last} ${session.time}'
+        : session.time;
+    return (label: '$prefix · ${session.label}', value: value);
+  }
+}
+
+/// 카운트다운 세그먼트 한 칸(숫자 + DAYS/HRS/MIN 라벨).
+class _HeroCountSeg extends StatelessWidget {
+  const _HeroCountSeg({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(top: 10, bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x0DFFFFFF), // white/5
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x12FFFFFF)), // white/7
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 28,
+              height: 1.1,
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.heroMeta,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 다음/진행중/최근 세션 하이라이트 타일(레드 그라데이션).
+class _HeroNextTile extends StatelessWidget {
+  const _HeroNextTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.heroAccent.withValues(alpha: 0.18),
+            AppColors.heroAccent.withValues(alpha: 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+              color: AppColors.heroAccentBright,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 17,
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// '7.17 – 7.19' 형태의 주말 날짜 범위(연도·앞자리 0 제거).
+String _heroDateRange(Race race) {
+  String short(String iso) {
+    final parts = iso.split('-');
+    if (parts.length < 3) return iso;
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (month == null || day == null) return iso;
+    return '$month.$day';
+  }
+
+  return '${short(race.startDate)} – ${short(race.endDate)}';
+}
+
+/// 히어로 세션 리스트 한 줄(디자인 Home v2.dc.html 1a의 3상태 + 완료 상태).
+/// - 다음 세션: 레드 배경 하이라이트 + 풀네임 + 흰색 800
+/// - 레이스(미완료): 레드 도트 + 흰색 800
+/// - 완료: 체크 아이콘 + 흐린 텍스트 (시안엔 없지만 주말 중반 UX 에 필요)
+/// - 예정: 비활성 도트 + 목록 톤 텍스트
+class _HeroSessionRow extends StatelessWidget {
+  const _HeroSessionRow({
+    required this.race,
+    required this.session,
+    required this.now,
+    required this.isNext,
+  });
+
+  final Race race;
+  final RaceSession session;
+  final DateTime now;
+  final bool isNext;
 
   @override
   Widget build(BuildContext context) {
     final status = getSessionStatus(race, session, now);
     final isDone = status == SessionStatus.ended;
+    final highlight = isNext && !isDone;
     final isRace = session.id == 'race' && !isDone;
+    final emphasized = highlight || isRace;
 
     final nameColor = isDone
         ? AppColors.textEnded
-        : isRace
+        : emphasized
         ? AppColors.white
-        : AppColors.scheduleText;
-    final timeColor = isDone
-        ? AppColors.textEnded
-        : isRace
-        ? AppColors.white
-        : AppColors.muted;
-    final weight = isRace ? FontWeight.w700 : FontWeight.w500;
+        : AppColors.heroRowText;
+    final weight = emphasized ? FontWeight.w800 : FontWeight.w500;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: highlight
+            ? AppColors.heroAccent.withValues(alpha: 0.10)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
-          // 상태 도트: 완료는 체크, 레이스는 레드, 예정은 비활성 톤.
-          if (isDone)
-            const Icon(Icons.check, size: 11, color: AppColors.textEnded)
-          else
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: isRace ? AppColors.red : AppColors.dotInactive,
-                shape: BoxShape.circle,
-              ),
+          // 상태 도트: 완료는 체크, 다음/레이스는 레드, 예정은 비활성 톤.
+          SizedBox(
+            width: 11,
+            child: Center(
+              child: isDone
+                  ? const Icon(
+                      Icons.check,
+                      size: 11,
+                      color: AppColors.textEnded,
+                    )
+                  : Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: emphasized
+                            ? AppColors.heroAccent
+                            : AppColors.heroDotIdle,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
             ),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              session.label,
+              // 다음 세션 행만 풀네임(예: '프리 프랙티스 1')으로 강조.
+              highlight ? session.fullLabel : session.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -340,205 +680,34 @@ class _HeroScheduleRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 52,
+            child: Text(
+              session.date,
+              maxLines: 1,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.2,
+                color: isDone ? AppColors.textEnded : AppColors.heroDim,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           Text(
-            '${session.date} ${session.time}',
+            session.time,
             maxLines: 1,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               height: 1.2,
-              color: timeColor,
+              color: nameColor,
               fontWeight: weight,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HeroSessionBox extends StatelessWidget {
-  const _HeroSessionBox({
-    required this.race,
-    required this.session,
-    required this.now,
-    required this.liveSnapshot,
-  });
-
-  final Race race;
-  final RaceSession? session;
-  final DateTime now;
-  final LiveSessionSnapshot? liveSnapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = session;
-    // 세션 박스는 '진행중인 세션' 또는 '다음 세션'만 보여준다. 종료된 세션
-    // 결과는 라이브 카드/상세 패널이 담당하므로, 스냅샷이 ended 상태면
-    // 아래 스케줄 기반 '다음 세션' 표시로 넘어간다.
-    final snapshot = _matchingDisplayableSnapshot(liveSnapshot, race, now);
-    if (snapshot != null && isLiveSnapshotSessionActive(snapshot, now)) {
-      final mappedSession = liveRaceSessionForSnapshot(snapshot, race) ?? s;
-
-      return _sessionBox(
-        label: '진행중인 세션',
-        accent: AppColors.redSoft,
-        sessionTitle: _snapshotSessionTitle(snapshot, mappedSession),
-        meta: snapshot.updatedAtLabel ?? 'LIVE',
-        value: _liveValue(snapshot),
-        valueColor: AppColors.redSoft,
-        badgeLabel: 'LIVE',
-        badgeVariant: AppChipVariant.red,
-        isLive: true,
-      );
-    }
-
-    if (s == null) {
-      return _box(
-        child: Text(
-          race.cancelNote ?? '세션 정보가 아직 준비되지 않았습니다.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-        ),
-      );
-    }
-
-    final status = getSessionStatus(race, s, now);
-    final isLive = status == SessionStatus.live;
-    final raceEnded = getRaceStatus(race, now) == RaceStatus.ended;
-    final label = isLive
-        ? '진행중인 세션'
-        : raceEnded
-        ? '최근 세션'
-        : '다음 세션';
-    final accent = isLive ? AppColors.redSoft : AppColors.blueSoft;
-
-    return _sessionBox(
-      label: label,
-      accent: accent,
-      sessionTitle: s.fullLabel,
-      meta: s.date,
-      value: isLive ? 'LIVE' : s.time,
-      valueColor: isLive ? AppColors.redSoft : AppColors.white,
-      badgeLabel: isLive ? 'LIVE' : null,
-      badgeVariant: AppChipVariant.red,
-      isLive: isLive,
-    );
-  }
-
-  Widget _sessionBox({
-    required String label,
-    required Color accent,
-    required String sessionTitle,
-    required String meta,
-    required String value,
-    required Color valueColor,
-    required String? badgeLabel,
-    required AppChipVariant badgeVariant,
-    required bool isLive,
-  }) {
-    return _box(
-      isLive: isLive,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: accent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: accent,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    if (badgeLabel != null) ...[
-                      const SizedBox(width: 8),
-                      AppChip(label: badgeLabel, variant: badgeVariant),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  sessionTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                meta,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Pretendard',
-                  color: AppColors.muted,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Pretendard',
-                  height: 1.1,
-                  color: valueColor,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _box({required Widget child, bool isLive = false}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isLive ? null : const Color(0x40000000), // black/25
-        gradient: isLive
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0x1AEF4444), Color(0x40000000)],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isLive ? const Color(0x66EF4444) : AppColors.divider,
-        ),
-      ),
-      child: child,
     );
   }
 }
@@ -565,15 +734,6 @@ String _snapshotSessionTitle(
   // 스냅샷에 세션 정보가 없을 때만 스케줄에서 매핑된 한글 라벨로 보완한다.
   final mapped = mappedSession?.fullLabel.trim();
   return (mapped != null && mapped.isNotEmpty) ? mapped : '세션';
-}
-
-String _liveValue(LiveSessionSnapshot snapshot) {
-  final currentLap = snapshot.currentLap;
-  final totalLaps = snapshot.totalLaps;
-  if (currentLap != null && totalLaps != null) {
-    return '$currentLap / $totalLaps LAP';
-  }
-  return 'LIVE';
 }
 
 class _EmptyHomeContent extends StatelessWidget {
