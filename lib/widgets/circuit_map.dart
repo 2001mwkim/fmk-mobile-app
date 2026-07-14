@@ -35,54 +35,6 @@ class SvgCircuitMap extends StatelessWidget {
   }
 }
 
-/// 배경 장식용 단색 서킷 아웃라인(히어로 카드/위젯 배경).
-///
-/// [SvgCircuitMap]과 달리 placeholder 없이 — 로드 전/실패 시 아무것도 그리지
-/// 않는다(배경 장식이라 없어도 레이아웃이 무너지지 않아야 함).
-class CircuitOutline extends StatelessWidget {
-  const CircuitOutline({super.key, required this.assetPath, required this.color});
-
-  final String assetPath;
-
-  /// 전체 패스에 일괄 적용할 색(원본 SVG 색 무시). 낮은 알파를 권장.
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: rootBundle.loadString(assetPath),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        return CircuitOutlineFromSource(source: snapshot.data!, color: color);
-      },
-    );
-  }
-}
-
-/// 미리 로드한 SVG 소스로 동기 렌더링하는 아웃라인.
-///
-/// 홈 위젯 배경 PNG 캡처(HomeWidget.renderFlutterWidget)는 위젯을 오프스크린
-/// 파이프라인에서 즉시 그리므로 비동기 에셋 로드(FutureBuilder)가 끝나기를
-/// 기다려주지 않는다 — 호출부가 소스를 먼저 읽어 이 위젯에 넘긴다.
-class CircuitOutlineFromSource extends StatelessWidget {
-  const CircuitOutlineFromSource({
-    super.key,
-    required this.source,
-    required this.color,
-  });
-
-  final String source;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SvgPathPainter(_parseSvg(source), colorOverride: color),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
 class _TrackMapPlaceholder extends StatelessWidget {
   const _TrackMapPlaceholder();
 
@@ -147,12 +99,9 @@ class _DiagonalBandsPainter extends CustomPainter {
 }
 
 class _SvgPathPainter extends CustomPainter {
-  _SvgPathPainter(this.svg, {this.colorOverride});
+  _SvgPathPainter(this.svg);
 
   final _ParsedSvg svg;
-
-  /// 지정 시 원본 SVG 색 대신 전체 패스에 이 색을 쓴다(아웃라인 장식용).
-  final Color? colorOverride;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -175,7 +124,7 @@ class _SvgPathPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..strokeWidth = item.strokeWidth
-        ..color = colorOverride ?? item.color;
+        ..color = item.color;
       canvas.drawPath(item.path, paint);
     }
 
@@ -183,8 +132,7 @@ class _SvgPathPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SvgPathPainter oldDelegate) =>
-      oldDelegate.svg != svg || oldDelegate.colorOverride != colorOverride;
+  bool shouldRepaint(_SvgPathPainter oldDelegate) => oldDelegate.svg != svg;
 }
 
 class _ParsedSvg {

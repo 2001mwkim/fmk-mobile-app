@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../data/country_flags.dart';
@@ -28,7 +26,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
   final bool isStale;
   final DateTime? now;
 
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(20));
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(16));
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +45,9 @@ class HomeLiveTopThreeCard extends StatelessWidget {
     final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
 
     final surface = Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
+        color: AppColors.card,
         borderRadius: _radius,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: ended
-              ? const [Color(0xFF15161D), Color(0xFF141525), Color(0xFF141828)]
-              : const [Color(0xFF1C0F12), Color(0xFF161126), Color(0xFF141828)],
-        ),
       ),
       foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
@@ -65,23 +57,14 @@ class HomeLiveTopThreeCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: _radius,
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!ended)
-              const Positioned.fill(
-                child: CustomPaint(painter: _LiveStripesPainter()),
-              ),
-            if (!ended) Positioned(right: -32, top: -44, child: _glow(160)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
-                  child: _topContent(context, s, ended),
-                ),
-                _footer(ended),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
+              child: _topContent(context, s, ended),
             ),
+            _footer(ended),
           ],
         ),
       ),
@@ -246,20 +229,6 @@ class HomeLiveTopThreeCard extends StatelessWidget {
           ),
           Text('→', style: TextStyle(fontSize: 14, color: color)),
         ],
-      ),
-    );
-  }
-
-  Widget _glow(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [Color(0x33EF4444), Color(0x00EF4444)],
-          stops: [0.0, 0.7],
-        ),
       ),
     );
   }
@@ -480,30 +449,4 @@ class _RankBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 웹 repeating-linear-gradient(108deg, transparent 0 24px, rgba(239,68,68,0.05) 24px 25px).
-class _LiveStripesPainter extends CustomPainter {
-  const _LiveStripesPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color =
-          const Color(0x0DEF4444) // rgba(239,68,68,~0.05)
-      ..strokeWidth = 1;
-
-    canvas.save();
-    canvas.clipRect(Offset.zero & size);
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.rotate(108 * math.pi / 180);
-    final extent = size.width + size.height;
-    for (double x = -extent; x <= extent; x += 25) {
-      canvas.drawLine(Offset(x, -extent), Offset(x, extent), paint);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_LiveStripesPainter oldDelegate) => false;
 }

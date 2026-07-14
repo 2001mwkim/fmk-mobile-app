@@ -96,12 +96,8 @@ class _GuideProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
+        color: AppColors.card,
         borderRadius: _radius,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C0F0E), Color(0xFF1A1030), Color(0xFF141828)],
-        ),
       ),
       foregroundDecoration: const BoxDecoration(
         borderRadius: _radius,

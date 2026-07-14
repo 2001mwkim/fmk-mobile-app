@@ -334,7 +334,8 @@ class FmkHomeWidgetBridge {
     );
     final teams = buildFmkStandingsWidgetRows(
       constructorStandings:
-          snapshot?.constructorStandings ?? static_standings.constructorStandings,
+          snapshot?.constructorStandings ??
+          static_standings.constructorStandings,
     );
 
     final writes = <Future<bool?>>[];
@@ -347,7 +348,10 @@ class FmkHomeWidgetBridge {
           HomeWidget.saveWidgetData<int>('${key}Pos', row?.position ?? i + 1),
           HomeWidget.saveWidgetData<String>('${key}Name', row?.name ?? ''),
           HomeWidget.saveWidgetData<String>('${key}Pts', row?.points ?? ''),
-          HomeWidget.saveWidgetData<String>('${key}Change', row?.changeLabel ?? ''),
+          HomeWidget.saveWidgetData<String>(
+            '${key}Change',
+            row?.changeLabel ?? '',
+          ),
           HomeWidget.saveWidgetData<int>(
             '${key}ChangeColor',
             _androidColorInt(row?.changeColor ?? 0xFF7880A0),
@@ -439,8 +443,8 @@ List<FmkStandingsWidgetRow> buildFmkStandingsWidgetRows({
     ];
   }
   return [
-    for (final c in (constructorStandings ?? const <ConstructorStanding>[])
-        .take(5))
+    for (final c
+        in (constructorStandings ?? const <ConstructorStanding>[]).take(5))
       row(
         position: c.position,
         name: c.teamKo,
@@ -478,7 +482,10 @@ FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
 
 /// 확정 결과 모드: 우측 화면에 최근 그랑프리 Top 3(공식 결과)를 그린다.
 /// 일정 화면 데이터는 항상 함께 저장한다(토글 전환용).
-FmkHomeWidgetPayload _buildResultPayload(LatestRaceResult latest, DateTime now) {
+FmkHomeWidgetPayload _buildResultPayload(
+  LatestRaceResult latest,
+  DateTime now,
+) {
   final race = getRaceById(latest.raceId);
   final schedule = _nextRaceSchedule(now);
   final topThree = latest.data.entries.take(3).toList();

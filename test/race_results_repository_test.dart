@@ -212,13 +212,15 @@ void main() {
       },
       {'sessionType': 'RACE', 'status': 'official', 'results': race['results']},
     ];
-    final sessions = parseRaceSessionResultsJson(jsonEncode(body), raceId: 'gb');
+    final sessions = parseRaceSessionResultsJson(
+      jsonEncode(body),
+      raceId: 'gb',
+    );
     expect(sessions, isNotNull);
-    expect([for (final s in sessions!) s.sessionType], [
-      'FP1',
-      'QUALIFYING',
-      'RACE',
-    ]);
+    expect(
+      [for (final s in sessions!) s.sessionType],
+      ['FP1', 'QUALIFYING', 'RACE'],
+    );
     expect(sessions.first.data.entries.length, 12);
 
     // 구버전 응답(sessions 없음) → 레이스 1개짜리 목록으로 정규화.
@@ -237,9 +239,8 @@ void main() {
     )!;
     // 퀄리 결과: 갭 없이 행별 랩타임만 있는 형태.
     final qualiBody = validBody(race.id);
-    final qualiRows =
-        ((qualiBody['races'] as List).first['results'] as List)
-            .cast<Map<String, dynamic>>();
+    final qualiRows = ((qualiBody['races'] as List).first['results'] as List)
+        .cast<Map<String, dynamic>>();
     for (final row in qualiRows) {
       row['time'] = '1:2${row['position']}.00${row['position']}';
       row['gap'] = null;

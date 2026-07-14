@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/home_recent_result_card.dart';
 import '../widgets/live_session_builder.dart';
+import '../widgets/app_ui.dart';
 
 class LiveCenterScreen extends StatelessWidget {
   const LiveCenterScreen({
@@ -37,7 +38,10 @@ class LiveCenterScreen extends StatelessWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                 children: [
-                  const _Title(),
+                  const AppPageHeader(
+                    title: '라이브 센터',
+                    description: '실시간 순위와 세션 상황을 한곳에서 확인하세요.',
+                  ),
                   const SizedBox(height: 16),
                   if (value == null)
                     _OfflineCenter(
@@ -52,37 +56,6 @@ class LiveCenterScreen extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
-}
-
-class _Title extends StatelessWidget {
-  const _Title();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '라이브 센터',
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 27,
-            height: 1.1,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        SizedBox(height: 7),
-        Text(
-          '실시간 순위와 세션 상황을 한곳에서 확인하세요.',
-          style: TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -141,26 +114,19 @@ class _OfflineCenter extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _TimingPreviewCard(session: session),
-        const SizedBox(height: 12),
-        const _WeatherPreviewCard(),
-        const SizedBox(height: 12),
-        const _RaceControlPreviewCard(),
-        const SizedBox(height: 16),
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            // 세션 단위 결과 피드(FP1/퀄리 포함)를 보여주므로 'GP 결과'가 아니라
-            // '세션 결과'가 정확하다 — 카드 제목("최근 세션 결과 (…)")과도 일치.
-            '직전 세션 결과',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _TimingPreviewCard(session: session),
+              const Divider(height: 1, color: AppColors.rowBorder),
+              const _WeatherPreviewCard(),
+              const Divider(height: 1, color: AppColors.rowBorder),
+              const _RaceControlPreviewCard(),
+            ],
           ),
         ),
-        HomeRecentResultCard(repository: resultsRepository, topPadding: 10),
+        HomeRecentResultCard(repository: resultsRepository, topPadding: 16),
       ],
     );
   }
@@ -177,50 +143,47 @@ class _TimingPreviewCard extends StatelessWidget {
     final startLabel = session == null
         ? null
         : '${session!.date} ${session!.time} 세션 시작과 함께 표시됩니다.';
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '실시간 순위',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '실시간 순위',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(
-                  'TIME / GAP',
-                  style: const TextStyle(
-                    color: AppColors.faint,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 18),
-            child: Text(
-              '전체 드라이버 순위와 랩타임·타이어·섹터가 실시간으로 올라옵니다.'
-              '${startLabel == null ? '' : '\n$startLabel'}',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 12,
-                height: 1.5,
               ),
+              Text(
+                'TIME / GAP',
+                style: const TextStyle(
+                  color: AppColors.faint,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 18),
+          child: Text(
+            '전체 드라이버 순위와 랩타임·타이어·섹터가 실시간으로 올라옵니다.'
+            '${startLabel == null ? '' : '\n$startLabel'}',
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              height: 1.5,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -231,11 +194,12 @@ class _WeatherPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return const Padding(
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '트랙 & 날씨',
             style: TextStyle(
               color: AppColors.white,
@@ -243,8 +207,8 @@ class _WeatherPreviewCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 14),
-          const Row(
+          SizedBox(height: 14),
+          Row(
             children: [
               _Metric(label: '대기', value: '—'),
               _Metric(label: '트랙', value: '—'),
@@ -264,11 +228,12 @@ class _RaceControlPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return const Padding(
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '레이스 컨트롤',
             style: TextStyle(
               color: AppColors.white,
@@ -276,8 +241,8 @@ class _RaceControlPreviewCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             '세이프티카·깃발 등 FIA 심판진 메시지가 세션 중 실시간으로 표시됩니다.',
             style: TextStyle(
               color: AppColors.textMuted,
@@ -300,6 +265,7 @@ class _LiveContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SessionHeader(snapshot: snapshot, isStale: isStale),
         if (snapshot.weather != null) ...[

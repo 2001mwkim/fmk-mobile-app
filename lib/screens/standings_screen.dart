@@ -6,11 +6,10 @@ import '../models/standing.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_ui.dart';
 
 // 웹 순위 페이지 전용 색.
 const Color _muted = AppColors.muted; // #7880a0
-const Color _navMuted = AppColors.textMuted; // 비활성 탭 텍스트
-const Color _hairline = AppColors.hairline; // white/8 (알약 보더)
 const Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
 
 enum _StandingsTab { drivers, constructors }
@@ -60,33 +59,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             // 상단 제목/설명
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '2026 시즌 기준',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _muted,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '챔피언십 순위',
-                    style: TextStyle(
-                      fontSize: 26,
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppPageHeader(title: '챔피언십 순위', eyebrow: '2026 시즌 기준'),
             const SizedBox(height: 16),
             // 드라이버 / 컨스트럭터 알약 토글
             _SegmentedTabs(
@@ -145,80 +118,11 @@ class _SegmentedTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _hairline),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SegmentButton(
-              label: '드라이버',
-              selected: tab == _StandingsTab.drivers,
-              onTap: () => onChanged(_StandingsTab.drivers),
-            ),
-          ),
-          Expanded(
-            child: _SegmentButton(
-              label: '컨스트럭터',
-              selected: tab == _StandingsTab.constructors,
-              onTap: () => onChanged(_StandingsTab.constructors),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SegmentButton extends StatelessWidget {
-  const _SegmentButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.red : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: selected
-                ? const [
-                    BoxShadow(
-                      color: Color(0x66EF4444), // rgba(239,68,68,0.4)
-                      blurRadius: 10,
-                      offset: Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: selected ? AppColors.white : _navMuted,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
+    return AppSegmentedControl<_StandingsTab>(
+      values: _StandingsTab.values,
+      selected: tab,
+      labelFor: (value) => value == _StandingsTab.drivers ? '드라이버' : '컨스트럭터',
+      onChanged: onChanged,
     );
   }
 }
@@ -231,7 +135,7 @@ class _StandingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rows.isEmpty) {
-      return const _EmptyStandings(message: '순위 데이터가 없습니다.');
+      return const AppStateView(message: '순위 데이터가 없습니다.');
     }
 
     return AppCard(
@@ -371,10 +275,10 @@ class _PointsLabel extends StatelessWidget {
         Text(
           _formatPoints(points),
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 15,
             fontFamily: 'Pretendard',
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
+            color: AppColors.slate300,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(width: 4),
@@ -420,28 +324,6 @@ class _PositionChange extends StatelessWidget {
             ? AppColors.redSoft
             : _muted,
         fontWeight: FontWeight.w800,
-      ),
-    );
-  }
-}
-
-class _EmptyStandings extends StatelessWidget {
-  const _EmptyStandings({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
-        ),
       ),
     );
   }

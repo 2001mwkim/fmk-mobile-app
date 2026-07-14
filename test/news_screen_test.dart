@@ -130,7 +130,10 @@ void main() {
   testWidgets('news screen caps list to display limit', (tester) async {
     final repository = _FakeNewsRepository([
       for (var i = 0; i < 30; i++)
-        item(id: 'n$i', publishedAt: now.subtract(Duration(hours: i + 1))),
+        item(
+          id: 'n$i',
+          publishedAt: now.subtract(Duration(hours: i + 1)),
+        ),
     ]);
 
     await tester.pumpWidget(

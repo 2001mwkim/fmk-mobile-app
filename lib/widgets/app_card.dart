@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 
 /// 웹 components/Card.tsx 의 Flutter 포팅.
 ///
@@ -18,34 +19,31 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
+    this.backgroundColor = AppColors.card,
+    this.borderColor = AppColors.border,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final Color backgroundColor;
+  final Color borderColor;
 
   /// 웹에서 Card 를 <Link> 로 감싸 클릭 가능하게 쓰던 경우를 위한 옵션.
   final VoidCallback? onTap;
 
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(16));
+  static const BorderRadius _radius = AppRadius.mediumBorder;
 
   @override
   Widget build(BuildContext context) {
     final content = Padding(padding: padding, child: child);
 
     final surface = DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
+      decoration: BoxDecoration(
+        color: backgroundColor,
         borderRadius: _radius,
-        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        border: Border.fromBorderSide(BorderSide(color: borderColor)),
       ),
-      // 웹 inset 상단 하이라이트(rgba(255,255,255,0.04)) 근사.
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          borderRadius: _radius,
-          border: Border(top: BorderSide(color: Color(0x0AFFFFFF))),
-        ),
-        child: content,
-      ),
+      child: content,
     );
 
     if (onTap == null) {

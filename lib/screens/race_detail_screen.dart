@@ -26,7 +26,11 @@ const Color _faintBorder = AppColors.faintBorder; // white/6
 const Color _hairline = AppColors.hairline; // white/8
 
 class RaceDetailScreen extends StatefulWidget {
-  const RaceDetailScreen({super.key, required this.race, this.resultsRepository});
+  const RaceDetailScreen({
+    super.key,
+    required this.race,
+    this.resultsRepository,
+  });
 
   final Race race;
 
@@ -281,25 +285,18 @@ class _HeroCard extends StatelessWidget {
   final Race race;
   final String status;
 
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(24));
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(16));
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
+        color: AppColors.card,
         borderRadius: _radius,
-        // to bottom right: #1c0f0e -> #1a1030 -> #141828
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C0F0E), Color(0xFF1A1030), Color(0xFF141828)],
-        ),
       ),
       foregroundDecoration: const BoxDecoration(
         borderRadius: _radius,
-        border: Border.fromBorderSide(
-          BorderSide(color: Color(0x4DEF4444)), // red-500/30
-        ),
+        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
       child: ClipRRect(
         borderRadius: _radius,

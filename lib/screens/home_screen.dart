@@ -16,6 +16,7 @@ import '../widgets/home_live_top_three_card.dart';
 import '../widgets/home_quick_actions_card.dart';
 import '../widgets/home_standings_card.dart';
 import '../widgets/live_session_builder.dart';
+import '../widgets/app_ui.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -85,13 +86,9 @@ class _SeasonHomeContent extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _HomeHeader()),
-              const SizedBox(width: 12),
-              const _HomeSettingsButton(),
-            ],
+          const AppPageHeader(
+            title: '2026 시즌',
+            trailing: _HomeSettingsButton(),
           ),
           const SizedBox(height: 16),
           // 라이브 Top 3 카드/히어로/주말 일정 모두 같은 스냅샷을 본다.
@@ -135,24 +132,6 @@ class _SeasonHomeContent extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    // 리디자인(home_screen_2a): 서브카피 없이 타이틀만 크게(26/900).
-    return const Text(
-      '2026 시즌',
-      style: TextStyle(
-        fontSize: 26,
-        height: 1,
-        color: AppColors.white,
-        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -226,8 +205,6 @@ class _NextRaceCard extends StatelessWidget {
 
     return HeroCard(
       padding: EdgeInsets.zero,
-      // 다음 GP 서킷 아웃라인을 배경 장식으로(에셋 없으면 자동 미표시).
-      circuitAssetPath: 'assets/circuits/${race.id}.svg',
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => RaceDetailScreen(race: race)),
       ),
@@ -242,7 +219,8 @@ class _NextRaceCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    _HeroBadge(label: statusLabel),
+                    Flexible(child: _HeroBadge(label: statusLabel)),
+                    const SizedBox(width: 8),
                     const Spacer(),
                     Text(
                       _heroDateRange(race),
@@ -255,17 +233,27 @@ class _NextRaceCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  race.nameKo,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    height: 1.1,
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final largeText =
+                        MediaQuery.textScalerOf(context).scale(1) >= 1.25;
+                    final displayName = largeText && constraints.maxWidth < 330
+                        ? race.nameKo.replaceFirst('-', '-\n')
+                        : race.nameKo;
+                    return Text(
+                      displayName,
+                      semanticsLabel: race.nameKo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 30,
+                        height: 1.1,
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 5),
                 Text(
@@ -338,7 +326,7 @@ class _HeroBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.heroAccent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -346,10 +334,12 @@ class _HeroBadge extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
+          letterSpacing: 0.6,
           color: AppColors.heroAccent,
         ),
       ),
@@ -421,33 +411,53 @@ class _HeroCountdownRowState extends State<_HeroCountdownRow> {
 
     final tile = _resolveTile();
 
-    // IntrinsicHeight: 세그먼트/타일이 같은 높이로 늘어나되(stretch),
-    // 세로 무한 제약(ListView 내 Column)에서도 안전하게 동작한다.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 5,
-            child: _HeroCountSeg(value: pad(days), label: 'DAYS'),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.25;
+        final compact = largeText || constraints.maxWidth < 320;
+        final countdown = Row(
+          children: [
+            Expanded(
+              child: _HeroCountSeg(value: pad(days), label: 'DAYS'),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _HeroCountSeg(value: pad(hours), label: 'HRS'),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _HeroCountSeg(value: pad(minutes), label: 'MIN'),
+            ),
+          ],
+        );
+
+        if (compact) {
+          return Column(
+            children: [
+              countdown,
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: _HeroNextTile(label: tile.label, value: tile.value),
+              ),
+            ],
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 15, child: countdown),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 7,
+                child: _HeroNextTile(label: tile.label, value: tile.value),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 5,
-            child: _HeroCountSeg(value: pad(hours), label: 'HRS'),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 5,
-            child: _HeroCountSeg(value: pad(minutes), label: 'MIN'),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 7,
-            child: _HeroNextTile(label: tile.label, value: tile.value),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -530,7 +540,7 @@ class _HeroCountSeg extends StatelessWidget {
   }
 }
 
-/// 다음/진행중/최근 세션 하이라이트 타일(레드 그라데이션).
+/// 다음/진행중/최근 세션 하이라이트 타일.
 class _HeroNextTile extends StatelessWidget {
   const _HeroNextTile({required this.label, required this.value});
 
@@ -542,14 +552,7 @@ class _HeroNextTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.heroAccent.withValues(alpha: 0.18),
-            AppColors.heroAccent.withValues(alpha: 0.08),
-          ],
-        ),
+        color: AppColors.heroAccent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.35)),
       ),

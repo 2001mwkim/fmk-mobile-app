@@ -21,7 +21,7 @@ class HomeQuickActionsCard extends StatelessWidget {
       context: context,
       backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) => const _WidgetPickerSheet(),
     );
@@ -29,9 +29,8 @@ class HomeQuickActionsCard extends StatelessWidget {
 
     final requester =
         pinRequester ??
-        (name) => FmkHomeWidgetBridge.requestPinWidget(
-          qualifiedAndroidName: name,
-        );
+        (name) =>
+            FmkHomeWidgetBridge.requestPinWidget(qualifiedAndroidName: name);
     final launched = await requester(provider);
     if (launched || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +53,9 @@ class HomeQuickActionsCard extends StatelessWidget {
               subtitle: '세션 시작 전에 알림',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
                 );
               },
             ),
@@ -100,9 +101,8 @@ class _WidgetPickerSheet extends StatelessWidget {
               icon: Icons.calendar_today_outlined,
               title: '일정 · 라이브 위젯',
               subtitle: '다음 세션 일정, 라이브 순위와 최근 결과',
-              onTap: () => Navigator.of(
-                context,
-              ).pop(fmkHomeWidgetProviderQualifiedName),
+              onTap: () =>
+                  Navigator.of(context).pop(fmkHomeWidgetProviderQualifiedName),
             ),
             const SizedBox(height: 8),
             _WidgetOptionTile(

@@ -45,7 +45,9 @@ class HttpStandingsRepository implements StandingsRepository {
     final httpClient = client ?? http.Client();
     try {
       final uri = Uri.parse(baseUrl).replace(path: '/api/standings');
-      final response = await httpClient.get(uri).timeout(kStandingsFetchTimeout);
+      final response = await httpClient
+          .get(uri)
+          .timeout(kStandingsFetchTimeout);
       if (response.statusCode != 200) return null;
       // JSON 은 UTF-8 (RFC 8259) — 한글 이름 깨짐 방지(뉴스와 동일 규칙).
       return parseStandingsJson(utf8.decode(response.bodyBytes));

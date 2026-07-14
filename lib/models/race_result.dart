@@ -27,7 +27,10 @@ class RaceResultEntry {
     final position = json['position'];
     final driverKo = json['driverKo'];
     final points = json['points'];
-    if (position is! int || driverKo is! String || driverKo.isEmpty || points is! num) {
+    if (position is! int ||
+        driverKo is! String ||
+        driverKo.isEmpty ||
+        points is! num) {
       return null;
     }
     return RaceResultEntry(

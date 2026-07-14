@@ -65,19 +65,17 @@ void main() {
     expect(find.text('키미 안토넬리'), findsNothing);
     expect(find.text('메르세데스'), findsWidgets);
 
-    // 소식 탭을 라이브 센터로 교체했다. 비라이브 때는 다음 세션을 작게
-    // 안내하고, 직전 세션 결과(FP/퀄리 포함)를 중심 콘텐츠로 보여준다.
+    // 소식 탭을 라이브 센터로 교체했다. 비라이브 때는 다음 세션과
+    // 세션 중 제공될 핵심 데이터를 한 패널에서 안내한다.
     await tester.tap(find.text('라이브'));
     await tester.pumpAndSettle();
     expect(find.text('직관'), findsNothing);
     expect(find.text('라이브 센터'), findsOneWidget);
     expect(find.text('다음 라이브'), findsOneWidget);
-    // 비라이브에도 라이브 카드 틀(실시간 순위/날씨/레이스 컨트롤)을 빈
-    // 상태로 유지한다 — 세션 중 무엇이 표시되는지 구조로 보여주기 위함.
+    // 비라이브에도 실시간 순위/날씨/레이스 컨트롤의 정보 구조를 유지한다.
     expect(find.text('실시간 순위'), findsOneWidget);
     expect(find.text('트랙 & 날씨'), findsOneWidget);
     expect(find.text('레이스 컨트롤'), findsOneWidget);
-    expect(find.text('직전 세션 결과'), findsOneWidget);
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();

@@ -81,7 +81,10 @@ void main() {
     });
 
     testWidgets('서버 실패 시 번들 정적 순위를 그대로 보여준다', (tester) async {
-      await pump(tester, HomeStandingsCard(repository: _FakeStandingsRepo(null)));
+      await pump(
+        tester,
+        HomeStandingsCard(repository: _FakeStandingsRepo(null)),
+      );
 
       expect(find.text('챔피언십 TOP 3'), findsOneWidget);
       // 정적 데이터 선두(순위 탭과 같은 출처).

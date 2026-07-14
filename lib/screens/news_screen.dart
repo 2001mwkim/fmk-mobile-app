@@ -245,9 +245,9 @@ class _NewsCard extends StatelessWidget {
     }
 
     if (opened || !context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('원문 링크를 열지 못했습니다.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('원문 링크를 열지 못했습니다.')));
   }
 }
 

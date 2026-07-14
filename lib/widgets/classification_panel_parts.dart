@@ -44,7 +44,7 @@ class ClassificationPanelShell extends StatelessWidget {
   }
 }
 
-/// 패널 헤더 배경: 라이브(빨강) / 종료(흰색) 그라데이션.
+/// 패널 헤더 배경: 라이브 여부는 단색 명도 차이로만 구분한다.
 class ClassificationHeaderContainer extends StatelessWidget {
   const ClassificationHeaderContainer({
     super.key,
@@ -52,7 +52,7 @@ class ClassificationHeaderContainer extends StatelessWidget {
     required this.child,
   });
 
-  /// true 면 라이브(빨간 톤), false 면 종료(중립 톤) 그라데이션.
+  /// true 면 라이브(빨간 톤), false 면 종료(중립 톤).
   final bool emphasized;
   final Widget child;
 
@@ -60,15 +60,7 @@ class ClassificationHeaderContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: emphasized
-              ? const [Color(0x14EF4444), Color(0x00EF4444)]
-              : const [Color(0x08FFFFFF), Color(0x00FFFFFF)],
-        ),
-      ),
+      color: emphasized ? const Color(0x14EF4444) : AppColors.rowBorder,
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
       child: child,
     );

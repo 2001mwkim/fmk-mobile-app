@@ -6,6 +6,7 @@ import '../models/race.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../widgets/app_ui.dart';
 import 'race_detail_screen.dart';
 
 // 웹 calendar 전용 색 (globals/CalendarClient 에서 사용하는 값).
@@ -44,7 +45,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final firstInactiveIndex = visibleRaces.indexWhere(_isInactive);
 
     final children = <Widget>[
-      const _CalendarHeader(),
+      const AppPageHeader(title: '시즌 캘린더', eyebrow: '2026 SEASON'),
       const SizedBox(height: 16),
       _FilterTabs(
         selectedFilter: _selectedFilter,
@@ -149,41 +150,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
 // startDate(YYYY-MM-DD) 사전식 비교 = 날짜 오름차순.
 int _byStartDateAsc(Race a, Race b) => a.startDate.compareTo(b.startDate);
 
-class _CalendarHeader extends StatelessWidget {
-  const _CalendarHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '2026 SEASON',
-            style: TextStyle(
-              fontSize: 11,
-              color: _muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.6,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            '시즌 캘린더',
-            style: TextStyle(
-              fontSize: 26,
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _FilterTabs extends StatelessWidget {
   const _FilterTabs({required this.selectedFilter, required this.onChanged});
 
@@ -192,69 +158,11 @@ class _FilterTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final filter in _CalendarFilter.values) ...[
-          Expanded(
-            child: _FilterPill(
-              label: filter.label,
-              selected: filter == selectedFilter,
-              onTap: () => onChanged(filter),
-            ),
-          ),
-          if (filter != _CalendarFilter.values.last) const SizedBox(width: 8),
-        ],
-      ],
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.red : AppColors.card,
-            borderRadius: BorderRadius.circular(999),
-            border: selected ? null : Border.all(color: _hairline),
-            boxShadow: selected
-                ? const [
-                    BoxShadow(
-                      color: Color(0x59EF4444), // rgba(239,68,68,0.35)
-                      blurRadius: 12,
-                      offset: Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: selected ? AppColors.white : _muted,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
+    return AppSegmentedControl<_CalendarFilter>(
+      values: _CalendarFilter.values,
+      selected: selectedFilter,
+      labelFor: (filter) => filter.label,
+      onChanged: onChanged,
     );
   }
 }
@@ -271,31 +179,7 @@ class _SubHeader extends StatelessWidget {
         ? '다가오는 그랑프리'
         : '${filter.label} 그랑프리';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
-            '$count',
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Pretendard',
-              color: _muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
+    return AppSectionHeader(title: label, meta: '$count');
   }
 }
 
@@ -341,50 +225,89 @@ class _ActiveRaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = _content(context);
-
     if (!_emphasized) {
       return AppCard(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         onTap: onTap,
-        child: content,
+        child: _compactContent(context),
       );
     }
 
-    // NEXT / 진행중 — 레드 보더 + 은은한 그라데이션 + 리본.
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1C0F0E), Color(0xFF141828)],
-                ),
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      onTap: onTap,
+      borderColor: AppColors.red,
+      child: _content(context),
+    );
+  }
+
+  Widget _compactContent(BuildContext context) {
+    final dateText =
+        '${_shortDate(race.startDate)} – ${_shortDate(race.endDate)}';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _Flag(race.countryKo, size: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'R${race.round}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textEnded,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (race.hasSprint) ...[
+                    const SizedBox(width: 6),
+                    const AppChip(label: '스프린트', variant: AppChipVariant.blue),
+                  ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      race.nameKo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.25,
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              foregroundDecoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-                border: Border.fromBorderSide(
-                  BorderSide(color: Color(0x66EF4444)), // red-500/40
-                ),
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  Text(
+                    dateText,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${race.circuitKo} · ${race.cityKo}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: _muted),
+                    ),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.all(18),
-              child: content,
-            ),
-            // 진행중 카드는 상태 칩('진행중')이 이미 있으므로 NEXT 리본은
-            // 다음 그랑프리에만 붙인다.
-            if (isNext) const Positioned(top: -8, right: 18, child: _Ribbon()),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -593,37 +516,6 @@ class _CompactRaceCard extends StatelessWidget {
   }
 }
 
-class _Ribbon extends StatelessWidget {
-  const _Ribbon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.red,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x80EF4444), // rgba(239,68,68,0.5)
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Text(
-        'NEXT',
-        style: TextStyle(
-          fontSize: 10,
-          color: AppColors.white,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-}
-
 class _Flag extends StatelessWidget {
   const _Flag(this.countryKo, {required this.size});
 
@@ -645,25 +537,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Text(
-            '표시할 그랑프리가 없습니다.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '다른 필터를 선택해보세요.',
-            style: TextStyle(fontSize: 12, color: _muted),
-          ),
-        ],
-      ),
-    );
+    return const AppStateView(message: '표시할 그랑프리가 없습니다.\n다른 필터를 선택해보세요.');
   }
 }
 
