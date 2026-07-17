@@ -156,6 +156,89 @@ void main() {
     expect(controller.snapshot, same(ended));
   });
 
+  test(
+    'waits for a repeated mid-race ended signal before showing final result',
+    () async {
+      final now = DateTime(2026, 6, 30, 12);
+      const live = LiveSessionSnapshot(
+        status: LiveSessionStatus.live,
+        updatedAt: '2026-06-30T03:00:00Z',
+        raceId: 'spain',
+        sessionKey: 'race-1',
+        sessionType: 'Race',
+        sessionName: 'Race',
+        currentLap: 24,
+        totalLaps: 66,
+      );
+      final ended = LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '2026-06-30T03:01:00Z',
+        raceId: 'spain',
+        sessionKey: 'race-1',
+        sessionType: 'Race',
+        sessionName: 'Race',
+        currentLap: 24,
+        totalLaps: 66,
+        visibleUntil: DateTime.now().add(const Duration(minutes: 30)),
+      );
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([
+          const LiveSessionFetchResult.success(live),
+          LiveSessionFetchResult.success(ended),
+          LiveSessionFetchResult.success(ended),
+        ]),
+        now: () => now,
+      );
+
+      await controller.refresh();
+      await controller.refresh();
+      expect(controller.snapshot, same(live));
+      expect(controller.latestSessionSnapshot, same(live));
+
+      await controller.refresh();
+      expect(controller.snapshot, same(ended));
+      expect(controller.latestSessionSnapshot, same(ended));
+    },
+  );
+
+  test('accepts an ended signal immediately on the final lap', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    const live = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-06-30T03:00:00Z',
+      raceId: 'spain',
+      sessionKey: 'race-1',
+      sessionType: 'Race',
+      sessionName: 'Race',
+      currentLap: 65,
+      totalLaps: 66,
+    );
+    final ended = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '2026-06-30T03:01:00Z',
+      raceId: 'spain',
+      sessionKey: 'race-1',
+      sessionType: 'Race',
+      sessionName: 'Race',
+      currentLap: 66,
+      totalLaps: 66,
+      visibleUntil: DateTime.now().add(const Duration(minutes: 30)),
+    );
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        const LiveSessionFetchResult.success(live),
+        LiveSessionFetchResult.success(ended),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    await controller.refresh();
+
+    expect(controller.snapshot, same(ended));
+    expect(controller.latestSessionSnapshot, same(ended));
+  });
+
   test('hides ended snapshot once visibleUntil passed', () async {
     final now = DateTime(2026, 6, 30, 12);
     final live = _liveSnapshot();

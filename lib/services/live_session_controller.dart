@@ -11,6 +11,10 @@ const Duration liveGracePeriod = Duration(minutes: 3);
 /// 마지막 정상 수신 이후 이 기간이 지나면 라이브 박스를 내린다(default 로 전환).
 const Duration liveStaleMaxAge = Duration(minutes: 10);
 
+/// 진행 중 레이스/스프린트가 종료됐다는 단발성 신호를 확정하기 전 필요한 연속 수신 수.
+/// collector 재연결 중 남은 상태값 하나로 '최종 결과'가 되는 것을 막는다.
+const int endedConfirmationCount = 2;
+
 /// live.json 을 주기적으로 폴링해 최신 [LiveSessionSnapshot] 을 제공한다.
 ///
 /// - 리스너(화면)가 처음 붙으면 폴링을 시작하고, 모두 떨어지면 타이머를 정리한다.
@@ -78,6 +82,9 @@ class LiveSessionController extends ChangeNotifier {
   LiveLastSession? _lastSession;
   LiveLastSession? get lastSession => _lastSession;
 
+  String? _pendingEndedSessionId;
+  int _pendingEndedCount = 0;
+
   Timer? _timer;
   int _listeners = 0;
 
@@ -110,7 +117,8 @@ class LiveSessionController extends ChangeNotifier {
     final fetchedAt = _now();
     _lastFetchedAt = fetchedAt;
     final result = await _service.fetchResult();
-    final fetched = result.succeeded ? result.snapshot : null;
+    final received = result.succeeded ? result.snapshot : null;
+    final fetched = _acceptSnapshot(received);
 
     var latestSessionChanged = false;
     if (fetched != null && _isSessionSnapshot(fetched)) {
@@ -205,6 +213,69 @@ class LiveSessionController extends ChangeNotifier {
   Duration _staleAge(DateTime now) {
     final at = _lastGoodAt;
     return at == null ? Duration.zero : now.difference(at);
+  }
+
+  /// 라이브였던 레이스/스프린트의 중간 종료 신호는 두 번 연속 확인한다.
+  /// 완주 랩에 도달한 경우는 명백한 종료 근거가 있으므로 바로 수용한다.
+  LiveSessionSnapshot? _acceptSnapshot(LiveSessionSnapshot? received) {
+    if (!_requiresEndedConfirmation(received)) {
+      _clearPendingEnded();
+      return received;
+    }
+
+    final id = _sessionIdentity(received!);
+    if (id == null) return received;
+    if (id == _pendingEndedSessionId) {
+      _pendingEndedCount++;
+    } else {
+      _pendingEndedSessionId = id;
+      _pendingEndedCount = 1;
+    }
+
+    if (_pendingEndedCount >= endedConfirmationCount) {
+      _clearPendingEnded();
+      return received;
+    }
+    return null;
+  }
+
+  bool _requiresEndedConfirmation(LiveSessionSnapshot? received) {
+    if (received == null ||
+        received.status != LiveSessionStatus.ended ||
+        !received.isRaceOrSprint) {
+      return false;
+    }
+    final previous = _latestSessionSnapshot;
+    if (previous == null ||
+        previous.status != LiveSessionStatus.live ||
+        !_sameSession(previous, received)) {
+      return false;
+    }
+    final currentLap = received.currentLap;
+    final totalLaps = received.totalLaps;
+    return currentLap == null || totalLaps == null || currentLap < totalLaps;
+  }
+
+  bool _sameSession(LiveSessionSnapshot a, LiveSessionSnapshot b) {
+    final aId = _sessionIdentity(a);
+    final bId = _sessionIdentity(b);
+    return aId != null && aId == bId;
+  }
+
+  String? _sessionIdentity(LiveSessionSnapshot value) {
+    final key = value.sessionKey?.trim();
+    if (key != null && key.isNotEmpty) return 'key:$key';
+    final race = (value.raceId ?? value.raceName)?.trim();
+    final session = (value.sessionName ?? value.sessionType)?.trim();
+    if (race == null || race.isEmpty || session == null || session.isEmpty) {
+      return null;
+    }
+    return 'session:$race/$session';
+  }
+
+  void _clearPendingEnded() {
+    _pendingEndedSessionId = null;
+    _pendingEndedCount = 0;
   }
 
   /// top-level wrapper만 잘못 스냅샷처럼 파싱된 빈 inactive 값은 제외한다.

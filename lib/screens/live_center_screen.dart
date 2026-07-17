@@ -510,6 +510,11 @@ class _TimingCardState extends State<_TimingCard> {
     final topThree = drivers.take(3).toList();
     final remaining = drivers.skip(3).toList();
     final raceLike = snapshot.isRaceOrSprint;
+    final headerLabel = switch (_tab) {
+      _BoardTab.lap => raceLike ? 'INTERVAL' : 'BEST LAP',
+      _BoardTab.sector => 'SECTOR TIME',
+      _BoardTab.tire => null,
+    };
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -529,9 +534,9 @@ class _TimingCardState extends State<_TimingCard> {
                     ),
                   ),
                 ),
-                if (_tab == _BoardTab.lap)
+                if (headerLabel != null)
                   Text(
-                    snapshot.gapColumnLabel,
+                    headerLabel,
                     style: const TextStyle(
                       color: AppColors.faint,
                       fontSize: 9,
@@ -739,7 +744,7 @@ class _DriverRow extends StatelessWidget {
     };
   }
 
-  /// LAP 탭: BEST/LAST 랩(플래그 색) + 미니섹터 바.
+  /// LAP 탭은 랩 기록만 보인다. 섹터 값은 SECTOR 탭에만 두어 중복을 없앤다.
   Widget _lapContent() {
     final best = raceLike ? driver.bestLapTime : driver.displayTime;
     final bestColor = best == null
@@ -747,36 +752,30 @@ class _DriverRow extends StatelessWidget {
         : driver.bestLapIsOverall
         ? AppColors.timingPurple
         : AppColors.greenSoft;
-    final sectors = _sectors;
-    final hasSectors = sectors.any(
-      (s) => s.value != null || s.segments.isNotEmpty,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            _lapCluster('BEST', best, bestColor),
-            const SizedBox(width: 14),
-            _lapCluster(
-              'LAST',
-              driver.lastLapTime,
-              _flagColor(driver.lastLapFlag),
-            ),
+            if (raceLike) ...[
+              _lapCluster(
+                'LAST',
+                driver.lastLapTime,
+                _flagColor(driver.lastLapFlag),
+              ),
+              const SizedBox(width: 14),
+              _lapCluster('BEST', best, bestColor),
+            ] else ...[
+              _lapCluster('BEST', best, bestColor),
+              const SizedBox(width: 14),
+              _lapCluster(
+                'LAST',
+                driver.lastLapTime,
+                _flagColor(driver.lastLapFlag),
+              ),
+            ],
           ],
         ),
-        if (hasSectors) ...[
-          const SizedBox(height: 5),
-          Row(
-            children: [
-              for (var i = 0; i < sectors.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                _MiniSectorCluster(detail: sectors[i]),
-              ],
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -799,7 +798,7 @@ class _DriverRow extends StatelessWidget {
     );
   }
 
-  /// SECTOR 탭: 현재 섹터(플래그 색) 위, 개인 베스트 섹터 아래.
+  /// SECTOR 탭: 현재 섹터(플래그 색) 위, 미니섹터와 개인 베스트를 아래에 둔다.
   Widget _sectorContent() {
     final sectors = _sectors;
     return Row(
@@ -825,6 +824,10 @@ class _DriverRow extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 2),
+              if (sectors[i].segments.isNotEmpty) ...[
+                _MiniSectorBar(segments: sectors[i].segments),
+                const SizedBox(height: 3),
+              ],
               Text(
                 (i < driver.bestSectors.length
                         ? driver.bestSectors[i]
@@ -898,36 +901,6 @@ class _DriverRow extends StatelessWidget {
         fontSize: 13,
         fontWeight: FontWeight.w800,
       ),
-    );
-  }
-}
-
-/// 미니섹터 바 + 섹터 타임(플래그 색) 한 묶음.
-class _MiniSectorCluster extends StatelessWidget {
-  const _MiniSectorCluster({required this.detail});
-
-  final LiveSectorDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (detail.segments.isNotEmpty) ...[
-          _MiniSectorBar(segments: detail.segments),
-          const SizedBox(height: 3),
-        ],
-        Text(
-          detail.value ?? '—',
-          style: TextStyle(
-            color: detail.value == null
-                ? AppColors.faint
-                : _DriverRow._flagColor(detail.flag),
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
     );
   }
 }

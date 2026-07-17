@@ -60,14 +60,16 @@ void main() {
     expect(find.text('LAP'), findsWidgets);
     expect(find.text('SECTOR'), findsOneWidget);
     expect(find.text('TIRE'), findsOneWidget);
-    // LAP 탭: BEST/LAST 클러스터 + 섹터 값(미니 클러스터).
+    // 레이스 LAP 탭: INTERVAL이 우선이며 섹터 시간은 중복 표시하지 않는다.
+    expect(find.text('INTERVAL'), findsOneWidget);
     expect(find.text('BEST'), findsWidgets);
     expect(find.text('LAST'), findsOneWidget);
-    expect(find.text('28.100'), findsOneWidget);
+    expect(find.text('28.100'), findsNothing);
 
     // SECTOR 탭: S1 라벨 + 값.
     await tester.tap(find.text('SECTOR'));
     await tester.pump();
+    expect(find.text('SECTOR TIME'), findsOneWidget);
     expect(find.text('S1 '), findsOneWidget);
     expect(find.text('28.100'), findsOneWidget);
 
@@ -83,6 +85,40 @@ void main() {
     await tester.pump();
     await tester.scrollUntilVisible(find.text('YELLOW FLAG IN TURN 3'), 200);
     expect(find.text('YELLOW FLAG IN TURN 3'), findsOneWidget);
+  });
+
+  testWidgets('time-attack sessions prioritize best lap instead of interval', (
+    tester,
+  ) async {
+    const snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-07-12T01:00:00Z',
+      raceName: 'British Grand Prix',
+      sessionType: 'Qualifying',
+      sessionName: 'Qualifying',
+      classification: [
+        LiveDriverPosition(
+          position: 1,
+          code: 'NOR',
+          displayName: '랜도 노리스',
+          displayTime: '1:28.100',
+          lastLapTime: '1:28.400',
+          interval: '+0.100',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const LiveCenterScreen(snapshotOverride: snapshot),
+      ),
+    );
+
+    expect(find.text('BEST LAP'), findsOneWidget);
+    expect(find.text('INTERVAL'), findsNothing);
+    expect(find.text('1:28.100'), findsOneWidget);
+    expect(find.text('1:28.400'), findsOneWidget);
   });
 
   testWidgets('timing and race control collapse beyond the latest three', (
