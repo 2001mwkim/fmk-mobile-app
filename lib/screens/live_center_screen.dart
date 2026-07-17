@@ -117,6 +117,9 @@ class _OfflineCenter extends StatelessWidget {
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(
+            // stretch: 레이스 컨트롤처럼 Row/Expanded 없는 섹션도 카드 폭을
+            // 가득 채워야 제목·본문이 다른 섹션과 좌측 정렬로 맞는다.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _TimingPreviewCard(session: session),
               const Divider(height: 1, color: AppColors.rowBorder),
@@ -322,7 +325,10 @@ class _SessionHeader extends StatelessWidget {
           ),
           const SizedBox(height: 15),
           Text(
-            snapshot.raceName ?? 'F1 라이브',
+            // 피드의 영문 GP명 대신 한글 이름(races.dart 매핑)을 우선 사용.
+            resolveLiveRace(snapshot.raceId, snapshot.raceName)?.nameKo ??
+                snapshot.raceName ??
+                'F1 라이브',
             style: const TextStyle(
               color: AppColors.white,
               fontSize: 22,
@@ -462,21 +468,23 @@ class _DriverRow extends StatelessWidget {
   final LiveDriverPosition driver;
   final bool raceLike;
 
+  /// 상세 줄 공용 스타일(타이어 랩 수·PIT·섹터).
+  static const TextStyle _detailStyle = TextStyle(
+    color: AppColors.faint,
+    fontSize: 9,
+    fontWeight: FontWeight.w700,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final tyre = driver.compound == null
-        ? null
-        : '${_compoundShort(driver.compound!)}${driver.tyreAge == null ? '' : ' · ${driver.tyreAge}L'}';
-    final sectors = [
-      driver.sector1,
-      driver.sector2,
-      driver.sector3,
-    ].whereType<String>().join('  ');
-    final details = <String>[
-      ?tyre,
-      if (driver.pitStops != null) 'PIT ${driver.pitStops}',
-      if (sectors.isNotEmpty) sectors,
-    ];
+    // 라이브 타이밍 보드 시안 참고: 항목을 라벨링해 처음 보는 사람도 읽게
+    // 한다 — 타이어는 컴파운드 색 링 배지 + '7랩', 섹터는 S1/S2/S3 라벨.
+    final sectors = <String>[
+      if (driver.sector1 != null) 'S1 ${driver.sector1}',
+      if (driver.sector2 != null) 'S2 ${driver.sector2}',
+      if (driver.sector3 != null) 'S3 ${driver.sector3}',
+    ].join(' · ');
+    final hasTyreLine = driver.compound != null || driver.pitStops != null;
     final status = driver.retired
         ? 'OUT'
         : driver.inPit
@@ -535,17 +543,33 @@ class _DriverRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (details.isNotEmpty)
+                if (hasTyreLine) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      if (driver.compound != null) ...[
+                        _TyreBadge(compound: driver.compound!),
+                        if (driver.tyreAge != null) ...[
+                          const SizedBox(width: 4),
+                          Text('${driver.tyreAge}랩', style: _detailStyle),
+                        ],
+                      ],
+                      if (driver.pitStops != null) ...[
+                        if (driver.compound != null) const SizedBox(width: 10),
+                        Text('PIT ${driver.pitStops}', style: _detailStyle),
+                      ],
+                    ],
+                  ),
+                ],
+                if (sectors.isNotEmpty) ...[
+                  const SizedBox(height: 3),
                   Text(
-                    details.join('  ·  '),
+                    sectors,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.faint,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: _detailStyle,
                   ),
+                ],
               ],
             ),
           ),
@@ -565,6 +589,47 @@ class _DriverRow extends StatelessWidget {
     );
   }
 }
+
+/// 타이어 컴파운드 배지 — 컴파운드 색 링 + 약어(S/M/H/I/W).
+class _TyreBadge extends StatelessWidget {
+  const _TyreBadge({required this.compound});
+
+  final String compound;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 15,
+      height: 15,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: _compoundColor(compound), width: 2),
+      ),
+      child: Text(
+        _compoundShort(compound),
+        style: const TextStyle(
+          color: AppColors.white,
+          fontSize: 8,
+          height: 1,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+/// 컴파운드 표준 의미색(소프트 레드 · 미디엄 옐로 · 하드 화이트 계열 ·
+/// 인터미디엇 그린 · 웻 블루). 노란색 금지 규칙의 예외 — 깃발처럼 F1
+/// 도메인 의미색이라 다른 색으로 바꾸면 오히려 오독된다.
+Color _compoundColor(String value) => switch (value.trim().toUpperCase()) {
+  'SOFT' => AppColors.red,
+  'MEDIUM' => AppColors.flagYellow,
+  'HARD' => AppColors.slate300,
+  'INTERMEDIATE' => AppColors.greenSoft,
+  'WET' => AppColors.blueSoft,
+  _ => AppColors.textMuted,
+};
 
 class _WeatherCard extends StatelessWidget {
   const _WeatherCard({required this.weather});

@@ -54,7 +54,11 @@ void main() {
     expect(find.text('21 / 52'), findsOneWidget);
     expect(find.text('YELLOW'), findsOneWidget);
     expect(find.text('실시간 순위'), findsOneWidget);
-    expect(find.textContaining('M · 11L'), findsOneWidget);
+    // 라벨링된 상세 줄: 타이어 배지(M) + 랩 수, PIT 횟수, 섹터 라벨.
+    expect(find.text('M'), findsOneWidget); // 컴파운드 배지
+    expect(find.text('11랩'), findsOneWidget);
+    expect(find.text('PIT 1'), findsOneWidget);
+    expect(find.textContaining('S1 28.100'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('YELLOW FLAG IN TURN 3'), 200);
     expect(find.text('YELLOW FLAG IN TURN 3'), findsOneWidget);
   });
