@@ -61,10 +61,12 @@ class LiveDriverPosition {
   final bool retired;
   final String? speedTrap;
 
-  /// 웹과 동일한 갭 선택 규칙.
-  /// race/sprint: interval 우선, 그 외: gapToLeader 우선. 둘 다 없으면 '—'.
+  /// 갭 선택 규칙.
+  /// race/sprint: interval 만 사용 — 컬럼 라벨이 'INTERVAL'인데 gapToLeader 로
+  /// 폴백하면 행마다 숫자의 의미가 달라진다(없으면 '—').
+  /// 그 외: gapToLeader 우선(현재 UI 미사용 경로).
   String gap({required bool raceLike}) {
-    if (raceLike) return interval ?? gapToLeader ?? '—';
+    if (raceLike) return interval ?? '—';
     return gapToLeader ?? interval ?? '—';
   }
 
@@ -234,7 +236,9 @@ class LiveSessionSnapshot {
     return isRaceOrSprint ? '현재 레이스 순위' : '세션 순위';
   }
 
-  String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'LAP';
+  // 연습/퀄리 표시값은 개인 베스트 우선(lapTime 선택 규칙)이라 'LAP'(방금 랩)
+  // 으로 읽히면 오해 — 타이밍 보드 관례대로 'BEST'로 라벨링한다.
+  String get gapColumnLabel => isRaceOrSprint ? 'INTERVAL' : 'BEST';
 }
 
 /// 퀄리파잉 세그먼트(Q1/Q2/Q3)를 sessionName/sessionType 에서 뽑아낸다.

@@ -64,7 +64,8 @@ void main() {
       ),
     );
 
-    expect(find.text('LAP'), findsOneWidget);
+    // 연습/퀄리 표시값은 개인 베스트 우선이라 컬럼 라벨도 'BEST'.
+    expect(find.text('BEST'), findsOneWidget);
     expect(find.text('1:28.493'), findsWidgets);
     expect(find.text('1:28.626'), findsWidgets);
     expect(find.text('+2.341'), findsNothing);

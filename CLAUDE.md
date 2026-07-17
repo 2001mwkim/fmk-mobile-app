@@ -45,7 +45,7 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - **색상**: 팔레트는 전부 `lib/theme/app_colors.dart`의 `AppColors`. 새 hex 리터럴을 화면에 직접 넣지 말 것(웹 Tailwind 값만 옮겨온다는 원칙). **노란색 금지**(P1 강조도 레드 사용)
 - **시간**: 모든 표시 시간은 KST 고정(UTC+9 수동 변환). 세션 지속시간 추정은 `races.dart`의 `_sessionDurations`(레이스 120분 = F1 2시간 제한)
 - 주석은 한국어로, "왜"(규칙의 근거, 웹 원본 출처)를 남긴다
-- 라이브 표시 정책(중요 규칙): Practice/Qualifying은 랩타임만 표시(없으면 '—', gap 폴백 금지), Race/Sprint는 interval/gap. 세션 종료 노출 기한은 "다음 세션 30분 전까지(마지막 세션은 +1시간)". 퀄리파잉만 세그먼트(Q1/Q2) 사이 ended를 LIVE로 보정
+- 라이브 표시 정책(중요 규칙): Practice/Qualifying은 랩타임만 표시(없으면 '—', gap 폴백 금지, 컬럼 라벨 'BEST'), Race/Sprint는 interval만(없으면 '—' — gapToLeader 폴백 금지, 컬럼 라벨 'INTERVAL'). 세션 종료 노출 기한은 "다음 세션 30분 전까지(마지막 세션은 +1시간)". 퀄리파잉만 세그먼트(Q1/Q2) 사이 ended를 LIVE로 보정
 - 검증: 변경 후 `flutter analyze` + `flutter test`, 위젯/알림 등 네이티브 변경은 `flutter build apk --debug`까지
 
 ## 미해결 사항
