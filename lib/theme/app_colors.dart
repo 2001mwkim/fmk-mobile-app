@@ -29,6 +29,9 @@ class AppColors {
   /// FIA 플래그/세이프티카 상태 전용 의미 색상. 일반 강조 UI에는 사용하지 않는다.
   static const Color flagYellow = Color(0xFFFACC15);
   static const Color warningAmber = Color(0xFFF59E0B);
+
+  /// 타이밍 보드 '세션 전체 최고 기록' 의미색(퍼플) — F1 중계 관례색.
+  static const Color timingPurple = Color(0xFFC084FC);
   // 웹 blue-400 (Tailwind) — blue 칩 텍스트
   static const Color blueSoft = Color(0xFF60A5FA);
   // 웹 mono 칩 텍스트 (slate-300)

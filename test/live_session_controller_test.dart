@@ -176,6 +176,78 @@ void main() {
     expect(controller.snapshot, same(live));
     await controller.refresh();
     expect(controller.snapshot, isNull); // 확정 종료 → 즉시 숨김
+    // 내용 없는 종료 신호는 본문용 최근 세션을 덮어쓰지 않는다.
+    expect(controller.latestSessionSnapshot, same(live));
+    expect(controller.latestSessionIsStale, isFalse);
+  });
+
+  test(
+    'live center keeps an expired ended session until a new session arrives',
+    () async {
+      final now = DateTime(2026, 6, 30, 12);
+      final ended = LiveSessionSnapshot(
+        status: LiveSessionStatus.ended,
+        updatedAt: '2026-06-30T02:00:00Z',
+        raceId: 'austria-2026',
+        sessionType: 'Qualifying',
+        sessionName: 'Qualifying',
+        visibleUntil: now.subtract(const Duration(hours: 1)),
+        classification: const [
+          LiveDriverPosition(position: 1, code: 'NOR', displayName: '노리스'),
+        ],
+      );
+      const preparing = LiveSessionSnapshot(
+        status: LiveSessionStatus.inactive,
+        updatedAt: '2026-06-30T11:58:00Z',
+        raceId: 'austria-2026',
+        sessionKey: 'race',
+        sessionType: 'Race',
+        sessionName: 'Race',
+      );
+      final controller = LiveSessionController(
+        _FakeLiveSessionService([
+          LiveSessionFetchResult.success(ended),
+          const LiveSessionFetchResult.success(preparing),
+        ]),
+        now: () => now,
+      );
+
+      await controller.refresh();
+      expect(controller.snapshot, isNull);
+      expect(controller.latestSessionSnapshot, same(ended));
+
+      await controller.refresh();
+      expect(controller.latestSessionSnapshot, same(preparing));
+    },
+  );
+
+  test('lastSession is promoted to the live center on a cold start', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final last = LiveLastSession(
+      raceId: 'austria-2026',
+      sessionType: 'Practice',
+      sessionName: 'Practice 1',
+      endedAt: now.subtract(const Duration(hours: 2)),
+      classification: const [
+        LiveDriverPosition(position: 1, code: 'NOR', displayName: '노리스'),
+      ],
+    );
+    final wrapper = LiveSessionSnapshot(
+      status: LiveSessionStatus.inactive,
+      updatedAt: '',
+      lastSession: last,
+    );
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(wrapper)]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+
+    expect(controller.snapshot, isNull);
+    expect(controller.latestSessionSnapshot?.status, LiveSessionStatus.ended);
+    expect(controller.latestSessionSnapshot?.sessionName, 'Practice 1');
+    expect(controller.latestSessionSnapshot?.classification.single.code, 'NOR');
   });
 
   test('widget bridge keeps live payload through a transient null', () async {

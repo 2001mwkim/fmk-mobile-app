@@ -37,6 +37,13 @@ class LiveDriverPosition {
     this.inPit = false,
     this.retired = false,
     this.speedTrap,
+    this.lastLapFlag,
+    this.bestLapIsOverall = false,
+    this.sectorDetails = const [],
+    this.bestSectors = const [],
+    this.speedI1,
+    this.speedI2,
+    this.stints = const [],
   });
 
   final int position;
@@ -61,6 +68,26 @@ class LiveDriverPosition {
   final bool retired;
   final String? speedTrap;
 
+  // ── 라이브 보드 탭(LAP/SECTOR/TIRE) 상세 ──
+  /// LAST 랩 색상 플래그: 'ob' 전체최고(퍼플) / 'pb' 개인최고(그린).
+  final String? lastLapFlag;
+
+  /// 개인 베스트 랩이 세션 전체 1위(퍼플 표시 대상)인지.
+  final bool bestLapIsOverall;
+
+  /// 섹터별 상세(값·플래그·미니섹터). 비어 있으면 sector1~3 로 폴백.
+  final List<LiveSectorDetail> sectorDetails;
+
+  /// 개인 베스트 섹터 타임(S1~S3 순서).
+  final List<String?> bestSectors;
+
+  /// 스피드트랩 1·2 구간 속도(km/h).
+  final String? speedI1;
+  final String? speedI2;
+
+  /// 이 세션의 스틴트 히스토리(타이어 사용 순서).
+  final List<LiveStint> stints;
+
   /// 갭 선택 규칙.
   /// race/sprint: interval 만 사용 — 컬럼 라벨이 'INTERVAL'인데 gapToLeader 로
   /// 폴백하면 행마다 숫자의 의미가 달라진다(없으면 '—').
@@ -77,6 +104,72 @@ class LiveDriverPosition {
     if (raceLike) return gap(raceLike: true);
     return displayTime ?? lapTime ?? '—';
   }
+}
+
+/// 섹터 하나의 라이브 보드 상세(값 + 최고기록 플래그 + 미니섹터).
+class LiveSectorDetail {
+  const LiveSectorDetail({this.value, this.flag, this.segments = const []});
+
+  final String? value;
+
+  /// 'ob' 전체최고(퍼플) / 'pb' 개인최고(그린) / null.
+  final String? flag;
+
+  /// 미니섹터 상태 코드: 2048 완주 / 2049 개인최고 / 2051 전체최고 / 2064 핏.
+  final List<int> segments;
+}
+
+/// 이 세션의 스틴트 하나(타이어 컴파운드 + 사용 랩 수).
+class LiveStint {
+  const LiveStint({this.compound, this.laps});
+
+  final String? compound;
+  final int? laps;
+}
+
+/// 세션 텍스트(sessionType/sessionName)로 레이스류 여부 판정 — 스냅샷과
+/// 직전 세션 결과가 같은 규칙을 공유한다.
+bool liveTextIsRaceOrSprint(String? sessionType, String? sessionName) {
+  final text = '${sessionType ?? ''} ${sessionName ?? ''}'.toLowerCase();
+  if (text.contains('practice') ||
+      text.contains('qualifying') ||
+      text.contains('shootout') ||
+      text.contains('프랙티스') ||
+      text.contains('퀄리')) {
+    return false;
+  }
+  return text.contains('race') ||
+      text.contains('sprint') ||
+      text.contains('레이스') ||
+      text.contains('스프린트');
+}
+
+/// 가장 최근에 끝난 세션의 최종 순위(live.json 최상위 `lastSession`).
+///
+/// F1DB 공식 결과는 그랑프리 종료 후에나 발행되므로, 주말 중에는 이 데이터가
+/// "직전 세션 결과"의 소스가 된다(collector 메모리 보관 — 재시작 시 소실).
+class LiveLastSession {
+  const LiveLastSession({
+    this.raceId,
+    this.raceName,
+    this.sessionType,
+    this.sessionName,
+    this.endedAt,
+    this.classification = const [],
+  });
+
+  final String? raceId;
+  final String? raceName;
+  final String? sessionType;
+  final String? sessionName;
+  final DateTime? endedAt;
+  final List<LiveDriverPosition> classification;
+
+  bool get isRaceOrSprint =>
+      liveTextIsRaceOrSprint(sessionType, sessionName);
+
+  /// 화면 표시용 한글 세션 이름.
+  String get sessionTitleKo => liveSessionLabelKo(sessionName, sessionType);
 }
 
 class LiveWeather {
@@ -137,8 +230,10 @@ class LiveSessionSnapshot {
     this.trackStatus,
     this.trackStatusMessage,
     this.remainingTime,
+    this.clockStopped = false,
     this.weather,
     this.raceControlMessages = const [],
+    this.lastSession,
   });
 
   final LiveSessionStatus status;
@@ -167,8 +262,14 @@ class LiveSessionSnapshot {
   final String? trackStatus;
   final String? trackStatusMessage;
   final String? remainingTime;
+
+  /// 세션 시계 정지 여부(레드 플래그 등) — 남은 시간 로컬 티커가 이때 멈춘다.
+  final bool clockStopped;
   final LiveWeather? weather;
   final List<LiveRaceControlMessage> raceControlMessages;
+
+  /// 가장 최근에 끝난 세션의 최종 순위(컨트롤러가 스냅샷과 별개로 보존).
+  final LiveLastSession? lastSession;
 
   bool get isEnded => status == LiveSessionStatus.ended;
 
@@ -186,20 +287,8 @@ class LiveSessionSnapshot {
 
   /// practice/qualifying/shootout 이 아니고 race/sprint 면 true.
   /// 한글 세션명('레이스'/'스프린트'/'퀄리파잉'/'프랙티스')도 인식한다.
-  bool get isRaceOrSprint {
-    final text = '${sessionType ?? ''} ${sessionName ?? ''}'.toLowerCase();
-    if (text.contains('practice') ||
-        text.contains('qualifying') ||
-        text.contains('shootout') ||
-        text.contains('프랙티스') ||
-        text.contains('퀄리')) {
-      return false;
-    }
-    return text.contains('race') ||
-        text.contains('sprint') ||
-        text.contains('레이스') ||
-        text.contains('스프린트');
-  }
+  bool get isRaceOrSprint =>
+      liveTextIsRaceOrSprint(sessionType, sessionName);
 
   bool get showLap => isRaceOrSprint && currentLap != null && totalLaps != null;
 

@@ -107,10 +107,13 @@ LiveSessionSnapshot? parseLiveJson(String body) {
         map['trackStatusMessage'] ?? map['trackStatusLabel'],
       ),
       remainingTime: _string(map['remainingTime'] ?? map['sessionTimeLeft']),
+      clockStopped: _bool(map['clockStopped']) ?? false,
       weather: _parseWeather(map['weather'] ?? map['weatherData']),
       raceControlMessages: _parseRaceControlMessages(
         map['raceControlMessages'] ?? map['raceControl'],
       ),
+      // lastSession 은 스냅샷이 아니라 body 최상위 필드(스냅샷과 수명이 다름).
+      lastSession: _parseLastSession(decoded['lastSession']),
     );
   } catch (_) {
     return null;
@@ -155,10 +158,62 @@ List<LiveDriverPosition> _parseDrivers(dynamic value) {
         inPit: _bool(m['inPit'] ?? m['pit']) ?? false,
         retired: _bool(m['retired'] ?? m['stopped']) ?? false,
         speedTrap: _string(m['speedTrap'] ?? m['speed']),
+        lastLapFlag: _string(m['lastLapFlag']),
+        bestLapIsOverall: _bool(m['bestLapIsOverall']) ?? false,
+        sectorDetails: _parseSectorDetails(m['sectorDetails']),
+        bestSectors: [
+          if (m['bestSectors'] is List)
+            for (final raw in m['bestSectors'] as List) _string(raw),
+        ],
+        speedI1: _string(m['speedI1']),
+        speedI2: _string(m['speedI2']),
+        stints: _parseStints(m['stints']),
       ),
     );
   }
   return result;
+}
+
+List<LiveSectorDetail> _parseSectorDetails(dynamic value) {
+  if (value is! List) return const [];
+  return [
+    for (final raw in value)
+      if (raw is Map)
+        LiveSectorDetail(
+          value: _string(raw['value']),
+          flag: _string(raw['flag']),
+          segments: [
+            if (raw['segments'] is List)
+              for (final code in raw['segments'] as List)
+                if (_int(code) != null) _int(code)!,
+          ],
+        ),
+  ];
+}
+
+/// 직전 세션 결과 파싱 — 순위가 비어 있으면 쓸모가 없으므로 null.
+LiveLastSession? _parseLastSession(dynamic value) {
+  if (value is! Map) return null;
+  final map = value.cast<String, dynamic>();
+  final classification = _parseDrivers(map['classification']);
+  if (classification.isEmpty) return null;
+  return LiveLastSession(
+    raceId: _string(map['raceId']),
+    raceName: _string(map['raceName']),
+    sessionType: _string(map['sessionType']),
+    sessionName: _string(map['sessionName']),
+    endedAt: _dateTime(map['endedAt']),
+    classification: classification,
+  );
+}
+
+List<LiveStint> _parseStints(dynamic value) {
+  if (value is! List) return const [];
+  return [
+    for (final raw in value)
+      if (raw is Map)
+        LiveStint(compound: _string(raw['compound']), laps: _int(raw['laps'])),
+  ];
 }
 
 LiveWeather? _parseWeather(dynamic value) {

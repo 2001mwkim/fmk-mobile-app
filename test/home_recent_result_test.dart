@@ -1,92 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fmk_app/models/race_result.dart';
+import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/live_center_screen.dart';
-import 'package:fmk_app/screens/race_detail_screen.dart';
-import 'package:fmk_app/services/race_results_repository.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 
 void main() {
-  RaceResultEntry entry(int position) => RaceResultEntry(
-    position: position,
-    positionLabel: '$position',
-    driverKo: '드라이버$position',
-    driverEn: 'Driver $position',
-    teamKo: '팀$position',
-    teamEn: 'Team $position',
-    points: 0,
-    time: position == 1 ? '1:23.456' : null,
-    gap: position == 1 ? null : '+$position.0',
-  );
+  testWidgets('종료 세션은 별도 최근 결과 카드 없이 라이브센터 본문에 표시된다', (tester) async {
+    const ended = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '2026-07-17T10:00:00Z',
+      raceName: 'British Grand Prix',
+      sessionType: 'Qualifying',
+      sessionName: 'Qualifying',
+      classification: [
+        LiveDriverPosition(
+          position: 1,
+          code: 'NOR',
+          displayName: '랜도 노리스',
+          displayTime: '1:25.123',
+        ),
+      ],
+      raceControlMessages: [LiveRaceControlMessage(message: 'SESSION ENDED')],
+      weather: LiveWeather(airTemperature: 21.5),
+    );
 
-  LatestRaceResult latest({String sessionType = 'RACE'}) => LatestRaceResult(
-    raceId: 'australia-2026',
-    sessionType: sessionType,
-    data: RaceResultData(
-      status: 'official',
-      entries: [for (var i = 1; i <= 12; i++) entry(i)],
-    ),
-  );
-
-  Future<void> pumpLiveCenter(
-    WidgetTester tester,
-    RaceResultsRepository repository,
-  ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(),
-        home: LiveCenterScreen(resultsRepository: repository),
+        home: const LiveCenterScreen(snapshotOverride: ended),
       ),
     );
-    await tester.pumpAndSettle();
-  }
 
-  testWidgets('라이브 센터는 상세 화면과 같은 최근 세션 결과를 표시한다', (tester) async {
-    await pumpLiveCenter(tester, _FakeRepo(latest(sessionType: 'FP1')));
-
-    final title = find.text('최근 세션 결과 (호주 그랑프리 FP1)');
-    await tester.scrollUntilVisible(title, 200);
-    expect(title, findsOneWidget);
-    expect(find.text('드라이버1'), findsOneWidget);
-    expect(find.text('공식 결과'), findsNothing);
-    expect(find.text('12 DRIVERS'), findsNothing);
-  });
-
-  testWidgets('세션 결과가 없으면 라이브 센터에 결과 패널을 표시하지 않는다', (tester) async {
-    await pumpLiveCenter(tester, _FakeRepo(null));
+    expect(find.text('최종 결과'), findsOneWidget);
+    expect(find.text('NOR'), findsOneWidget);
+    expect(find.text('SESSION ENDED'), findsOneWidget);
+    expect(find.text('21.5°'), findsOneWidget);
     expect(find.textContaining('최근 세션 결과'), findsNothing);
   });
 
-  testWidgets('라이브 센터 결과 패널을 누르면 해당 GP 상세 화면으로 이동한다', (tester) async {
-    await pumpLiveCenter(tester, _FakeRepo(latest()));
+  testWidgets('세션 데이터가 전혀 없을 때도 중복 최근 결과 카드는 만들지 않는다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.dark(), home: const LiveCenterScreen()),
+    );
 
-    final title = find.text('최근 세션 결과 (호주 그랑프리 레이스)');
-    await tester.scrollUntilVisible(title, 200);
-    await tester.tap(title);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(RaceDetailScreen), findsOneWidget);
+    expect(find.textContaining('최근 세션 결과'), findsNothing);
   });
-}
-
-class _FakeRepo implements RaceResultsRepository {
-  _FakeRepo(this.latestResult);
-
-  final LatestRaceResult? latestResult;
-
-  @override
-  Future<RaceResultData?> fetchResult({
-    required String raceId,
-    int season = 2026,
-  }) async => null;
-
-  @override
-  Future<List<SessionResultData>?> fetchSessionResults({
-    required String raceId,
-    int season = 2026,
-  }) async => null;
-
-  @override
-  Future<LatestRaceResult?> fetchLatest({int season = 2026}) async =>
-      latestResult;
 }

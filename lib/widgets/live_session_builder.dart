@@ -8,7 +8,14 @@ import '../services/live_session_controller.dart';
 /// 정적 화면 구조를 바꾸지 않고 라이브 위젯만 감싸는 용도. mount 시 폴링 리스너로
 /// 등록되고, dispose 시 해제되어 마지막 화면이 사라지면 타이머가 정리된다.
 class LiveSessionBuilder extends StatefulWidget {
-  const LiveSessionBuilder({super.key, required this.builder});
+  const LiveSessionBuilder({
+    super.key,
+    required this.builder,
+    this.latestSession = false,
+  });
+
+  /// true면 일반 라이브 노출 기한 대신 라이브 센터용 최근 세션을 구독한다.
+  final bool latestSession;
 
   final Widget Function(
     BuildContext context,
@@ -42,8 +49,12 @@ class _LiveSessionBuilderState extends State<LiveSessionBuilder> {
   Widget build(BuildContext context) {
     return widget.builder(
       context,
-      liveSessionController.snapshot,
-      liveSessionController.isStale,
+      widget.latestSession
+          ? liveSessionController.latestSessionSnapshot
+          : liveSessionController.snapshot,
+      widget.latestSession
+          ? liveSessionController.latestSessionIsStale
+          : liveSessionController.isStale,
     );
   }
 }

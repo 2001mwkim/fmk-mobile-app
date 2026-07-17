@@ -71,20 +71,37 @@ void main() {
   test('parseLiveJson maps live center details', () {
     const body = '''
 {"snapshot":{"status":"live","updatedAt":"2026-07-12T01:00:00Z",
-"trackStatus":"6","remainingTime":"12:34",
+"trackStatus":"6","remainingTime":"12:34","clockStopped":true,
 "weather":{"airTemp":"24.5","trackTemp":38.2,"humidity":61,"rainfall":"false","windSpeed":2.8},
-"classification":[{"position":1,"code":"NOR","displayName":"Lando Norris","compound":"MEDIUM","tyreAge":12,"pitStops":1,"sector1":"28.101","sector2":"35.202","sector3":"24.303"}],
+"classification":[{"position":1,"code":"NOR","displayName":"Lando Norris","compound":"MEDIUM","tyreAge":12,"pitStops":1,"sector1":"28.101","sector2":"35.202","sector3":"24.303",
+"lastLapFlag":"pb","bestLapIsOverall":true,
+"sectorDetails":[{"value":"28.101","flag":"ob","segments":[2048,2051,2049]}],
+"bestSectors":["28.000","35.000",null],
+"speedI1":"312","speedI2":"289",
+"stints":[{"compound":"SOFT","laps":9},{"compound":"MEDIUM","laps":12}]}],
 "raceControlMessages":[{"Utc":"2026-07-12T01:01:00Z","Category":"Flag","Flag":"YELLOW","Message":"YELLOW FLAG IN TURN 3"}]}}
 ''';
 
     final snapshot = parseLiveJson(body)!;
     expect(snapshot.trackStatus, '6');
     expect(snapshot.remainingTime, '12:34');
+    expect(snapshot.clockStopped, isTrue);
     expect(snapshot.weather!.airTemperature, 24.5);
     expect(snapshot.weather!.rainfall, isFalse);
-    expect(snapshot.classification.single.compound, 'MEDIUM');
-    expect(snapshot.classification.single.tyreAge, 12);
-    expect(snapshot.classification.single.sector2, '35.202');
+    final driver = snapshot.classification.single;
+    expect(driver.compound, 'MEDIUM');
+    expect(driver.tyreAge, 12);
+    expect(driver.sector2, '35.202');
+    // 라이브 보드 탭 상세 필드.
+    expect(driver.lastLapFlag, 'pb');
+    expect(driver.bestLapIsOverall, isTrue);
+    expect(driver.sectorDetails.single.flag, 'ob');
+    expect(driver.sectorDetails.single.segments, [2048, 2051, 2049]);
+    expect(driver.bestSectors, ['28.000', '35.000', null]);
+    expect(driver.speedI1, '312');
+    expect(driver.stints.length, 2);
+    expect(driver.stints.first.compound, 'SOFT');
+    expect(driver.stints.last.laps, 12);
     expect(snapshot.raceControlMessages.single.flag, 'YELLOW');
   });
 

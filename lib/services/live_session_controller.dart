@@ -20,6 +20,8 @@ const Duration liveStaleMaxAge = Duration(minutes: 10);
 ///   끊김에 박스가 깜빡이지 않게). [liveGracePeriod] 이후부터는 [isStale] 을 세워
 ///   UI 가 "업데이트 지연" 배지를 붙일 수 있게 한다.
 /// - 단, 종료가 확정된(visibleUntil/스케줄 창이 지난 ended) 스냅샷이 오면 즉시 내린다.
+/// - 라이브 센터용 [latestSessionSnapshot] 은 위 노출 기한과 별개로 마지막 세션을
+///   계속 보존한다. 새 세션 스냅샷이 수신되면 그때 교체한다.
 /// - [enabled] 가 false 면 폴링하지 않는다(위젯 테스트에서 네트워크 차단용).
 class LiveSessionController extends ChangeNotifier {
   LiveSessionController(
@@ -47,6 +49,16 @@ class LiveSessionController extends ChangeNotifier {
   LiveSessionSnapshot? _snapshot;
   LiveSessionSnapshot? get snapshot => _snapshot;
 
+  /// 라이브 센터가 표시할 가장 최근 세션. 종료 노출 기한이 지나도 유지하며,
+  /// 다음 세션의 식별 가능한 스냅샷이 들어오면 즉시 새 세션으로 교체한다.
+  LiveSessionSnapshot? _latestSessionSnapshot;
+  LiveSessionSnapshot? get latestSessionSnapshot => _latestSessionSnapshot;
+
+  DateTime? _latestSessionAt;
+
+  bool _latestSessionIsStale = false;
+  bool get latestSessionIsStale => _latestSessionIsStale;
+
   /// 마지막으로 정상 수신한(=displayable) 스냅샷. transient 실패 동안 재노출에 쓴다.
   LiveSessionSnapshot? _lastGoodSnapshot;
   LiveSessionSnapshot? get lastGoodLiveSnapshot => _lastGoodSnapshot;
@@ -60,6 +72,11 @@ class LiveSessionController extends ChangeNotifier {
 
   bool _isStale = false;
   bool get isStale => _isStale;
+
+  /// 가장 최근에 끝난 세션의 최종 순위. 스냅샷이 내려가도(30분 노출 종료 등)
+  /// 별도로 보존해 라이브 센터 "직전 세션 결과"가 계속 쓸 수 있게 한다.
+  LiveLastSession? _lastSession;
+  LiveLastSession? get lastSession => _lastSession;
 
   Timer? _timer;
   int _listeners = 0;
@@ -95,6 +112,40 @@ class LiveSessionController extends ChangeNotifier {
     final result = await _service.fetchResult();
     final fetched = result.succeeded ? result.snapshot : null;
 
+    var latestSessionChanged = false;
+    if (fetched != null && _isSessionSnapshot(fetched)) {
+      latestSessionChanged = _latestSessionSnapshot != fetched;
+      _latestSessionSnapshot = fetched;
+      _latestSessionAt = fetchedAt;
+      _latestSessionIsStale = false;
+    }
+
+    // lastSession 은 표시 정책과 무관하게 항상 최신값을 보존한다.
+    var lastSessionChanged = false;
+    final fetchedLast = fetched?.lastSession;
+    if (fetchedLast != null && fetchedLast.endedAt != _lastSession?.endedAt) {
+      _lastSession = fetchedLast;
+      lastSessionChanged = true;
+      // snapshot=null 인 응답으로 콜드 스타트한 경우에도 직전 순위는 라이브
+      // 센터 본문에서 볼 수 있게 한다. 완전한 스냅샷이 있으면 그쪽을 유지한다.
+      if (_latestSessionSnapshot == null) {
+        _latestSessionSnapshot = _snapshotFromLastSession(fetchedLast);
+        _latestSessionAt = fetchedAt;
+        _latestSessionIsStale = false;
+        latestSessionChanged = true;
+      }
+    }
+
+    if (!latestSessionChanged &&
+        _latestSessionSnapshot?.status == LiveSessionStatus.live &&
+        _latestSessionAt != null) {
+      final stale = fetchedAt.difference(_latestSessionAt!) > gracePeriod;
+      if (stale != _latestSessionIsStale) {
+        _latestSessionIsStale = stale;
+        latestSessionChanged = true;
+      }
+    }
+
     final LiveSessionSnapshot? next;
     final bool nextIsStale;
 
@@ -122,7 +173,12 @@ class LiveSessionController extends ChangeNotifier {
       _lastGoodAt = null;
     }
 
-    if (next == _snapshot && nextIsStale == _isStale) return;
+    if (next == _snapshot &&
+        nextIsStale == _isStale &&
+        !lastSessionChanged &&
+        !latestSessionChanged) {
+      return;
+    }
     _snapshot = next;
     _isStale = nextIsStale;
     notifyListeners();
@@ -149,6 +205,39 @@ class LiveSessionController extends ChangeNotifier {
   Duration _staleAge(DateTime now) {
     final at = _lastGoodAt;
     return at == null ? Duration.zero : now.difference(at);
+  }
+
+  /// top-level wrapper만 잘못 스냅샷처럼 파싱된 빈 inactive 값은 제외한다.
+  /// inactive 여도 세션 식별자가 있으면 시작 직전 준비 스냅샷으로 인정한다.
+  bool _isSessionSnapshot(LiveSessionSnapshot value) {
+    final hasIdentity =
+        (value.raceId?.isNotEmpty ?? false) ||
+        (value.raceName?.isNotEmpty ?? false) ||
+        (value.sessionKey?.isNotEmpty ?? false) ||
+        (value.sessionType?.isNotEmpty ?? false) ||
+        (value.sessionName?.isNotEmpty ?? false);
+    final hasDetails =
+        value.classification.isNotEmpty ||
+        value.topThree.isNotEmpty ||
+        value.weather != null ||
+        value.raceControlMessages.isNotEmpty;
+    return hasIdentity || hasDetails;
+  }
+
+  LiveSessionSnapshot _snapshotFromLastSession(LiveLastSession last) {
+    final classification = [...last.classification]
+      ..sort((a, b) => a.position.compareTo(b.position));
+    return LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: last.endedAt?.toIso8601String() ?? '',
+      raceId: last.raceId,
+      raceName: last.raceName,
+      sessionType: last.sessionType,
+      sessionName: last.sessionName,
+      topThree: classification.take(3).toList(),
+      classification: classification,
+      endedAt: last.endedAt,
+    );
   }
 
   /// 외부에서 즉시 1회 갱신이 필요할 때.
