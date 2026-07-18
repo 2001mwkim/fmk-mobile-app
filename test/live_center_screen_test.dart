@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/live_center_screen.dart';
+import 'package:fmk_app/theme/app_colors.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 
 void main() {
@@ -32,6 +33,7 @@ void main() {
           pitStops: 1,
           interval: '+0.000',
           sector1: '28.100',
+          bestSectors: ['28.000'],
         ),
       ],
       raceControlMessages: [
@@ -72,6 +74,7 @@ void main() {
     expect(find.text('SECTOR TIME'), findsOneWidget);
     expect(find.text('S1 '), findsOneWidget);
     expect(find.text('28.100'), findsOneWidget);
+    expect(find.text('28.000'), findsNothing);
 
     // TIRE 탭: 컴파운드 배지 + 장착 랩 + PIT 횟수.
     await tester.tap(find.text('TIRE'));
@@ -120,6 +123,73 @@ void main() {
     expect(find.text('1:28.100'), findsOneWidget);
     expect(find.text('1:28.400'), findsOneWidget);
   });
+
+  testWidgets(
+    'lap colors distinguish overall, personal best, and slower laps',
+    (tester) async {
+      const snapshot = LiveSessionSnapshot(
+        status: LiveSessionStatus.live,
+        updatedAt: '2026-07-12T01:00:00Z',
+        raceName: 'British Grand Prix',
+        sessionType: 'Qualifying',
+        sessionName: 'Qualifying',
+        classification: [
+          LiveDriverPosition(
+            position: 1,
+            code: 'NOR',
+            displayName: 'Lando Norris',
+            displayTime: '1:28.100',
+            lastLapTime: '1:28.100',
+          ),
+          LiveDriverPosition(
+            position: 2,
+            code: 'VER',
+            displayName: 'Max Verstappen',
+            displayTime: '1:28.500',
+            lastLapTime: '1:28.700',
+          ),
+          LiveDriverPosition(
+            position: 3,
+            code: 'HAM',
+            displayName: 'Lewis Hamilton',
+            displayTime: '1:29.000',
+            lastLapTime: '1:29.000',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: const LiveCenterScreen(snapshotOverride: snapshot),
+        ),
+      );
+
+      final overallTexts = tester
+          .widgetList<Text>(find.text('1:28.100'))
+          .toList();
+      expect(
+        overallTexts.every(
+          (text) => text.style?.color == AppColors.timingPurple,
+        ),
+        isTrue,
+      );
+      expect(
+        tester.widget<Text>(find.text('1:28.500')).style?.color,
+        AppColors.slate300,
+      );
+      expect(
+        tester.widget<Text>(find.text('1:28.700')).style?.color,
+        AppColors.flagYellow,
+      );
+      expect(
+        tester
+            .widgetList<Text>(find.text('1:29.000'))
+            .any((text) => text.style?.color == AppColors.greenSoft),
+        isTrue,
+      );
+    },
+  );
 
   testWidgets('timing and race control collapse beyond the latest three', (
     tester,

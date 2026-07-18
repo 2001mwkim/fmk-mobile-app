@@ -487,6 +487,40 @@ class _Metric extends StatelessWidget {
 /// 라이브 보드 탭 — 랩타임 / 섹터 / 타이어 관점을 전환한다.
 enum _BoardTab { lap, sector, tire }
 
+int? _lapTimeMilliseconds(String? value) {
+  if (value == null) return null;
+  final parts = value.trim().split(':');
+  if (parts.isEmpty || parts.length > 2) return null;
+
+  final seconds = double.tryParse(parts.last);
+  if (seconds == null) return null;
+  final minutes = parts.length == 2 ? int.tryParse(parts.first) : 0;
+  if (minutes == null) return null;
+  return ((minutes * 60 + seconds) * 1000).round();
+}
+
+String? _driverBestLap(LiveDriverPosition driver, {required bool raceLike}) {
+  return raceLike
+      ? driver.bestLapTime
+      : driver.displayTime ?? driver.bestLapTime;
+}
+
+int? _overallBestLapMilliseconds(
+  Iterable<LiveDriverPosition> drivers, {
+  required bool raceLike,
+}) {
+  int? fastest;
+  for (final driver in drivers) {
+    final value = _lapTimeMilliseconds(
+      _driverBestLap(driver, raceLike: raceLike),
+    );
+    if (value != null && (fastest == null || value < fastest)) {
+      fastest = value;
+    }
+  }
+  return fastest;
+}
+
 class _TimingCard extends StatefulWidget {
   const _TimingCard({required this.snapshot});
 
@@ -510,6 +544,10 @@ class _TimingCardState extends State<_TimingCard> {
     final topThree = drivers.take(3).toList();
     final remaining = drivers.skip(3).toList();
     final raceLike = snapshot.isRaceOrSprint;
+    final overallBestLapMilliseconds = _overallBestLapMilliseconds(
+      drivers,
+      raceLike: raceLike,
+    );
     final headerLabel = switch (_tab) {
       _BoardTab.lap => raceLike ? 'INTERVAL' : 'BEST LAP',
       _BoardTab.sector => 'SECTOR TIME',
@@ -563,7 +601,12 @@ class _TimingCardState extends State<_TimingCard> {
             )
           else ...[
             for (final driver in topThree)
-              _DriverRow(driver: driver, raceLike: raceLike, tab: _tab),
+              _DriverRow(
+                driver: driver,
+                raceLike: raceLike,
+                tab: _tab,
+                overallBestLapMilliseconds: overallBestLapMilliseconds,
+              ),
             if (remaining.isNotEmpty)
               ClassificationExpander(
                 accent: snapshot.isEnded
@@ -574,7 +617,12 @@ class _TimingCardState extends State<_TimingCard> {
                 count: remaining.length,
                 rows: [
                   for (final driver in remaining)
-                    _DriverRow(driver: driver, raceLike: raceLike, tab: _tab),
+                    _DriverRow(
+                      driver: driver,
+                      raceLike: raceLike,
+                      tab: _tab,
+                      overallBestLapMilliseconds: overallBestLapMilliseconds,
+                    ),
                 ],
               ),
           ],
@@ -647,11 +695,13 @@ class _DriverRow extends StatelessWidget {
     required this.driver,
     required this.raceLike,
     required this.tab,
+    required this.overallBestLapMilliseconds,
   });
 
   final LiveDriverPosition driver;
   final bool raceLike;
   final _BoardTab tab;
+  final int? overallBestLapMilliseconds;
 
   /// 보조 정보(랩 수·PIT) 스타일.
   static const TextStyle _metaStyle = TextStyle(
@@ -746,38 +796,54 @@ class _DriverRow extends StatelessWidget {
 
   /// LAP 탭은 랩 기록만 보인다. 섹터 값은 SECTOR 탭에만 두어 중복을 없앤다.
   Widget _lapContent() {
-    final best = raceLike ? driver.bestLapTime : driver.displayTime;
+    final best = _driverBestLap(driver, raceLike: raceLike);
+    final bestMilliseconds = _lapTimeMilliseconds(best);
     final bestColor = best == null
         ? AppColors.slate300
-        : driver.bestLapIsOverall
+        : driver.bestLapIsOverall ||
+              (bestMilliseconds != null &&
+                  bestMilliseconds == overallBestLapMilliseconds)
         ? AppColors.timingPurple
-        : AppColors.greenSoft;
+        : AppColors.slate300;
+    final lastColor = _lastLapColor(
+      bestMilliseconds: bestMilliseconds,
+      lastMilliseconds: _lapTimeMilliseconds(driver.lastLapTime),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             if (raceLike) ...[
-              _lapCluster(
-                'LAST',
-                driver.lastLapTime,
-                _flagColor(driver.lastLapFlag),
-              ),
+              _lapCluster('LAST', driver.lastLapTime, lastColor),
               const SizedBox(width: 14),
               _lapCluster('BEST', best, bestColor),
             ] else ...[
               _lapCluster('BEST', best, bestColor),
               const SizedBox(width: 14),
-              _lapCluster(
-                'LAST',
-                driver.lastLapTime,
-                _flagColor(driver.lastLapFlag),
-              ),
+              _lapCluster('LAST', driver.lastLapTime, lastColor),
             ],
           ],
         ),
       ],
     );
+  }
+
+  Color _lastLapColor({
+    required int? bestMilliseconds,
+    required int? lastMilliseconds,
+  }) {
+    if (driver.lastLapFlag == 'ob') return AppColors.timingPurple;
+    if (driver.lastLapFlag == 'pb') return AppColors.greenSoft;
+    if (lastMilliseconds == null || bestMilliseconds == null) {
+      return AppColors.slate300;
+    }
+    if (lastMilliseconds == overallBestLapMilliseconds) {
+      return AppColors.timingPurple;
+    }
+    return lastMilliseconds <= bestMilliseconds
+        ? AppColors.greenSoft
+        : AppColors.flagYellow;
   }
 
   Widget _lapCluster(String label, String? value, Color color) {
@@ -798,7 +864,7 @@ class _DriverRow extends StatelessWidget {
     );
   }
 
-  /// SECTOR 탭: 현재 섹터(플래그 색) 위, 미니섹터와 개인 베스트를 아래에 둔다.
+  /// SECTOR 탭: 현재 섹터와 수신된 미니섹터만 표시한다.
   Widget _sectorContent() {
     final sectors = _sectors;
     return Row(
@@ -823,22 +889,10 @@ class _DriverRow extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
               if (sectors[i].segments.isNotEmpty) ...[
+                const SizedBox(height: 2),
                 _MiniSectorBar(segments: sectors[i].segments),
-                const SizedBox(height: 3),
               ],
-              Text(
-                (i < driver.bestSectors.length
-                        ? driver.bestSectors[i]
-                        : null) ??
-                    '—',
-                style: const TextStyle(
-                  color: AppColors.faint,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
             ],
           ),
         ],

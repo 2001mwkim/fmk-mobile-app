@@ -53,6 +53,8 @@ void main() {
         ),
         isTrue,
       );
+      expect(notifications.first.body, contains('7월 1일 10:00 (KST)'));
+      expect(notifications.first.body, isNot(contains('30분 뒤')));
     });
 
     test('schedules only race session when race only is on', () {
