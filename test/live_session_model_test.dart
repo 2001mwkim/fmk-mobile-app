@@ -105,6 +105,48 @@ void main() {
     expect(snapshot.raceControlMessages.single.flag, 'YELLOW');
   });
 
+  test('remaining time shows only for timed sessions', () {
+    // 레이스/스프린트는 랩 기반 진행 → 남은 시간 미표시.
+    LiveSessionSnapshot session(String type, {String? remaining = '12:34'}) =>
+        LiveSessionSnapshot(
+          status: LiveSessionStatus.live,
+          updatedAt: '',
+          sessionType: type,
+          sessionName: type,
+          remainingTime: remaining,
+        );
+
+    expect(session('Race').showRemainingTime, isFalse);
+    expect(session('Sprint').showRemainingTime, isFalse);
+    expect(session('Practice 1').showRemainingTime, isTrue);
+    expect(session('Qualifying').showRemainingTime, isTrue);
+    expect(session('Sprint Qualifying').showRemainingTime, isTrue);
+    // 시간제 세션이라도 서버 값이 없으면 표시할 게 없다.
+    expect(session('Qualifying', remaining: null).showRemainingTime, isFalse);
+  });
+
+  test('pre-start ended race snapshot does not mark the race ended', () {
+    // F1 피드는 퀄리 종료 후 SessionInfo 를 미리 Race 로 전환하고 상태값은
+    // 직전 세션의 Finalised 가 남아, 일요일 낮에 '레이스 ended' 스냅샷이 온다.
+    final belgium = getRaceById('belgium-2026')!;
+    const snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.ended,
+      updatedAt: '',
+      raceId: 'belgium-2026',
+      raceName: 'Belgian Grand Prix',
+      sessionType: 'Race',
+      sessionName: 'Race',
+    );
+
+    // 레이스 시작(22:00 KST) 전의 ended 는 가짜 → 다음 GP 로 넘기지 않는다.
+    final preRace = DateTime.parse('2026-07-19T15:00:00+09:00');
+    expect(liveSnapshotMarksRaceEnded(snapshot, belgium, preRace), isFalse);
+
+    // 시작 후 조기 종료(스케줄 창 24:00 이전 체커기)는 여전히 인정.
+    final earlyFinish = DateTime.parse('2026-07-19T23:40:00+09:00');
+    expect(liveSnapshotMarksRaceEnded(snapshot, belgium, earlyFinish), isTrue);
+  });
+
   test('ended race is not treated live within its scheduled window', () {
     // 레이스가 스케줄상 종료 창(시작+3시간)보다 일찍 끝난 상황.
     final snapshot = LiveSessionSnapshot(

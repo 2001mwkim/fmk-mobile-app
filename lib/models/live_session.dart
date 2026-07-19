@@ -292,6 +292,10 @@ class LiveSessionSnapshot {
 
   bool get showLap => isRaceOrSprint && currentLap != null && totalLaps != null;
 
+  /// 남은 시간은 시간제 세션(프랙티스/퀄리파잉/스프린트 퀄리파잉)에서만 표시.
+  /// 레이스/스프린트는 랩 기반 진행이라 남은 시간 노출이 오히려 혼란을 준다.
+  bool get showRemainingTime => !isRaceOrSprint && remainingTime != null;
+
   String get sessionTitle => sessionName ?? sessionType ?? 'Session';
 
   /// 화면 표시용 한글 세션 이름(영문 live.json 안전 변환).
@@ -448,7 +452,14 @@ bool liveSnapshotMarksRaceEnded(
   if (snapshotRace == null || snapshotRace.id != race.id) return false;
 
   final session = liveRaceSessionForSnapshot(snapshot, snapshotRace);
-  return session?.id == 'race';
+  if (session == null || session.id != 'race') return false;
+
+  // F1 피드는 퀄리 종료 후 SessionInfo 를 미리 Race 로 전환하는데, 상태값은
+  // 직전 세션의 Finalised 가 남아 레이스 시작 전에도 'ended' 스냅샷이 온다
+  // (매 GP 일요일 오전 재발). 스케줄상 레이스 시작 전의 ended 는 가짜이므로
+  // 신뢰하지 않는다 — 시작 후의 조기 체커기(원래 의도)는 그대로 인정.
+  final currentTime = now ?? DateTime.now();
+  return !currentTime.isBefore(getSessionDate(snapshotRace, session));
 }
 
 RaceSession? liveRaceSessionForSnapshot(

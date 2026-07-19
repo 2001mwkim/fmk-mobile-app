@@ -52,6 +52,25 @@ void main() {
     expect(find.text('벨기에 그랑프리'), findsOneWidget);
     expect(find.text('진행중'), findsNothing);
   });
+
+  testWidgets('home hero keeps current GP on pre-race fake ended snapshot', (
+    tester,
+  ) async {
+    // F1 피드가 퀄리 종료 후 SessionInfo 를 미리 Race 로 바꿔, 일요일 낮에
+    // 'ended Race' 스냅샷이 오는 상황 — 레이스 시작 전이므로 넘기지 않는다.
+    await _pumpHome(
+      tester,
+      now: DateTime.parse('2026-07-19T15:00:00+09:00'),
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'belgium-2026',
+      ),
+    );
+
+    // 라이브 카드도 GP명을 표시하므로 히어로까지 최소 1개 이상이면 된다.
+    expect(find.text('벨기에 그랑프리'), findsWidgets);
+    expect(find.text('헝가리 그랑프리'), findsNothing);
+  });
 }
 
 final DateTime _beforeBritishSprint = DateTime.parse(
