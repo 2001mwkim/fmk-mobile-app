@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- 런치 스플래시: 흰 번쩍임 방지를 위해 블랙 배경 + 중앙 앱 로고(비아 포뮬러).
+     로고 png(assets/icon/app_icon.png) 자체가 블랙 배경 위 흰 마크라 검은 창
+     배경과 이음매 없이 흰 마크만 떠 보인다. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
+    <item android:drawable="@android:color/black" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/splash_logo" />
+    </item>
 </layer-list>
