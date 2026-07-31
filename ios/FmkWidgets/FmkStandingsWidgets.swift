@@ -67,11 +67,13 @@ struct FmkStandingsView: View {
     let compact = family == .systemSmall
     let rows = compact ? Array(entry.rows.prefix(3)) : entry.rows
 
-    VStack(alignment: .leading, spacing: compact ? 4 : 6) {
+    // 행들이 위젯 높이를 균등하게 채운다 — 고정 spacing 만 쓰면 하단이 빈다.
+    VStack(alignment: .leading, spacing: 0) {
       Text(title)
-        .font(.system(size: compact ? 10 : 12, weight: .heavy))
+        .font(.system(size: compact ? 11 : 13, weight: .heavy))
         .foregroundColor(FmkTheme.white)
         .lineLimit(1)
+        .padding(.bottom, 4)
 
       if rows.isEmpty {
         Spacer(minLength: 0)
@@ -81,44 +83,43 @@ struct FmkStandingsView: View {
           .multilineTextAlignment(.leading)
         Spacer(minLength: 0)
       } else {
-        VStack(spacing: compact ? 3 : 4) {
-          ForEach(rows) { row in
-            HStack(spacing: compact ? 5 : 7) {
-              Text("\(row.position)")
-                .font(.system(size: compact ? 10 : 11, weight: .heavy))
-                .foregroundColor(row.position == 1 ? FmkTheme.red : FmkTheme.dim)
-                .frame(width: 11, alignment: .center)
-                .fmkMonoDigits()
-              RoundedRectangle(cornerRadius: 1.5)
-                .fill(Color(argb: row.teamColorArgb))
-                .frame(width: 3, height: compact ? 11 : 13)
-              Text(row.name)
-                .font(.system(size: compact ? 10 : 12, weight: .bold))
-                .foregroundColor(FmkTheme.white)
-                .lineLimit(1)
-              Spacer(minLength: 3)
-              if !compact && !row.changeLabel.isEmpty {
-                Text(row.changeLabel)
-                  .font(.system(size: 9, weight: .bold))
-                  .foregroundColor(Color(argb: row.changeColorArgb))
-              }
-              Text(row.points)
-                .font(.system(size: compact ? 10 : 11, weight: .heavy))
-                .foregroundColor(FmkTheme.text)
-                .fmkMonoDigits()
-              if !compact {
-                Text("PTS")
-                  .font(.system(size: 7, weight: .semibold))
-                  .foregroundColor(FmkTheme.dim)
-              }
+        ForEach(rows) { row in
+          HStack(spacing: compact ? 6 : 8) {
+            Text("\(row.position)")
+              .font(.system(size: compact ? 12 : 13, weight: .heavy))
+              .foregroundColor(row.position == 1 ? FmkTheme.red : FmkTheme.dim)
+              .frame(width: 13, alignment: .center)
+              .fmkMonoDigits()
+            RoundedRectangle(cornerRadius: 1.5)
+              .fill(Color(argb: row.teamColorArgb))
+              .frame(width: 3.5, height: compact ? 12 : 15)
+            Text(row.name)
+              .font(.system(size: compact ? 12 : 14, weight: .bold))
+              .foregroundColor(FmkTheme.white)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+            Spacer(minLength: 3)
+            if !compact && !row.changeLabel.isEmpty {
+              Text(row.changeLabel)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(Color(argb: row.changeColorArgb))
+            }
+            Text(row.points)
+              .font(.system(size: compact ? 12 : 13, weight: .heavy))
+              .foregroundColor(FmkTheme.text)
+              .fmkMonoDigits()
+            if !compact {
+              Text("PTS")
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundColor(FmkTheme.dim)
             }
           }
+          .frame(maxHeight: .infinity)
         }
-        Spacer(minLength: 0)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .padding(.horizontal, compact ? 12 : 14)
+    .padding(.horizontal, compact ? 13 : 16)
     .padding(.vertical, compact ? 11 : 12)
     .fmkWidgetBackground()
     .widgetURL(URL(string: "fmkwidget://standings?homeWidget"))

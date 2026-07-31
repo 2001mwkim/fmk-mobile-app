@@ -132,44 +132,45 @@ struct FmkScheduleView: View {
   var body: some View {
     let payload = entry.payload
     let highlight = payload.highlightIndex(at: entry.date)
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 5) {
+    // 행들이 위젯 높이를 균등하게 채운다(.frame(maxHeight: .infinity)) —
+    // 고정 spacing 만 쓰면 systemMedium 하단이 빈 공간으로 남는다.
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 6) {
         Text(payload.scheduleGpFlag.isEmpty ? payload.gpFlag : payload.scheduleGpFlag)
-          .font(.system(size: 12))
+          .font(.system(size: 14))
         Text(payload.scheduleGpName.isEmpty ? payload.gpName : payload.scheduleGpName)
-          .font(.system(size: 13, weight: .heavy))
+          .font(.system(size: 15, weight: .heavy))
           .foregroundColor(FmkTheme.white)
           .lineLimit(1)
         Spacer(minLength: 0)
       }
+      .padding(.bottom, 4)
 
-      VStack(spacing: 3) {
-        ForEach(Array(payload.sessions.enumerated()), id: \.offset) { index, row in
-          let isNext = highlight == index + 1
-          let isPast = highlight > index + 1 || (highlight == 0 && row.start != nil)
-          HStack(spacing: 6) {
-            Circle()
-              .fill(FmkTheme.red)
-              .frame(width: 4, height: 4)
-              .opacity(isNext ? 1 : 0)
-            Text(row.name)
-              .font(.system(size: 11, weight: isNext ? .heavy : .semibold))
-              .foregroundColor(isNext ? FmkTheme.white : (isPast ? FmkTheme.ghost : FmkTheme.text))
-              .lineLimit(1)
-            Spacer(minLength: 4)
-            Text(row.date)
-              .font(.system(size: 10, weight: .medium))
-              .foregroundColor(isPast ? FmkTheme.ghost : FmkTheme.dim)
-            Text(row.time)
-              .font(.system(size: 11, weight: .heavy))
-              .foregroundColor(isNext ? FmkTheme.red : (isPast ? FmkTheme.ghost : FmkTheme.white))
-              .fmkMonoDigits()
-          }
+      ForEach(Array(payload.sessions.enumerated()), id: \.offset) { index, row in
+        let isNext = highlight == index + 1
+        let isPast = highlight > index + 1 || (highlight == 0 && row.start != nil)
+        HStack(spacing: 7) {
+          Circle()
+            .fill(FmkTheme.red)
+            .frame(width: 5, height: 5)
+            .opacity(isNext ? 1 : 0)
+          Text(row.name)
+            .font(.system(size: 13, weight: isNext ? .heavy : .semibold))
+            .foregroundColor(isNext ? FmkTheme.white : (isPast ? FmkTheme.ghost : FmkTheme.text))
+            .lineLimit(1)
+          Spacer(minLength: 4)
+          Text(row.date)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(isPast ? FmkTheme.ghost : FmkTheme.dim)
+          Text(row.time)
+            .font(.system(size: 14, weight: .heavy))
+            .foregroundColor(isNext ? FmkTheme.red : (isPast ? FmkTheme.ghost : FmkTheme.white))
+            .fmkMonoDigits()
         }
+        .frame(maxHeight: .infinity)
       }
-      Spacer(minLength: 0)
     }
-    .padding(.horizontal, 14)
+    .padding(.horizontal, 16)
     .padding(.vertical, 12)
   }
 }
@@ -187,32 +188,33 @@ struct FmkScheduleCompactView: View {
 
     VStack(alignment: .leading, spacing: 3) {
       Text("VIA FORMULA")
-        .font(.system(size: 8, weight: .heavy))
+        .font(.system(size: 9, weight: .heavy))
         .foregroundColor(FmkTheme.red)
         .kerning(0.8)
       HStack(spacing: 4) {
         Text(payload.scheduleGpFlag.isEmpty ? payload.gpFlag : payload.scheduleGpFlag)
-          .font(.system(size: 10))
+          .font(.system(size: 12))
         Text(payload.scheduleGpName.isEmpty ? payload.gpName : payload.scheduleGpName)
-          .font(.system(size: 11, weight: .bold))
+          .font(.system(size: 12, weight: .bold))
           .foregroundColor(FmkTheme.text)
           .lineLimit(1)
+          .minimumScaleFactor(0.8)
       }
       Spacer(minLength: 0)
       Text(row?.name ?? "—")
-        .font(.system(size: 11, weight: .semibold))
+        .font(.system(size: 13, weight: .semibold))
         .foregroundColor(FmkTheme.dim)
         .lineLimit(1)
       Text(row?.time ?? "—")
-        .font(.system(size: 22, weight: .heavy))
+        .font(.system(size: 26, weight: .heavy))
         .foregroundColor(FmkTheme.white)
         .fmkMonoDigits()
       Text(row.map { $0.date.isEmpty ? "KST" : "\($0.date) · KST" } ?? "KST")
-        .font(.system(size: 9, weight: .medium))
+        .font(.system(size: 10, weight: .medium))
         .foregroundColor(FmkTheme.dim)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .padding(12)
+    .padding(13)
   }
 }
 
@@ -222,59 +224,59 @@ struct FmkLiveView: View {
   let live: FmkLiveState
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 6) {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 7) {
         Text(live.isLive ? "LIVE" : "결과")
-          .font(.system(size: 9, weight: .heavy))
+          .font(.system(size: 10, weight: .heavy))
           .foregroundColor(FmkTheme.white)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
+          .padding(.horizontal, 7)
+          .padding(.vertical, 2.5)
           .background(Capsule().fill(FmkTheme.red))
         Text(live.gpName)
-          .font(.system(size: 12, weight: .heavy))
+          .font(.system(size: 14, weight: .heavy))
           .foregroundColor(FmkTheme.white)
           .lineLimit(1)
         Spacer(minLength: 0)
         if live.isLive && live.lapTotal > 0 {
           Text("\(live.lapCurrent)")
-            .font(.system(size: 12, weight: .heavy))
+            .font(.system(size: 14, weight: .heavy))
             .foregroundColor(FmkTheme.white)
             .fmkMonoDigits()
           Text("/ \(live.lapTotal) LAP")
-            .font(.system(size: 9, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundColor(FmkTheme.dim)
         }
       }
+      .padding(.bottom, 6)
 
-      VStack(spacing: 4) {
-        ForEach(live.rows) { row in
-          HStack(spacing: 7) {
-            Text("\(row.position)")
-              .font(.system(size: 12, weight: .heavy))
-              .foregroundColor(FmkTheme.dim)
-              .frame(width: 12, alignment: .center)
-              .fmkMonoDigits()
-            RoundedRectangle(cornerRadius: 1.5)
-              .fill(Color(argb: row.colorArgb))
-              .frame(width: 3, height: 14)
-            Text(row.name)
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(FmkTheme.white)
-              .lineLimit(1)
-            Spacer(minLength: 4)
-            Text(row.time.isEmpty ? "—" : row.time)
-              .font(.system(size: 11, weight: .semibold))
-              .foregroundColor(FmkTheme.text)
-              .fmkMonoDigits()
-          }
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(RoundedRectangle(cornerRadius: 8).fill(FmkTheme.card))
+      // 순위 행이 남은 높이를 균등하게 나눠 위젯을 가득 채운다.
+      ForEach(live.rows) { row in
+        HStack(spacing: 8) {
+          Text("\(row.position)")
+            .font(.system(size: 14, weight: .heavy))
+            .foregroundColor(FmkTheme.dim)
+            .frame(width: 14, alignment: .center)
+            .fmkMonoDigits()
+          RoundedRectangle(cornerRadius: 1.5)
+            .fill(Color(argb: row.colorArgb))
+            .frame(width: 3.5, height: 16)
+          Text(row.name)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(FmkTheme.white)
+            .lineLimit(1)
+          Spacer(minLength: 4)
+          Text(row.time.isEmpty ? "—" : row.time)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(FmkTheme.text)
+            .fmkMonoDigits()
         }
+        .padding(.horizontal, 10)
+        .frame(maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 9).fill(FmkTheme.card))
+        .padding(.vertical, 2)
       }
-      Spacer(minLength: 0)
     }
-    .padding(.horizontal, 14)
+    .padding(.horizontal, 16)
     .padding(.vertical, 12)
   }
 }
