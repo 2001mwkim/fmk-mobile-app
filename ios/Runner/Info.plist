@@ -22,6 +22,20 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<!-- 위젯 탭 딥링크(fmkwidget://home|standings|live?homeWidget).
+	     home_widget iOS 플러그인이 'homeWidget' 쿼리 파라미터로 위젯 URL 을
+	     식별한다. URI→탭 매핑은 lib/services/fmk_home_widget_bridge.dart. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>kr.formulamagazine.fmk.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fmkwidget</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

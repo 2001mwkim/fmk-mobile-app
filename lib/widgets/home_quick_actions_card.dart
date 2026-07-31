@@ -17,6 +17,68 @@ class HomeQuickActionsCard extends StatelessWidget {
   /// 테스트 주입 지점. 기본은 [FmkHomeWidgetBridge.requestPinWidget].
   final Future<bool> Function(String qualifiedAndroidName)? pinRequester;
 
+  /// iOS 는 런처 pin API 가 없어(WidgetKit) 수동 추가 안내를 띄운다.
+  Future<void> _showIOSAddGuide(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '위젯 추가 방법',
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final (index, step) in const [
+                '홈 화면의 빈 곳을 길게 누르세요',
+                '왼쪽 위 ➕ (또는 편집 → 위젯 추가)를 누르세요',
+                "'비아 포뮬러'를 검색해 원하는 위젯을 추가하세요",
+              ].indexed) ...[
+                if (index > 0) const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: AppColors.redSoft,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        step,
+                        style: const TextStyle(
+                          color: AppColors.textSoft,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickAndRequestPin(BuildContext context) async {
     final provider = await showModalBottomSheet<String>(
       context: context,
@@ -43,10 +105,12 @@ class HomeQuickActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 홈 위젯은 Android 전용(iOS 는 WidgetKit 미구현) — 동작하지 않는
-    // 진입점을 노출하면 App Store 심사(2.1 완성도) 리젝 사유가 된다.
-    final supportsHomeWidget =
+    // Android: 런처 pin 요청, iOS: WidgetKit 수동 추가 안내. 그 외(웹 등)는
+    // 동작하지 않는 진입점이 되므로 숨긴다(App Store 심사 2.1 완성도).
+    final isAndroid =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    final supportsHomeWidget = isAndroid || isIOS;
     return AppCard(
       padding: EdgeInsets.zero,
       child: Row(
@@ -72,7 +136,9 @@ class HomeQuickActionsCard extends StatelessWidget {
                 icon: Icons.widgets_outlined,
                 title: '위젯 추가',
                 subtitle: '홈 화면에서 바로 확인',
-                onTap: () => _pickAndRequestPin(context),
+                onTap: () => isIOS
+                    ? _showIOSAddGuide(context)
+                    : _pickAndRequestPin(context),
               ),
             ),
           ],

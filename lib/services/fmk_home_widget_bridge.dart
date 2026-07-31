@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
@@ -23,6 +24,16 @@ const String fmkHomeWidgetProviderQualifiedName =
 /// 챔피언십 순위 위젯(별도 위젯 종류)의 Provider.
 const String fmkStandingsWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
+
+/// iOS App Group — Runner/FmkWidgets 익스텐션 entitlements 와 문자열로
+/// 수동 동기화(ios/Runner/Runner.entitlements, ios/FmkWidgets/*.entitlements).
+const String fmkWidgetAppGroupId = 'group.kr.formulamagazine.fmk';
+
+/// iOS WidgetKit kind 문자열 — ios/FmkWidgets/ 의 Widget kind 와 수동 동기화.
+/// iOS 는 토글 대신 종류를 나눈다(드라이버/팀 순위가 각각 별도 위젯).
+const String fmkHomeWidgetIOSKind = 'FmkHomeWidget';
+const String fmkDriverStandingsWidgetIOSKind = 'FmkDriverStandingsWidget';
+const String fmkTeamStandingsWidgetIOSKind = 'FmkTeamStandingsWidget';
 
 /// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
 /// 인덱스는 app.dart 의 MainShell._screens / BottomNav._items 순서와 1:1
@@ -50,6 +61,7 @@ class FmkHomeWidgetPayload {
     required this.gpName,
     required this.scheduleGpFlag,
     required this.scheduleGpName,
+    this.scheduleRaceId = '',
     required this.sessions,
     required this.sessionHighlightIndex,
     required this.liveBadge,
@@ -70,6 +82,10 @@ class FmkHomeWidgetPayload {
   /// 없이 라이브 ↔ 일정 화면을 전환할 수 있게 한다.
   final String scheduleGpFlag;
   final String scheduleGpName;
+
+  /// 일정 화면 그랑프리의 races.dart id. iOS 위젯이 라이브 스냅샷의 raceId 와
+  /// 대조해 '다음 세션 30분 전까지 노출' 규칙을 적용할 때 쓴다(Android 미사용).
+  final String scheduleRaceId;
 
   /// 다음 그랑프리 세션 일정(최대 5개). 모드와 무관하게 항상 채운다.
   final List<FmkHomeWidgetSessionRow> sessions;
@@ -95,17 +111,47 @@ class FmkHomeWidgetSessionRow {
     required this.name,
     required this.date,
     required this.time,
+    this.id = '',
+    this.startEpochMs = 0,
+    this.endEpochMs = 0,
   });
 
   final String name;
   final String date;
   final String time;
+
+  /// races.dart 의 세션 id('fp1'/'qualifying'/'race' 등). iOS 위젯 타임라인이
+  /// 세션 경계 전환·퀄리 세그먼트 보정에 쓴다(Android 위젯은 무시).
+  final String id;
+
+  /// 세션 시작/종료(UTC epoch millis). 0 이면 정보 없음.
+  final int startEpochMs;
+  final int endEpochMs;
 }
 
 class FmkHomeWidgetBridge {
   const FmkHomeWidgetBridge._();
 
   static bool _bound = false;
+
+  /// 홈 위젯 지원 플랫폼(Android 위젯 + iOS WidgetKit).
+  static bool get _supported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
+  static bool get _isIOS =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  static bool _appGroupConfigured = false;
+
+  /// iOS 는 저장 전에 App Group 지정이 필수(플러그인이 UserDefaults suite 로
+  /// 기록). Android 에서는 no-op 이지만 분기 없이 한 번만 호출해 둔다.
+  static Future<void> _ensureAppGroup() async {
+    if (_appGroupConfigured || !_isIOS) return;
+    _appGroupConfigured = true;
+    await HomeWidget.setAppGroupId(fmkWidgetAppGroupId);
+  }
 
   /// 최근 확정 결과 캐시 — 라이브가 없을 때 위젯 '결과' 화면의 데이터.
   /// 확정 결과는 레이스 후 바뀌지 않으므로 낡아도 틀리지 않는다.
@@ -170,7 +216,7 @@ class FmkHomeWidgetBridge {
     LiveSessionSnapshot? snapshot,
     DateTime? now,
   }) async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    if (!_supported) return;
 
     await _ensureLatestResult();
     await _ensureStandings();
@@ -181,25 +227,52 @@ class FmkHomeWidgetBridge {
     );
 
     try {
+      await _ensureAppGroup();
       await _savePayload(payload);
       await _saveStandingsPayload(_standings);
+      if (_isIOS) await _saveIOSExtras();
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
+        iOSName: fmkHomeWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
+        iOSName: fmkDriverStandingsWidgetIOSKind,
       );
+      if (_isIOS) {
+        await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
+      }
     } catch (error, stackTrace) {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
   }
 
+  /// iOS 위젯 전용 보조 데이터. 위젯 익스텐션이 live.json 을 직접 fetch 할 때
+  /// 필요한 것들을 앱(Dart)이 단일 출처로 내려보낸다:
+  /// 드라이버 한글 이름/팀 액센트(drivers.dart), fetch URL(dart-define 반영).
+  static Future<void> _saveIOSExtras() async {
+    final names = <String, String>{...driverNameKoByCode};
+    final accents = <String, int>{
+      for (final code in driverNameKoByCode.keys)
+        code: liveDriverAccent(code).toARGB32(),
+    };
+    await Future.wait<bool?>([
+      HomeWidget.saveWidgetData<String>('driverNamesKoJson', jsonEncode(names)),
+      HomeWidget.saveWidgetData<String>(
+        'driverAccentsJson',
+        jsonEncode(accents),
+      ),
+      HomeWidget.saveWidgetData<String>('liveJsonUrl', kLiveJsonUrl),
+    ]);
+  }
+
   /// 앱이 위젯 탭으로 "시작"됐을 때의 딥링크 URI. 아니거나 실패하면 null
   /// (테스트/플러그인 미등록 환경 포함 — 절대 던지지 않는다).
   static Future<Uri?> initialLaunchUri() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    if (!_supported) return null;
     try {
+      await _ensureAppGroup();
       return await HomeWidget.initiallyLaunchedFromHomeWidget();
     } catch (_) {
       return null;
@@ -209,9 +282,7 @@ class FmkHomeWidgetBridge {
   /// 앱 "실행 중" 위젯 탭 딥링크 스트림. 미지원 플랫폼이면 빈 스트림.
   /// 채널 오류는 구독부에서 onError 로 무시할 것(테스트 환경 대비).
   static Stream<Uri?> widgetClicks() {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-      return const Stream<Uri?>.empty();
-    }
+    if (!_supported) return const Stream<Uri?>.empty();
     return HomeWidget.widgetClicked;
   }
 
@@ -261,6 +332,11 @@ class FmkHomeWidgetBridge {
         'scheduleGpName',
         payload.scheduleGpName,
       ),
+      // iOS 위젯의 라이브 노출 기한 판정용(Android 미사용).
+      HomeWidget.saveWidgetData<String>(
+        'scheduleRaceId',
+        payload.scheduleRaceId,
+      ),
       HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
       HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
       HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
@@ -289,6 +365,19 @@ class FmkHomeWidgetBridge {
         HomeWidget.saveWidgetData<int>(
           'session${index}Visible',
           session == null ? 0 : 1,
+        ),
+        // iOS 위젯 타임라인용(세션 경계 자동 전환·라이브 창 판정).
+        HomeWidget.saveWidgetData<String>(
+          'session${index}Id',
+          session?.id ?? '',
+        ),
+        HomeWidget.saveWidgetData<int>(
+          'session${index}StartEpoch',
+          session?.startEpochMs ?? 0,
+        ),
+        HomeWidget.saveWidgetData<int>(
+          'session${index}EndEpoch',
+          session?.endEpochMs ?? 0,
         ),
       ]);
     }
@@ -496,6 +585,7 @@ FmkHomeWidgetPayload _buildResultPayload(
     gpName: race?.nameKo ?? '최근 레이스',
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
+    scheduleRaceId: schedule.race.id,
     sessions: schedule.rows,
     sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: 'RESULT',
@@ -528,12 +618,16 @@ _nextRaceSchedule(DateTime now) {
   final rows = <FmkHomeWidgetSessionRow>[];
   for (var i = 0; i < sessions.length; i++) {
     final start = getSessionDate(race, sessions[i]);
+    final end = getSessionEndDate(race, sessions[i]);
     if (highlightIndex == 0 && start.isAfter(now)) highlightIndex = i + 1;
     rows.add(
       FmkHomeWidgetSessionRow(
         name: _sessionName(sessions[i]),
         date: _formatDateKst(start),
         time: _formatTimeKst(start),
+        id: sessions[i].id,
+        startEpochMs: start.toUtc().millisecondsSinceEpoch,
+        endEpochMs: end.toUtc().millisecondsSinceEpoch,
       ),
     );
   }
@@ -549,6 +643,7 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     gpName: schedule.race.nameKo,
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
+    scheduleRaceId: schedule.race.id,
     sessions: schedule.rows,
     sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: 'LIVE',
@@ -603,6 +698,7 @@ FmkHomeWidgetPayload _buildLivePayload(
     gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '비아 포뮬러 라이브']),
     scheduleGpFlag: _flagForRace(schedule.race),
     scheduleGpName: schedule.race.nameKo,
+    scheduleRaceId: schedule.race.id,
     sessions: schedule.rows,
     sessionHighlightIndex: schedule.highlightIndex,
     liveBadge: snapshot.isEnded && !isLiveSnapshotSessionActive(snapshot, now)
