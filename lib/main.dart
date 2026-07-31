@@ -2,12 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/live_session_controller.dart';
 import 'services/notification_settings_controller.dart';
+
+/// 크래시 리포팅 DSN. 릴리스 빌드에 `--dart-define=SENTRY_DSN=...` 로 주입한다.
+/// 비어 있으면 Sentry 를 아예 초기화하지 않아(테스트/로컬/DSN 미설정) 완전한
+/// no-op 이 된다. 값이 있어야만 크래시가 수집된다.
+const String _sentryDsn = String.fromEnvironment('SENTRY_DSN');
 
 /// WorkManager 주기 작업 이름(변경 시 기존 등록과 충돌하지 않게 유지).
 const String _kWidgetRefreshUniqueName = 'fmk-widget-refresh';
@@ -50,6 +56,31 @@ Future<void> _registerWidgetBackgroundRefresh() async {
 }
 
 void main() {
+  // DSN 이 없으면 Sentry 초기화 비용/후킹 없이 바로 실행한다.
+  if (_sentryDsn.isEmpty) {
+    _bootstrap();
+    return;
+  }
+
+  // Sentry 가 FlutterError.onError 후킹과 가드 존 설정을 담당하고, appRunner
+  // 안에서 앱을 실행해 초기화 이후의 미처리 예외까지 수집한다.
+  unawaited(
+    SentryFlutter.init(
+      (options) {
+        options.dsn = _sentryDsn;
+        // 스택트레이스 심볼화를 위한 릴리스 식별자(빌드마다 갱신).
+        options.release = 'fmk_app@0.1.1+20';
+        // 크래시(에러) 수집이 목적이라 성능 트레이싱은 끈다(쿼터/오버헤드 절약).
+        options.tracesSampleRate = 0.0;
+      },
+      appRunner: _bootstrap,
+    ),
+  );
+}
+
+/// 앱 부팅(라이브 폴링·위젯 브리지·알림 재등록 후 runApp). Sentry 초기화
+/// 여부와 무관하게 동일한 시작 절차를 공유한다.
+void _bootstrap() {
   WidgetsFlutterBinding.ensureInitialized();
   liveSessionController.enabled = true;
   FmkHomeWidgetBridge.bindTo(liveSessionController);

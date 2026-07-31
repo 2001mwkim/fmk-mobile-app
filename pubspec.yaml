@@ -45,6 +45,7 @@ dependencies:
   # 국기 SVG(circle-flags) 렌더링용 — 이모지 국기는 기기/런처마다 룩이 달라
   # 프리미엄 톤이 안 나온다(자산 출처: HatScripts/circle-flags, MIT).
   flutter_svg: ^2.0.10
+  sentry_flutter: ^9.26.0
 
 dev_dependencies:
   flutter_test:
