@@ -99,17 +99,14 @@ class _SeasonHomeContent extends StatelessWidget {
               final liveStale = liveSnapshotOverride == null && isStale;
               final nextRace = _effectiveNextRace(now, liveSnapshot);
               final nextSession = getNextSession(nextRace, now);
+              // 라이브/최근 세션 카드가 실제로 그려지는지(=Top 3 확보) 미리 판단해
+              // 히어로 카드와의 상단 간격을 조건부로만 넣는다(빈 카드면 여백 없음).
+              final showLiveCard =
+                  liveSnapshot != null && liveSnapshot.topThree.length >= 3;
               return Column(
                 children: [
-                  HomeLiveTopThreeCard(
-                    snapshot: liveSnapshot,
-                    isStale: liveStale,
-                    now: now,
-                    onTap: () =>
-                        _openLiveRace(builderContext, liveSnapshot?.raceId),
-                  ),
-                  const SizedBox(height: 12),
-                  // 다음 그랑프리 히어로 — 다음 세션 정보를 내부에 포함
+                  // 카운트다운 + 주말 일정 히어로가 상단. 라이브/최근 세션 카드는
+                  // 그 아래로 배치한다.
                   _NextRaceCard(
                     race: nextRace,
                     session: nextSession,
@@ -118,7 +115,14 @@ class _SeasonHomeContent extends StatelessWidget {
                     // 시각을 결정적으로 만든다.
                     ticking: nowOverride == null,
                   ),
-                  // 주말 일정은 히어로 카드에 통합됨(별도 카드 제거).
+                  if (showLiveCard) const SizedBox(height: 12),
+                  HomeLiveTopThreeCard(
+                    snapshot: liveSnapshot,
+                    isStale: liveStale,
+                    now: now,
+                    onTap: () =>
+                        _openLiveRace(builderContext, liveSnapshot?.raceId),
+                  ),
                   // 챔피언십 TOP 3 — 순위 탭과 같은 데이터의 미리보기.
                   HomeStandingsCard(
                     repository: standingsRepository,
