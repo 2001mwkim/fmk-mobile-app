@@ -9,6 +9,7 @@ import '../models/race_session.dart';
 const Duration sessionNotificationLeadTime = Duration(minutes: 30);
 const String kstTimeZoneName = 'Asia/Seoul';
 const int notificationGrandPrixWindow = 3;
+const String androidNotificationIcon = 'ic_notification';
 
 class NotificationPreferences {
   const NotificationPreferences({
@@ -141,9 +142,11 @@ class SessionNotificationPlanner {
           title: kind == ScheduledNotificationKind.raceOnly
               ? '비아 포뮬러 레이스 알림'
               : '비아 포뮬러 세션 알림',
-          body: kind == ScheduledNotificationKind.raceOnly
-              ? '${race.nameKo} 레이스가 30분 뒤 시작됩니다.'
-              : '${race.nameKo} ${session.label}이 30분 뒤 시작됩니다.',
+          // 비정확 알람으로 폴백되거나 기기 정책으로 표시가 늦어져도
+          // "30분 뒤"처럼 잘못된 정보를 주지 않도록 절대 시각을 표시한다.
+          body:
+              '${race.nameKo} ${session.label} 시작: '
+              '${_formatSessionStart(sessionStart)}',
           scheduledAt: reminderAt,
           kind: kind,
         ),
@@ -151,6 +154,13 @@ class SessionNotificationPlanner {
     }
 
     return notifications;
+  }
+
+  String _formatSessionStart(tz.TZDateTime sessionStart) {
+    final hour = sessionStart.hour.toString().padLeft(2, '0');
+    final minute = sessionStart.minute.toString().padLeft(2, '0');
+    return '${sessionStart.month}월 ${sessionStart.day}일 '
+        '$hour:$minute (KST)';
   }
 
   tz.TZDateTime? _sessionStartAt(Race race, RaceSession session) {
@@ -203,6 +213,7 @@ class FlutterSessionNotificationScheduler
         'fmk_session_reminders',
         '세션 알림',
         channelDescription: '그랑프리 세션 시작 30분 전 알림',
+        icon: androidNotificationIcon,
         importance: Importance.high,
         priority: Priority.high,
       );
@@ -216,7 +227,7 @@ class FlutterSessionNotificationScheduler
 
     NotificationTimeZones.kst();
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings(androidNotificationIcon),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
@@ -235,12 +246,18 @@ class FlutterSessionNotificationScheduler
     if (kIsWeb) return true;
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      final granted = await _plugin
+      final androidPlugin = _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
-          >()
+          >();
+      final notificationGranted = await androidPlugin
           ?.requestNotificationsPermission();
-      return granted ?? true;
+      if (notificationGranted == false) return false;
+
+      // Android 12+의 "알람 및 리마인더" 특수 권한이다. 사용자가 거부해도
+      // 알림 기능 자체는 유지하고 schedule()에서 비정확 알람으로 폴백한다.
+      await androidPlugin?.requestExactAlarmsPermission();
+      return true;
     }
 
     if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -272,6 +289,7 @@ class FlutterSessionNotificationScheduler
       android: _androidDetails,
       iOS: _darwinDetails,
     );
+    final androidScheduleMode = await _androidScheduleMode();
 
     for (final notification in notifications) {
       await _plugin.zonedSchedule(
@@ -280,10 +298,25 @@ class FlutterSessionNotificationScheduler
         body: notification.body,
         scheduledDate: notification.scheduledAt,
         notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: androidScheduleMode,
         payload: '${notification.raceId}:${notification.sessionId}',
       );
     }
+  }
+
+  Future<AndroidScheduleMode> _androidScheduleMode() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return AndroidScheduleMode.inexactAllowWhileIdle;
+    }
+
+    final canScheduleExact = await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.canScheduleExactNotifications();
+    return canScheduleExact == true
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 }
 
