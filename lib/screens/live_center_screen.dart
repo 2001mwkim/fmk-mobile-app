@@ -345,7 +345,7 @@ class _SessionHeader extends StatelessWidget {
                   label: 'LAP',
                   value: '${snapshot.currentLap} / ${snapshot.totalLaps}',
                 ),
-              if (snapshot.remainingTime != null)
+              if (snapshot.showRemainingTime)
                 _RemainingMetric(
                   remaining: snapshot.remainingTime!,
                   stopped: snapshot.clockStopped || snapshot.isEnded,
