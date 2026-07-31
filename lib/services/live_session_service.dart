@@ -4,21 +4,30 @@ import 'package:http/http.dart' as http;
 
 import '../models/live_session.dart';
 
-/// 개발용 live.json endpoint (기존 SignalR collector 가 제공).
+/// live.json endpoint (기존 SignalR collector 가 제공).
 ///
 /// 값은 빌드 시 `--dart-define=LIVE_JSON_URL=...` 로 주입할 수 있고,
-/// 주입이 없으면 기본값(`http://localhost:8787/live.json`)을 사용한다.
-/// `String.fromEnvironment` 는 const 이고 dart:io 에 의존하지 않아
-/// Web / Windows / Android 어디서든 빌드가 깨지지 않는다.
+/// 주입이 없으면 릴리스 빌드는 프로덕션(Railway) URL, 그 외(debug/profile)는
+/// 로컬 collector(`http://localhost:8787/live.json`)를 사용한다.
+/// 릴리스 기본값을 프로덕션으로 두는 이유: 스토어 빌드에서 주입을 잊으면
+/// 라이브가 조용히 죽고, iOS 는 ATS 가 http 를 차단해 증상 파악도 어렵다.
+/// `String.fromEnvironment`/`bool.fromEnvironment` 는 const 이고 dart:io 에
+/// 의존하지 않아 Web / Windows / Android 어디서든 빌드가 깨지지 않는다.
 ///
 /// 실행 환경별 예시:
 ///   - Windows desktop : http://localhost:8787/live.json   (기본값, 주입 불필요)
 ///   - Android emulator: flutter run --dart-define=LIVE_JSON_URL=http://10.0.2.2:8787/live.json
 ///   - physical device : flutter run --dart-define=LIVE_JSON_URL=`http://PC-LAN-IP:8787/live.json`
 ///                       (예: http://192.168.0.10:8787/live.json — PC 와 기기가 같은 네트워크)
+/// 릴리스(AOT product) 빌드 여부 — `kReleaseMode` 와 같은 판정이지만
+/// flutter/foundation 의존 없이 const 로 쓰기 위해 직접 읽는다.
+const bool _kIsReleaseBuild = bool.fromEnvironment('dart.vm.product');
+
 const String kLiveJsonUrl = String.fromEnvironment(
   'LIVE_JSON_URL',
-  defaultValue: 'http://localhost:8787/live.json',
+  defaultValue: _kIsReleaseBuild
+      ? 'https://live-production-c03d.up.railway.app/live.json'
+      : 'http://localhost:8787/live.json',
 );
 
 /// 요청 타임아웃(폴링 주기보다 짧게).
