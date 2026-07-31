@@ -38,6 +38,7 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - `lib/screens/`, `lib/widgets/` — 화면/위젯. 순위 패널 공용 UI는 `widgets/classification_panel_parts.dart`, 트랙맵 SVG 렌더러는 `widgets/circuit_map.dart`
 - `android/.../FmkHomeWidgetProvider.kt` — 홈 위젯. 일정↔결과 토글은 상시(우측 화면 = 라이브 중 라이브 순위, 평상시 최근 확정 결과 Top3 — mode `live`/`result`). 위젯 데이터 키는 브리지와 Kotlin 양쪽에 문자열로 존재하므로 함께 수정. 백그라운드 자체 갱신은 WorkManager 30분 주기(`main.dart` 의 `fmkWidgetBackgroundDispatcher` → `FmkHomeWidgetBridge.refreshFromNetwork`). 두 위젯 모두 2셀 폭(<180dp)이면 콤팩트 레이아웃으로 자동 전환(`onAppWidgetOptionsChanged`)
 - `android/.../FmkStandingsWidgetProvider.kt` — 챔피언십 순위 위젯(두 번째 위젯 종류). 드라이버↔팀 토글, Top 5(콤팩트는 Top 3) + ▲▼ 변동. 데이터 키 `stDriver*`/`stTeam*` 은 브리지 `_saveStandingsPayload` 와 수동 동기화, 순위 fetch 는 6시간 캐시(서버 갱신 주기와 동일, 실패 시 번들 정적 순위)
+- `ios/FmkWidgets/` — iOS WidgetKit 익스텐션(iOS 15+, 앱 본체는 14). Android 위젯의 iOS 대응이되 플랫폼 차이가 있다: 토글 없음(일정·라이브 위젯은 라이브/결과/일정 자동 전환, 순위는 드라이버/팀 별도 위젯 종류), 데이터는 App Group `group.kr.formulamagazine.fmk`(UserDefaults) 공유, 세션 창(시작-5분~종료+40분)에서만 위젯이 live.json 직접 fetch(`FmkLive.swift` — 표시 정책 포팅본이므로 라이브 규칙 변경 시 함께 수정). 위젯 kind 문자열·데이터 키는 브리지와 수동 동기화. Xcode 타깃 빌드 설정은 Generated.xcconfig 를 base 로 사용(버전 자동 동기화). 위젯 탭 딥링크는 `fmkwidget://…?homeWidget`(iOS 는 `homeWidget` 쿼리 파라미터 필수)
 - `test/` — 주제별 분리(app_navigation / live_widgets / home_hero / live_session_model / live_session_controller / notification / bridge)
 
 ## 컨벤션
