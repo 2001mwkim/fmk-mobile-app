@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../screens/settings_screen.dart';
@@ -42,6 +43,10 @@ class HomeQuickActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 홈 위젯은 Android 전용(iOS 는 WidgetKit 미구현) — 동작하지 않는
+    // 진입점을 노출하면 App Store 심사(2.1 완성도) 리젝 사유가 된다.
+    final supportsHomeWidget =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     return AppCard(
       padding: EdgeInsets.zero,
       child: Row(
@@ -60,15 +65,17 @@ class HomeQuickActionsCard extends StatelessWidget {
               },
             ),
           ),
-          Container(width: 1, height: 52, color: AppColors.rowBorder),
-          Expanded(
-            child: _QuickActionTile(
-              icon: Icons.widgets_outlined,
-              title: '위젯 추가',
-              subtitle: '홈 화면에서 바로 확인',
-              onTap: () => _pickAndRequestPin(context),
+          if (supportsHomeWidget) ...[
+            Container(width: 1, height: 52, color: AppColors.rowBorder),
+            Expanded(
+              child: _QuickActionTile(
+                icon: Icons.widgets_outlined,
+                title: '위젯 추가',
+                subtitle: '홈 화면에서 바로 확인',
+                onTap: () => _pickAndRequestPin(context),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
