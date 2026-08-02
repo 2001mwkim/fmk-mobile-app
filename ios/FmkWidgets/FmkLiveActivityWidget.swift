@@ -75,43 +75,39 @@ import WidgetKit
     let state: FmkLiveActivityAttributes.ContentState
 
     var body: some View {
-      VStack(alignment: .leading, spacing: 8) {
-        HStack(spacing: 7) {
+      // 업데이트 시각 표기는 뺀다(정보 대비 시각 소음) — 대신 헤더·행
+      // 타이포와 간격을 키워 배너를 채운다. updatedAt 은 계약 유지
+      // (서버 페이로드·스테일 판단용)하되 표시만 하지 않는다.
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 8) {
           FmkLiveBadge(text: state.badge)
           Text(state.gpName)
-            .font(.system(size: 14, weight: .heavy))
+            .font(.system(size: 15, weight: .heavy))
             .foregroundColor(FmkTheme.white)
             .lineLimit(1)
           Text(state.sessionName)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 13, weight: .semibold))
             .foregroundColor(FmkTheme.dim)
             .lineLimit(1)
           Spacer(minLength: 0)
           if state.lapTotal > 0 {
             Text("\(state.lapCurrent)")
-              .font(.system(size: 14, weight: .heavy))
+              .font(.system(size: 15, weight: .heavy))
               .foregroundColor(FmkTheme.white)
             Text("/ \(state.lapTotal) LAP")
-              .font(.system(size: 10, weight: .semibold))
+              .font(.system(size: 11, weight: .semibold))
               .foregroundColor(FmkTheme.dim)
           }
         }
 
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
           FmkLiveActivityRow(pos: 1, name: state.p1Name, time: state.p1Time)
           FmkLiveActivityRow(pos: 2, name: state.p2Name, time: state.p2Time)
           FmkLiveActivityRow(pos: 3, name: state.p3Name, time: state.p3Time)
         }
-
-        HStack {
-          Spacer(minLength: 0)
-          Text("업데이트 \(state.updatedAt) KST")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundColor(FmkTheme.ghost)
-        }
       }
       .padding(.horizontal, 16)
-      .padding(.vertical, 12)
+      .padding(.vertical, 14)
     }
   }
 
@@ -126,16 +122,16 @@ import WidgetKit
       if !name.isEmpty {
         HStack(spacing: 8) {
           Text("\(pos)")
-            .font(.system(size: 13, weight: .heavy))
+            .font(.system(size: 14, weight: .heavy))
             .foregroundColor(pos == 1 ? FmkTheme.red : FmkTheme.dim)
-            .frame(width: 13, alignment: .center)
+            .frame(width: 14, alignment: .center)
           Text(name)
-            .font(.system(size: 13, weight: .bold))
+            .font(.system(size: 14, weight: .bold))
             .foregroundColor(FmkTheme.white)
             .lineLimit(1)
           Spacer(minLength: 4)
           Text(time.isEmpty ? "—" : time)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 13, weight: .semibold))
             .foregroundColor(FmkTheme.text)
         }
       }
