@@ -42,6 +42,13 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- 라이브 세션 Live Activity(잠금화면·다이나믹 아일랜드).
+	     FrequentUpdates: 레이스 중 APNs 고빈도 갱신 허용(사용자가 설정에서
+	     제한할 수 있고, 시스템이 예산을 관리한다). -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

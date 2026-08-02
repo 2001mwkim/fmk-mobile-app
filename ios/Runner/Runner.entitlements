@@ -8,5 +8,9 @@
 	<array>
 		<string>group.kr.formulamagazine.fmk</string>
 	</array>
+	<!-- Live Activity 푸시 토큰(pushType .token) 요구 사항.
+	     스토어 배포 프로비저닝이 production 으로 자동 치환한다. -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

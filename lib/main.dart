@@ -7,6 +7,7 @@ import 'package:workmanager/workmanager.dart';
 
 import 'app.dart';
 import 'services/fmk_home_widget_bridge.dart';
+import 'services/fmk_live_activity_bridge.dart';
 import 'services/live_session_controller.dart';
 import 'services/notification_settings_controller.dart';
 
@@ -84,9 +85,12 @@ void _bootstrap() {
   WidgetsFlutterBinding.ensureInitialized();
   liveSessionController.enabled = true;
   FmkHomeWidgetBridge.bindTo(liveSessionController);
+  // iOS Live Activity(잠금화면·다이나믹 아일랜드) — 라이브 폴링과 동기화.
+  FmkLiveActivityBridge.bindTo(liveSessionController);
   unawaited(
     FmkHomeWidgetBridge.update(snapshot: liveSessionController.snapshot),
   );
+  unawaited(FmkLiveActivityBridge.sync(snapshot: liveSessionController.snapshot));
   unawaited(_registerWidgetBackgroundRefresh());
   unawaited(notificationSettingsController.refreshScheduledNotifications());
   runApp(const FmkApp());

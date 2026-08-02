@@ -9,5 +9,15 @@ struct FmkWidgetsBundle: WidgetBundle {
     FmkHomeWidget()
     FmkDriverStandingsWidget()
     FmkTeamStandingsWidget()
+    liveActivities
+  }
+
+  // Live Activity 는 iOS 16.1+ — 익스텐션 최소 버전(15)보다 높아서
+  // 가용성 분기로 조건부 포함한다(잠금화면·다이나믹 아일랜드).
+  @WidgetBundleBuilder
+  private var liveActivities: some Widget {
+    if #available(iOSApplicationExtension 16.1, *) {
+      FmkLiveActivityWidget()
+    }
   }
 }

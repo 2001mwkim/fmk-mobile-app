@@ -12,5 +12,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Live Activity 채널(fmk/live_activity) — Flutter 라이브 폴링과 연동.
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FmkLiveActivity") {
+      FmkLiveActivityManager.shared.install(messenger: registrar.messenger())
+    }
   }
 }
