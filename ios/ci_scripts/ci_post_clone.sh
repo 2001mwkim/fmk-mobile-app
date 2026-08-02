@@ -11,12 +11,15 @@
 # 참고: 릴리스 라이브 URL 은 dart-define 없이도 프로덕션이 기본값이라
 # (lib/services/live_session_service.dart) 추가 주입이 필요 없다.
 set -e
+set -x
 
 # 로컬 개발 머신과 동일한 Flutter 버전 고정(pubspec 의 sdk 제약과 호환).
+# 해당 태그가 없으면 stable 로 폴백한다.
 FLUTTER_VERSION=3.44.8
 
 echo "Installing Flutter $FLUTTER_VERSION..."
-git clone https://github.com/flutter/flutter.git --depth 1 -b "$FLUTTER_VERSION" "$HOME/flutter"
+git clone https://github.com/flutter/flutter.git --depth 1 -b "$FLUTTER_VERSION" "$HOME/flutter" \
+  || git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
 export PATH="$PATH:$HOME/flutter/bin"
 
 flutter --version
@@ -29,7 +32,10 @@ flutter pub get
 # 릴리스 설정으로 Generated.xcconfig 를 확정(FLUTTER_BUILD_MODE=release 등).
 flutter build ios --config-only --release
 
-HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
+# Xcode Cloud 런너에는 CocoaPods 가 기본 설치돼 있다 — 없을 때만 설치.
+if ! command -v pod >/dev/null 2>&1; then
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
+fi
 cd ios
 pod install
 
