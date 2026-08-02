@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- App Store 업로드용 수출 옵션(수동 서명).
+     실기기 미등록 계정이라 자동(개발) 서명이 불가능해 배포 인증서 +
+     App Store 프로필로 직접 서명한다. 사용:
+     flutter build ipa \-\-export-options-plist=ios/ExportOptions.plist -->
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>teamID</key>
+	<string>PHM7ANUX4X</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>kr.formulamagazine.fmk</key>
+		<string>fmk appstore</string>
+		<key>kr.formulamagazine.fmk.FmkWidgets</key>
+		<string>fmk widgets appstore</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+</dict>
+</plist>

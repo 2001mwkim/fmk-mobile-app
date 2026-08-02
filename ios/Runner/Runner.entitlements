@@ -9,8 +9,9 @@
 		<string>group.kr.formulamagazine.fmk</string>
 	</array>
 	<!-- Live Activity 푸시 토큰(pushType .token) 요구 사항.
-	     스토어 배포 프로비저닝이 production 으로 자동 치환한다. -->
+	     수동 App Store 서명이라 프로필(production)과 값을 맞춘다 —
+	     개발 서명으로 되돌릴 일이 생기면 development 로 변경. -->
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 </dict>
 </plist>
