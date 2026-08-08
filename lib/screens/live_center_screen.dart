@@ -1169,6 +1169,13 @@ class _MessageExpander extends StatefulWidget {
 
 class _MessageExpanderState extends State<_MessageExpander> {
   bool _expanded = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1221,7 +1228,23 @@ class _MessageExpanderState extends State<_MessageExpander> {
             ),
           ),
         ),
-        if (_expanded) ...widget.rows,
+        if (_expanded)
+          // 세션 내내 메시지가 쌓여 전부 펼치면 카드가 지나치게 길어진다.
+          // 고정 높이 스크롤 영역 안에서 이전 메시지를 훑어볼 수 있게 한다.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 260),
+            child: Scrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.rows,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
