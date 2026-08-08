@@ -95,7 +95,7 @@ class LiveActivityService : Service() {
                     foreground(
                         buildNotification(
                             title = "벨기에 그랑프리",
-                            text = "P1 NOR · 랜도 노리스",
+                            text = "1위 NOR 랜도 노리스 · 42/66랩",
                             chip = "L42/66",
                             currentLap = 42,
                             totalLaps = 66,
@@ -330,12 +330,14 @@ class LiveActivityService : Service() {
             val leaderCode = leader?.optString("code").orEmpty()
             val leaderName = leader?.optString("displayName").orEmpty()
 
+            // 사람들이 가장 궁금해하는 "현재 1위"를 앞세우고, 랩수는 뒤에 함께.
+            val lapPart = if (totalLaps > 0) " · $currentLap/${totalLaps}랩" else ""
             val text =
                 when {
                     leaderCode.isNotBlank() && leaderName.isNotBlank() ->
-                        "P1 $leaderCode · $leaderName"
-                    leaderCode.isNotBlank() -> "P1 $leaderCode"
-                    else -> "레이스 진행 중"
+                        "1위 $leaderCode $leaderName$lapPart"
+                    leaderCode.isNotBlank() -> "1위 $leaderCode$lapPart"
+                    else -> if (totalLaps > 0) "$currentLap/${totalLaps}랩" else "레이스 진행 중"
                 }
             val chip = if (totalLaps > 0) "L$currentLap/$totalLaps" else "LIVE"
 
