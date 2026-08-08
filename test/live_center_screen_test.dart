@@ -54,7 +54,7 @@ void main() {
 
     expect(find.text('라이브 센터'), findsOneWidget);
     expect(find.text('21 / 52'), findsOneWidget);
-    expect(find.text('YELLOW'), findsOneWidget);
+    // 헤더의 트랙 상태는 이제 색 점(_TrackStatusDot)으로만 표시(텍스트 생략).
     expect(find.text('실시간 순위'), findsOneWidget);
 
     // 라이브 보드 탭: LAP(기본) / SECTOR / TIRE.

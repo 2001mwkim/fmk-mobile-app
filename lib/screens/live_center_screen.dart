@@ -331,6 +331,15 @@ class _SessionHeader extends StatelessWidget {
                   children: [
                     Row(
                       children: [
+                        // 트랙 상태는 색 점 하나로 축약해 이름 앞에 둔다(텍스트 생략,
+                        // 색으로만 표시). 스크린리더용 라벨은 Semantics 로 유지.
+                        Semantics(
+                          label: '트랙 상태: $track',
+                          child: _TrackStatusDot(
+                            color: _trackStatusColor(snapshot.trackStatus),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
                         if (race != null) ...[
                           FlagIcon(countryKo: race.countryKo, size: 22),
                           const SizedBox(width: 9),
@@ -397,66 +406,32 @@ class _HeaderMetrics extends StatelessWidget {
             remaining: snapshot.remainingTime!,
             stopped: snapshot.clockStopped || snapshot.isEnded,
           ),
-        const SizedBox(height: 12),
-        _TrackStatusPill(
-          label: track,
-          color: _trackStatusColor(snapshot.trackStatus),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          '트랙 상태',
-          style: TextStyle(
-            color: AppColors.faint,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-          ),
-        ),
       ],
     );
   }
 }
 
-/// 트랙 상태 pill(색 배경 알약 + 점). GREEN/YELLOW/SC 등 상태색으로 한눈에.
-/// 트랙 메시지가 길 수 있어 폭을 제한하고 말줄임한다.
-class _TrackStatusPill extends StatelessWidget {
-  const _TrackStatusPill({required this.label, required this.color});
+/// 트랙 상태를 색 점 하나로 표시(GP명 앞). 색(GREEN/YELLOW/SC…)만으로 상태를
+/// 알리고, 솔리드 코어 + 같은 색 반투명 헤일로로 '상태등'처럼 보이게 한다.
+class _TrackStatusDot extends StatelessWidget {
+  const _TrackStatusDot({required this.color});
 
-  final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: 14,
+      height: 14,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withValues(alpha: 0.22),
+        shape: BoxShape.circle,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 130),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ),
-        ],
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }
