@@ -9,6 +9,7 @@ import '../services/live_session_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/classification_panel_parts.dart';
+import '../widgets/flag_icon.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/app_ui.dart';
 
@@ -285,6 +286,7 @@ class _SessionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final track =
         snapshot.trackStatusMessage ?? _trackStatusLabel(snapshot.trackStatus);
+    final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
     final (statusLabel, statusColor) = switch (snapshot.status) {
       LiveSessionStatus.live => ('LIVE', AppColors.red),
       LiveSessionStatus.ended => ('최종 결과', AppColors.muted),
@@ -316,49 +318,154 @@ class _SessionHeader extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 15),
-          Text(
-            // 피드의 영문 GP명 대신 한글 이름(races.dart 매핑)을 우선 사용.
-            resolveLiveRace(snapshot.raceId, snapshot.raceName)?.nameKo ??
-                snapshot.raceName ??
-                'F1 라이브',
-            style: const TextStyle(
-              color: AppColors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            snapshot.sessionTitleKo,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          // 좌우 분할: 좌측=국기+GP명+세션(아이덴티티), 우측=핵심 라이브 수치.
+          // 메트릭을 오른쪽에 몰아 기존의 넓은 하단 여백을 없앤다.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (snapshot.showLap)
-                _Metric(
-                  label: 'LAP',
-                  value: '${snapshot.currentLap} / ${snapshot.totalLaps}',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (race != null) ...[
+                          FlagIcon(countryKo: race.countryKo, size: 22),
+                          const SizedBox(width: 9),
+                        ],
+                        Expanded(
+                          child: Text(
+                            // 피드 영문명 대신 한글 이름(races.dart 매핑) 우선.
+                            race?.nameKo ?? snapshot.raceName ?? 'F1 라이브',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 20,
+                              height: 1.15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      snapshot.sessionTitleKo,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              if (snapshot.showRemainingTime)
-                _RemainingMetric(
-                  remaining: snapshot.remainingTime!,
-                  stopped: snapshot.clockStopped || snapshot.isEnded,
-                ),
-              _Metric(
-                label: '트랙 상태',
-                value: track,
-                valueColor: _trackStatusColor(snapshot.trackStatus),
               ),
+              const SizedBox(width: 14),
+              _HeaderMetrics(snapshot: snapshot, track: track),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 세션 헤더 우측의 핵심 수치 클러스터(우측 정렬). 레이스/스프린트는 LAP,
+/// 프랙티스/퀄리는 남은 시간을 위에, 트랙 상태를 아래에 둔다.
+class _HeaderMetrics extends StatelessWidget {
+  const _HeaderMetrics({required this.snapshot, required this.track});
+
+  final LiveSessionSnapshot snapshot;
+  final String track;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (snapshot.showLap)
+          _HeaderMetric(
+            label: 'LAP',
+            value: '${snapshot.currentLap} / ${snapshot.totalLaps}',
+          ),
+        if (snapshot.showRemainingTime)
+          _RemainingMetric(
+            remaining: snapshot.remainingTime!,
+            stopped: snapshot.clockStopped || snapshot.isEnded,
+          ),
+        const SizedBox(height: 10),
+        _HeaderMetric(
+          label: '트랙 상태',
+          value: track,
+          valueColor: _trackStatusColor(snapshot.trackStatus),
+          withDot: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 우측 정렬 미니 메트릭(값 위 · 라벨 아래). 트랙 상태는 색 점을 앞에 붙인다.
+class _HeaderMetric extends StatelessWidget {
+  const _HeaderMetric({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.withDot = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool withDot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (withDot) ...[
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: valueColor ?? AppColors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: valueColor ?? AppColors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.faint,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -442,16 +549,16 @@ class _RemainingMetricState extends State<_RemainingMetric> {
 
   @override
   Widget build(BuildContext context) {
-    return _Metric(label: '남은 시간', value: _display());
+    // 헤더 우측 클러스터에 들어가므로 우측 정렬 스타일(_HeaderMetric)로 렌더.
+    return _HeaderMetric(label: '남은 시간', value: _display());
   }
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value, this.valueColor});
+  const _Metric({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -472,8 +579,8 @@ class _Metric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: valueColor ?? AppColors.white,
+            style: const TextStyle(
+              color: AppColors.white,
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
