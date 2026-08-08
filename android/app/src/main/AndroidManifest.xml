@@ -6,6 +6,11 @@
     <!-- 예약 알림: 재부팅 후 재등록(BootReceiver)과 진동에 필요 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 라이브 세션 중 Android 16 Live Update(삼성 One UI Now Bar)를 앱이 꺼져도
+         갱신하기 위한 포그라운드 서비스 + 프로모티드(상시) 알림 권한 -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:label="비아 포뮬러"
@@ -76,6 +81,14 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/fmk_standings_widget_info" />
         </receiver>
+
+        <!-- 라이브 세션 중 Android 16 Live Update(Now Bar)를 앱이 꺼져도 갱신하기
+             위한 포그라운드 서비스. live.json 을 자체 폴링하고, 세션이 라이브
+             레이스/스프린트가 아니게 되면 스스로 종료한다. -->
+        <service
+            android:name=".LiveActivityService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

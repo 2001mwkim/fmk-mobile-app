@@ -18,7 +18,9 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "kr.formulamagazine.fmk"
-    compileSdk = flutter.compileSdkVersion
+    // Android 16 Live Update(Now Bar) API(NotificationCompat.ProgressStyle 등,
+    // androidx.core 1.16)를 쓰기 위해 36 고정. targetSdk 는 Flutter 기본 유지.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../services/live_activity_service.dart';
 import '../services/notification_settings_controller.dart';
 import '../services/notification_service.dart';
 
@@ -30,16 +32,21 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: const [
-            _BackButtonRow(),
-            SizedBox(height: 14),
-            _Header(),
-            SizedBox(height: 20),
-            _Section(title: '알림', child: _NotificationCard()),
-            SizedBox(height: 20),
-            _Section(title: '포뮬러 매거진 코리아', child: _FmkCard()),
-            SizedBox(height: 20),
-            _Section(title: '앱 정보', child: _AppInfoCard()),
+          children: [
+            const _BackButtonRow(),
+            const SizedBox(height: 14),
+            const _Header(),
+            const SizedBox(height: 20),
+            const _Section(title: '알림', child: _NotificationCard()),
+            const SizedBox(height: 20),
+            const _Section(title: '포뮬러 매거진 코리아', child: _FmkCard()),
+            const SizedBox(height: 20),
+            const _Section(title: '앱 정보', child: _AppInfoCard()),
+            // 개발 빌드에서만 노출되는 Now Bar(라이브 액티비티) 데모 검증 도구.
+            if (kDebugMode) ...const [
+              SizedBox(height: 20),
+              _Section(title: '개발자 (디버그)', child: _DebugLiveActivityCard()),
+            ],
           ],
         ),
       ),
@@ -709,4 +716,39 @@ void _showSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
   );
+}
+
+/// 디버그 전용: Now Bar(라이브 액티비티) 렌더링을 실제 라이브 세션 없이 확인.
+/// 프로덕션 빌드에서는 노출되지 않는다(kDebugMode 가드).
+class _DebugLiveActivityCard extends StatelessWidget {
+  const _DebugLiveActivityCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        children: [
+          _DlRow(
+            label: 'Now Bar 데모 시작',
+            value: '켜기',
+            showTopBorder: false,
+            onTap: () async {
+              await LiveActivityBridge.debugStartDemo();
+              if (context.mounted) {
+                _showSnackBar(context, '데모 시작 — 잠금화면/Now Bar를 확인하세요');
+              }
+            },
+          ),
+          _DlRow(
+            label: 'Now Bar 데모 중지',
+            value: '끄기',
+            onTap: () async {
+              await LiveActivityBridge.debugStop();
+              if (context.mounted) _showSnackBar(context, '데모 중지');
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

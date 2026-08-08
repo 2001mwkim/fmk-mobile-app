@@ -8,6 +8,7 @@ import 'package:workmanager/workmanager.dart';
 import 'app.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/fmk_live_activity_bridge.dart';
+import 'services/live_activity_service.dart';
 import 'services/live_session_controller.dart';
 import 'services/notification_settings_controller.dart';
 
@@ -87,6 +88,8 @@ void _bootstrap() {
   FmkHomeWidgetBridge.bindTo(liveSessionController);
   // iOS Live Activity(잠금화면·다이나믹 아일랜드) — 라이브 폴링과 동기화.
   FmkLiveActivityBridge.bindTo(liveSessionController);
+  // 라이브 세션 중 Android Now Bar(Live Update) 서비스를 켜고 끈다(Android 전용).
+  LiveActivityBridge.bindTo(liveSessionController);
   unawaited(
     FmkHomeWidgetBridge.update(snapshot: liveSessionController.snapshot),
   );
