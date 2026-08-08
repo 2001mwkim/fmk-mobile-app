@@ -17,8 +17,15 @@ class LiveActivityBridge {
 
   static const MethodChannel _channel = MethodChannel('fmk/live_activity');
 
-  static final bool _supported =
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  /// Now Bar(Android FGS) 기능 스위치. 현재는 삼성이 서드파티 Live Update 를
+  /// 기본 차단해 실사용자 노출이 안 되고, FGS_DATA_SYNC 권한이 Play 선언(동영상)
+  /// 부담을 유발하므로 릴리스에서 비활성화한다. 삼성 개방/화이트리스트 등재 시
+  /// true 로 되돌리고 AndroidManifest 의 FGS 권한·서비스 선언을 복구하면 된다.
+  static const bool _enabled = false;
+
+  static final bool _supported = _enabled &&
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.android;
 
   /// 중복 start/stop 호출을 막는 현재 활성 상태(앱 프로세스 기준).
   static bool _active = false;
