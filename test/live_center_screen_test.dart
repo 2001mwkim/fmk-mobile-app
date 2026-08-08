@@ -86,7 +86,13 @@ void main() {
     // 'LAP' 텍스트는 헤더 랩 메트릭에도 있어 탭 라벨(뒤쪽)을 지정한다.
     await tester.tap(find.text('LAP').last);
     await tester.pump();
-    await tester.scrollUntilVisible(find.text('YELLOW FLAG IN TURN 3'), 200);
+    // 레이스 컨트롤 박스가 자체 스크롤을 가져 화면에 Scrollable이 여러 개다.
+    // 바깥(메인 리스트)을 명시해 스크롤한다.
+    await tester.scrollUntilVisible(
+      find.text('YELLOW FLAG IN TURN 3'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('YELLOW FLAG IN TURN 3'), findsOneWidget);
   });
 
@@ -225,22 +231,22 @@ void main() {
     // (행에서 한글 이름을 뺐으므로 드라이버 식별은 코드로 확인한다.)
     expect(find.text('D3'), findsOneWidget);
     expect(find.text('D4'), findsNothing);
-    await tester.scrollUntilVisible(find.text('4위 이하 순위 보기'), 200);
+    await tester.scrollUntilVisible(
+      find.text('4위 이하 순위 보기'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('4위 이하 순위 보기'));
     await tester.pump();
     expect(find.text('D4'), findsOneWidget);
     expect(find.text('D6'), findsOneWidget);
 
-    // 레이스 컨트롤: 최신 3개 상시, 이전은 접힘 → 펼치면 보인다.
+    // 레이스 컨트롤: 접기/펴기 없이 전체를 스크롤 영역에 담는다 → 메시지가
+    // 많아도 모두 위젯 트리에 존재(스크롤로 확인). MSG 1~5 모두 렌더된다.
+    expect(find.text('MSG 1'), findsOneWidget);
     expect(find.text('MSG 3'), findsOneWidget);
-    expect(find.text('MSG 4'), findsNothing);
-    await tester.scrollUntilVisible(find.text('이전 메시지 보기'), 200);
-    // 리스트 하단 경계에 걸리면 탭이 빗나가므로 완전히 화면 안으로 끌어온다.
-    await tester.ensureVisible(find.text('이전 메시지 보기'));
-    await tester.pump();
-    await tester.tap(find.text('이전 메시지 보기'));
-    await tester.pump();
-    expect(find.text('MSG 4'), findsOneWidget);
     expect(find.text('MSG 5'), findsOneWidget);
+    // 접기/펴기 토글은 제거됨.
+    expect(find.text('이전 메시지 보기'), findsNothing);
   });
 }

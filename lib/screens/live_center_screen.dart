@@ -1225,13 +1225,27 @@ class _WeatherCard extends StatelessWidget {
   }
 }
 
-class _RaceControlCard extends StatelessWidget {
+class _RaceControlCard extends StatefulWidget {
   const _RaceControlCard({required this.messages});
 
   final List<LiveRaceControlMessage> messages;
 
   @override
+  State<_RaceControlCard> createState() => _RaceControlCardState();
+}
+
+class _RaceControlCardState extends State<_RaceControlCard> {
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final messages = widget.messages;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1250,118 +1264,32 @@ class _RaceControlCard extends StatelessWidget {
               '새로운 레이스 컨트롤 메시지가 없습니다.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             )
-          else ...[
-            // 세션 내내 쌓이는 목록이라 최신 3개만 상시, 이전은 접어둔다.
-            for (final message in messages.take(3))
-              _ControlMessage(message: message),
-            if (messages.length > 3)
-              _MessageExpander(
-                count: messages.length - 3,
-                rows: [
-                  for (final message in messages.skip(3))
-                    _ControlMessage(message: message),
-                ],
+          else
+            // 접기/펴기 없이 전체 메시지를 최신 3개 정도 높이의 스크롤 영역에
+            // 담아 스크롤로 확인한다(메시지가 적으면 그만큼만 차지).
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 186),
+              child: Scrollbar(
+                controller: _controller,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _controller,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final message in messages)
+                        _ControlMessage(message: message),
+                    ],
+                  ),
+                ),
               ),
-          ],
+            ),
         ],
       ),
     );
   }
 }
 
-/// 레이스 컨트롤 "이전 메시지" 접기/펼치기(순위 확장 UI와 같은 시각 언어).
-class _MessageExpander extends StatefulWidget {
-  const _MessageExpander({required this.count, required this.rows});
-
-  final int count;
-  final List<Widget> rows;
-
-  @override
-  State<_MessageExpander> createState() => _MessageExpanderState();
-}
-
-class _MessageExpanderState extends State<_MessageExpander> {
-  bool _expanded = false;
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppColors.rowBorder)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 11),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _expanded ? '메시지 접기' : '이전 메시지 보기',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.redSoft,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!_expanded)
-                      Text(
-                        '+ ${widget.count}개 더',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.muted,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _expanded ? '↑' : '↓',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.redSoft,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_expanded)
-          // 세션 내내 메시지가 쌓여 전부 펼치면 카드가 지나치게 길어진다.
-          // 고정 높이 스크롤 영역 안에서 이전 메시지를 훑어볼 수 있게 한다.
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 260),
-            child: Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: widget.rows,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
 
 class _ControlMessage extends StatelessWidget {
   const _ControlMessage({required this.message});
@@ -1383,12 +1311,13 @@ class _ControlMessage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 4,
-            height: 30,
-            decoration: BoxDecoration(
+          // 카테고리별 아이콘(정보/플래그/세이프티카) + 심각도 색으로 가독성↑.
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(
+              _messageIcon(message),
+              size: 18,
               color: _messageColor(message),
-              borderRadius: BorderRadius.circular(4),
             ),
           ),
           const SizedBox(width: 10),
@@ -1506,6 +1435,29 @@ Color _trackStatusColor(String? value) {
   }
   if (label == 'GREEN') return AppColors.greenSoft;
   return AppColors.white;
+}
+
+/// 레이스 컨트롤 메시지 카테고리 아이콘. 세이프티카/VSC → 자동차, 플래그
+/// 계열 → 깃발(체커기는 스포츠 스코어), 그 외 → 정보. 색은 [_messageColor].
+IconData _messageIcon(LiveRaceControlMessage message) {
+  final text =
+      '${message.flag ?? ''} ${message.category ?? ''} ${message.message}'
+          .toUpperCase();
+  if (text.contains('SAFETY CAR') ||
+      text.contains('VSC') ||
+      text.contains('VIRTUAL SAFETY')) {
+    return Icons.directions_car_filled;
+  }
+  final isFlag = (message.category ?? '').toUpperCase().contains('FLAG') ||
+      message.flag != null ||
+      text.contains('FLAG');
+  if (isFlag) {
+    if (text.contains('CHEQUERED') || text.contains('CHECKERED')) {
+      return Icons.sports_score;
+    }
+    return Icons.flag;
+  }
+  return Icons.info_outline;
 }
 
 Color _messageColor(LiveRaceControlMessage message) {
