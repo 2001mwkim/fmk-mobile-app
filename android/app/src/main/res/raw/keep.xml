@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  알림 아이콘은 Dart 문자열('ic_notification')로만 참조돼 정적 분석에 안 잡힌다.
+  AGP 9 릴리스 리소스 최적화가 미참조로 보고 스트립 → 런타임 invalid_icon 크래시.
+  리소스 셰어링에서 명시적으로 유지시킨다(모든 밀도 변형 포함).
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification"
+    tools:shrinkMode="safe" />
