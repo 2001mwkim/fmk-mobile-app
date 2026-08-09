@@ -875,7 +875,9 @@ const List<Race> races = [
     // 잠정값(현지 UTC+8 → KST +1시간). 세팡 국기 SVG 부재 → 이모지 폴백.
     id: 'bahrain',
     round: 17,
-    nameKo: '바레인 그랑프리 (세팡)',
+    // 표시명은 국기(말레이시아)와 맞춰 직관적으로. 공식 명칭은 '바레인 GP'라
+    // 매칭용 nameEn/id 는 그대로 두고 표시명(nameKo)만 말레이시아로 둔다.
+    nameKo: '말레이시아 그랑프리 (바레인 대체)',
     nameEn: 'Bahrain Grand Prix',
     countryKo: '말레이시아',
     cityKo: '세팡',
