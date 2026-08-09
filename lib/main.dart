@@ -70,8 +70,8 @@ void main() {
     SentryFlutter.init(
       (options) {
         options.dsn = _sentryDsn;
-        // 스택트레이스 심볼화를 위한 릴리스 식별자(빌드마다 갱신).
-        options.release = 'fmk_app@0.1.1+20';
+        // release/dist 는 sentry_flutter 가 패키지 정보(버전·빌드번호)에서 자동
+        // 감지하게 둔다(하드코딩 시 실제 버전과 어긋나 크래시가 오분류됨).
         // 크래시(에러) 수집이 목적이라 성능 트레이싱은 끈다(쿼터/오버헤드 절약).
         options.tracesSampleRate = 0.0;
       },

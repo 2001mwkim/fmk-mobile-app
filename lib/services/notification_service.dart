@@ -207,6 +207,8 @@ class FlutterSessionNotificationScheduler
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
+  // 초기화가 실패(예: 아이콘 리소스 누락)하면 알림 기능을 조용히 비활성화한다.
+  bool _unavailable = false;
 
   static const AndroidNotificationDetails _androidDetails =
       AndroidNotificationDetails(
@@ -223,25 +225,34 @@ class FlutterSessionNotificationScheduler
 
   @override
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (_initialized || _unavailable) return;
 
-    NotificationTimeZones.kst();
-    const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings(androidNotificationIcon),
-      iOS: DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      ),
-    );
+    try {
+      NotificationTimeZones.kst();
+      const initializationSettings = InitializationSettings(
+        android: AndroidInitializationSettings(androidNotificationIcon),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+      );
 
-    await _plugin.initialize(settings: initializationSettings);
-    _initialized = true;
+      await _plugin.initialize(settings: initializationSettings);
+      _initialized = true;
+    } catch (error) {
+      // 아이콘 리소스 누락 등으로 초기화가 실패해도 앱을 죽이지 않는다.
+      // (plugin.initialize 의 PlatformException 이 unawaited 경로에서 fatal 로
+      // 보고되던 문제 방어 — 알림만 조용히 비활성화.)
+      _unavailable = true;
+      debugPrint('알림 초기화 실패 — 알림 비활성화: $error');
+    }
   }
 
   @override
   Future<bool> requestPermission() async {
     await initialize();
+    if (_unavailable) return false;
 
     if (kIsWeb) return true;
 
@@ -275,6 +286,7 @@ class FlutterSessionNotificationScheduler
   @override
   Future<void> cancelNotifications(Iterable<int> ids) async {
     await initialize();
+    if (_unavailable) return;
     for (final id in ids) {
       await _plugin.cancel(id: id);
     }
@@ -285,6 +297,7 @@ class FlutterSessionNotificationScheduler
     List<ScheduledSessionNotification> notifications,
   ) async {
     await initialize();
+    if (_unavailable) return;
     const details = NotificationDetails(
       android: _androidDetails,
       iOS: _darwinDetails,
