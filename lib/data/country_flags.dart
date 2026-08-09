@@ -56,6 +56,7 @@ const Map<String, String> _countryCodeMap = {
   '브라질': 'br',
   '카타르': 'qa',
   '아랍에미리트': 'ae',
+  '말레이시아': 'my', // 세팡(바레인 GP 이전 개최지)
 };
 
 /// countryKo에 해당하는 원형 국기 SVG 에셋 경로. 매핑이 없으면 null(이모지 폴백).
