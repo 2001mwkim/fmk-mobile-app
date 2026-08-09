@@ -6,7 +6,7 @@ void main() {
   testWidgets('bottom tabs, race detail, and settings navigation work', (
     tester,
   ) async {
-    await tester.pumpWidget(const FmkApp());
+    await tester.pumpWidget(const FmkApp(runStartupPrompts: false));
 
     expect(find.text('Via Formula'), findsOneWidget);
     expect(find.text('F1 관련 정보를 내 손안에'), findsOneWidget);
