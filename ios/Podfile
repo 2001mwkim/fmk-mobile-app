@@ -1,6 +1,7 @@
 # 배포 타깃(Runner IPHONEOS_DEPLOYMENT_TARGET)과 일치시킨다.
-# 하한 14.0 은 workmanager_apple podspec 요구(iOS 14+) 때문.
-platform :ios, '14.0'
+# 15.0: App Store 2027년 봄부터 MinimumOSVersion 15 요구(ITMS-90068 예고),
+# 위젯 익스텐션도 15.0 — 앱 본체를 맞춰 통일한다.
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
