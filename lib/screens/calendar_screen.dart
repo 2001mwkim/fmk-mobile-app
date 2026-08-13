@@ -255,7 +255,7 @@ class _ActiveRaceCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'R${race.round}',
+                    race.roundLabel,
                     style: const TextStyle(
                       fontSize: 10,
                       color: AppColors.textEnded,
@@ -335,7 +335,7 @@ class _ActiveRaceCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppChip(label: 'R${race.round}', variant: AppChipVariant.mono),
+            AppChip(label: race.roundLabel, variant: AppChipVariant.mono),
             AppChip(label: status, variant: statusVariant),
           ],
         ),
@@ -490,7 +490,7 @@ class _CompactRaceCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        'R${race.round}',
+                        race.roundLabel,
                         style: const TextStyle(
                           fontSize: 11,
                           fontFamily: 'Pretendard',

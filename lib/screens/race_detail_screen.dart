@@ -100,7 +100,7 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
-                '그랑프리 상세 · R${race.round}',
+                race.isCancelled ? '그랑프리 상세 · 취소됨' : '그랑프리 상세 · R${race.round}',
                 style: const TextStyle(
                   fontSize: 11,
                   color: _muted,
@@ -396,7 +396,13 @@ class _TrackMapPanel extends StatelessWidget {
             Positioned.fill(
               child: SvgCircuitMap(assetPath: _circuitAssetPath(race.id)),
             ),
-            Positioned(left: 14, top: 12, child: _RoundPill(round: race.round)),
+            Positioned(
+              left: 14,
+              top: 12,
+              child: _RoundPill(
+                label: race.isCancelled ? '취소된 그랑프리' : 'ROUND ${race.round}',
+              ),
+            ),
             Positioned(
               right: 14,
               top: 12,
@@ -410,9 +416,9 @@ class _TrackMapPanel extends StatelessWidget {
 }
 
 class _RoundPill extends StatelessWidget {
-  const _RoundPill({required this.round});
+  const _RoundPill({required this.label});
 
-  final int round;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +429,7 @@ class _RoundPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        'ROUND $round',
+        label,
         style: const TextStyle(
           fontSize: 11,
           fontFamily: 'Pretendard',

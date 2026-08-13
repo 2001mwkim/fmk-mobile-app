@@ -43,4 +43,9 @@ class Race {
   final List<RaceSession> sessions;
   final bool isCancelled;
   final String? cancelNote;
+
+  /// 캘린더 행의 라운드 표기. 취소된 그랑프리는 공식 라운드 번호가 없다
+  /// (F1DB 도 미집계 — 취소 GP 가 라운드를 점유하면 이후 전 라운드가
+  /// 공식과 어긋난다). '취소' 상태 칩이 따로 붙으므로 여기선 대시만.
+  String get roundLabel => isCancelled ? '—' : 'R$round';
 }

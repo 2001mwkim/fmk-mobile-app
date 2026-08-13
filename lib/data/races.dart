@@ -182,7 +182,9 @@ const List<Race> races = [
   ),
   Race(
     id: 'saudi-arabia',
-    round: 4,
+    // 취소된 그랑프리는 공식 라운드를 점유하지 않는다(F1DB 미집계).
+    // 0 = 라운드 없음 — 표시는 Race.roundLabel 이 처리한다.
+    round: 0,
     nameKo: '사우디아라비아 그랑프리',
     nameEn: 'Saudi Arabian Grand Prix',
     countryKo: '사우디아라비아',
@@ -198,7 +200,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'miami-2026',
-    round: 5,
+    round: 4,
     nameKo: '마이애미 그랑프리',
     nameEn: 'Miami Grand Prix',
     countryKo: '미국',
@@ -254,7 +256,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'canada-2026',
-    round: 6,
+    round: 5,
     nameKo: '캐나다 그랑프리',
     nameEn: 'Canadian Grand Prix',
     countryKo: '캐나다',
@@ -310,7 +312,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'monaco-2026',
-    round: 7,
+    round: 6,
     nameKo: '모나코 그랑프리',
     nameEn: 'Monaco Grand Prix',
     countryKo: '모나코',
@@ -366,7 +368,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'barcelona-catalunya-2026',
-    round: 8,
+    round: 7,
     nameKo: '바르셀로나-카탈루냐 그랑프리',
     nameEn: 'Barcelona-Catalunya Grand Prix',
     countryKo: '스페인',
@@ -422,7 +424,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'austria-2026',
-    round: 9,
+    round: 8,
     nameKo: '오스트리아 그랑프리',
     nameEn: 'Austrian Grand Prix',
     countryKo: '오스트리아',
@@ -478,7 +480,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'great-britain-2026',
-    round: 10,
+    round: 9,
     nameKo: '영국 그랑프리',
     nameEn: 'British Grand Prix',
     countryKo: '영국',
@@ -534,7 +536,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'belgium-2026',
-    round: 11,
+    round: 10,
     nameKo: '벨기에 그랑프리',
     nameEn: 'Belgian Grand Prix',
     countryKo: '벨기에',
@@ -590,7 +592,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'hungary-2026',
-    round: 12,
+    round: 11,
     nameKo: '헝가리 그랑프리',
     nameEn: 'Hungarian Grand Prix',
     countryKo: '헝가리',
@@ -646,7 +648,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'netherlands-2026',
-    round: 13,
+    round: 12,
     nameKo: '네덜란드 그랑프리',
     nameEn: 'Dutch Grand Prix',
     countryKo: '네덜란드',
@@ -702,7 +704,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'italy-2026',
-    round: 14,
+    round: 13,
     nameKo: '이탈리아 그랑프리',
     nameEn: 'Italian Grand Prix',
     countryKo: '이탈리아',
@@ -758,7 +760,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'spain-2026',
-    round: 15,
+    round: 14,
     nameKo: '스페인 그랑프리',
     nameEn: 'Spanish Grand Prix',
     countryKo: '스페인',
@@ -814,7 +816,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'azerbaijan-2026',
-    round: 16,
+    round: 15,
     nameKo: '아제르바이잔 그랑프리',
     nameEn: 'Azerbaijan Grand Prix',
     countryKo: '아제르바이잔',
@@ -874,7 +876,7 @@ const List<Race> races = [
     // 라운드 17: 아제르바이잔(16)~싱가포르(18) 사이. 레이스 시각은 FIA 확정 전
     // 잠정값(현지 UTC+8 → KST +1시간). 세팡 국기 SVG 부재 → 이모지 폴백.
     id: 'bahrain',
-    round: 17,
+    round: 16,
     // 표시명은 국기(말레이시아)와 맞춰 직관적으로. 공식 명칭은 '바레인 GP'라
     // 매칭용 nameEn/id 는 그대로 두고 표시명(nameKo)만 말레이시아로 둔다.
     nameKo: '말레이시아 그랑프리 (바레인 대체)',
@@ -931,7 +933,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'singapore-2026',
-    round: 18,
+    round: 17,
     nameKo: '싱가포르 그랑프리',
     nameEn: 'Singapore Grand Prix',
     countryKo: '싱가포르',
@@ -987,7 +989,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'united-states-2026',
-    round: 19,
+    round: 18,
     nameKo: '미국 그랑프리',
     nameEn: 'United States Grand Prix',
     countryKo: '미국',
@@ -1043,7 +1045,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'mexico-2026',
-    round: 20,
+    round: 19,
     nameKo: '멕시코시티 그랑프리',
     nameEn: 'Mexico City Grand Prix',
     countryKo: '멕시코',
@@ -1099,7 +1101,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'brazil-2026',
-    round: 21,
+    round: 20,
     nameKo: '상파울루 그랑프리',
     nameEn: 'São Paulo Grand Prix',
     countryKo: '브라질',
@@ -1155,7 +1157,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'las-vegas-2026',
-    round: 22,
+    round: 21,
     nameKo: '라스베이거스 그랑프리',
     nameEn: 'Las Vegas Grand Prix',
     countryKo: '미국',
@@ -1211,7 +1213,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'qatar-2026',
-    round: 23,
+    round: 22,
     nameKo: '카타르 그랑프리',
     nameEn: 'Qatar Grand Prix',
     countryKo: '카타르',
@@ -1267,7 +1269,7 @@ const List<Race> races = [
   ),
   Race(
     id: 'abu-dhabi-2026',
-    round: 24,
+    round: 23,
     nameKo: '아부다비 그랑프리',
     nameEn: 'Abu Dhabi Grand Prix',
     countryKo: '아랍에미리트',
