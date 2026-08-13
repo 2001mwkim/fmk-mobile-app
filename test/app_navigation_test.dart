@@ -88,8 +88,10 @@ void main() {
     expect(find.text('일정 관리'), findsNothing);
     expect(find.text('캘린더에 추가'), findsNothing);
     expect(find.text('알림 설정'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('인스타그램 보러가기'), 200);
-    expect(find.text('인스타그램 보러가기'), findsOneWidget);
+    // 채널 정리: 제휴=이메일, 제보=인스타 DM(별도 인스타 행은 제거됨).
+    await tester.scrollUntilVisible(find.text('오류 제보 / 기능 제안'), 200);
+    expect(find.text('오류 제보 / 기능 제안'), findsOneWidget);
+    expect(find.text('문의는 인스타그램 DM으로 보내주세요'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('F1DB · CC BY 4.0'), 200);
     expect(find.text('F1DB · CC BY 4.0'), findsOneWidget);
     // 설정 최하단 개인정보 처리방침 링크

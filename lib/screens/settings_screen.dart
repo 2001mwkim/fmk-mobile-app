@@ -11,7 +11,6 @@ import '../services/notification_service.dart';
 
 const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
-const String _feedbackSubject = '비아 포뮬러 오류 제보 / 기능 제안';
 const String _f1dbUrl = 'https://github.com/f1db/f1db';
 const String _privacyPolicyUrl = 'https://www.formulamagazine.kr/privacy';
 
@@ -458,13 +457,8 @@ class _FmkCard extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _LinkRow(
-                    title: '인스타그램 보러가기',
-                    chevronColor: AppColors.redSoft,
-                    onTap: () =>
-                        _openExternalUri(context, Uri.parse(_instagramUrl)),
-                  ),
-                  const _RowDivider(),
+                  // 채널을 용도별로 하나씩만 둔다: 제휴=이메일, 제보=인스타 DM.
+                  // (별도 '인스타그램 보러가기' 행은 제보 행이 대신한다.)
                   _LinkRow(
                     title: '제휴 및 문의',
                     subtitle: _contactEmail,
@@ -476,14 +470,9 @@ class _FmkCard extends StatelessWidget {
                   const _RowDivider(),
                   _LinkRow(
                     title: '오류 제보 / 기능 제안',
-                    onTap: () => _openExternalUri(
-                      context,
-                      Uri(
-                        scheme: 'mailto',
-                        path: _contactEmail,
-                        queryParameters: {'subject': _feedbackSubject},
-                      ),
-                    ),
+                    subtitle: '문의는 인스타그램 DM으로 보내주세요',
+                    onTap: () =>
+                        _openExternalUri(context, Uri.parse(_instagramUrl)),
                   ),
                 ],
               ),
@@ -500,12 +489,10 @@ class _LinkRow extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.subtitle,
-    this.chevronColor = _muted,
   });
 
   final String title;
   final String? subtitle;
-  final Color chevronColor;
   final VoidCallback onTap;
 
   @override
@@ -544,7 +531,7 @@ class _LinkRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, size: 18, color: chevronColor),
+              Icon(Icons.chevron_right, size: 18, color: _muted),
             ],
           ),
         ),
