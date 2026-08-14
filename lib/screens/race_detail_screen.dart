@@ -329,7 +329,7 @@ class _HeroCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+                    '${race.circuitKo} · ${race.locationLabel}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: _heroSub,
@@ -783,7 +783,7 @@ class _CircuitInfoCard extends StatelessWidget {
           const _SectionTitle('서킷 정보'),
           const SizedBox(height: 6),
           Text(
-            '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+            '${race.circuitKo} · ${race.locationLabel}',
             style: const TextStyle(fontSize: 12, color: _muted),
           ),
           if (metrics.isNotEmpty) ...[

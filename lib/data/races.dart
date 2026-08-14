@@ -885,6 +885,9 @@ const List<Race> races = [
     startDate: '2026-10-02',
     endDate: '2026-10-04',
     hasSprint: false,
+    // 국가(바레인)와 실제 개최 도시(세팡·말레이시아)가 어긋나므로 위치 줄엔
+    // 도시만 노출한다("세팡, 바레인" 방지).
+    hideCountryInLocation: true,
     status: '예정',
     sessions: [
       RaceSession(

@@ -27,6 +27,7 @@ class Race {
     required this.sessions,
     this.isCancelled = false,
     this.cancelNote,
+    this.hideCountryInLocation = false,
   });
 
   final String id;
@@ -43,6 +44,15 @@ class Race {
   final List<RaceSession> sessions;
   final bool isCancelled;
   final String? cancelNote;
+
+  /// 위치 줄에서 국가 표기를 숨길지 여부. 바레인 GP 처럼 공식 명칭·국기는
+  /// 유지하되 실제 개최지(세팡)만 노출해 "세팡, 바레인" 같은 지리적 모순을
+  /// 피해야 하는 예외 케이스용.
+  final bool hideCountryInLocation;
+
+  /// 위치 줄에 쓰는 "도시[, 국가]" 표기. [hideCountryInLocation] 이면 도시만.
+  String get locationLabel =>
+      hideCountryInLocation ? cityKo : '$cityKo, $countryKo';
 
   /// 캘린더 행의 라운드 표기. 취소된 그랑프리는 공식 라운드 번호가 없다
   /// (F1DB 도 미집계 — 취소 GP 가 라운드를 점유하면 이후 전 라운드가

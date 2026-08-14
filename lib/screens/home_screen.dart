@@ -249,7 +249,7 @@ class _NextRaceCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${race.circuitKo} · ${race.cityKo}, ${race.countryKo}',
+                  '${race.circuitKo} · ${race.locationLabel}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.heroSubText,
