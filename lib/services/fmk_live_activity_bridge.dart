@@ -29,11 +29,9 @@ class FmkLiveActivityBridge {
   static bool get _isIOS =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
-  /// 토큰 등록 엔드포인트: live.json 과 같은 collector origin.
-  static String get _registerUrl {
-    final uri = Uri.parse(kLiveJsonUrl);
-    return uri.replace(path: '/live-activity/register', query: '').toString();
-  }
+  /// 토큰 등록 엔드포인트 — collector(Railway) 직결.
+  /// 폴링 URL(kLiveJsonUrl)은 Vercel 엣지일 수 있어 파생하면 안 된다.
+  static String get _registerUrl => kLiveActivityRegisterUrl;
 
   static void bindTo(LiveSessionController controller) {
     if (_bound || !_isIOS) return;

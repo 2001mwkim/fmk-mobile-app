@@ -25,9 +25,21 @@ const bool _kIsReleaseBuild = bool.fromEnvironment('dart.vm.product');
 
 const String kLiveJsonUrl = String.fromEnvironment(
   'LIVE_JSON_URL',
+  // 릴리스는 Vercel 엣지 캐시(/api/live, s-maxage 5초)를 기본으로 —
+  // 한국 기준 지연 ~500ms(Railway 직결) → ~65ms, 동시 사용자 폴링이
+  // origin(collector)에 몰리지 않는다. 페이로드는 live.json 과 동일.
   defaultValue: _kIsReleaseBuild
-      ? 'https://live-production-c03d.up.railway.app/live.json'
+      ? 'https://www.formulamagazine.kr/api/live'
       : 'http://localhost:8787/live.json',
+);
+
+/// Live Activity 푸시 토큰 등록 endpoint — 폴링 URL 과 달리 collector
+/// (Railway) 직결이어야 한다(Vercel 은 이 경로를 중계하지 않음).
+const String kLiveActivityRegisterUrl = String.fromEnvironment(
+  'LIVE_ACTIVITY_REGISTER_URL',
+  defaultValue: _kIsReleaseBuild
+      ? 'https://live-production-c03d.up.railway.app/live-activity/register'
+      : 'http://localhost:8787/live-activity/register',
 );
 
 /// 요청 타임아웃(폴링 주기보다 짧게).
