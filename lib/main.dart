@@ -12,10 +12,20 @@ import 'services/live_activity_service.dart';
 import 'services/live_session_controller.dart';
 import 'services/notification_settings_controller.dart';
 
-/// 크래시 리포팅 DSN. 릴리스 빌드에 `--dart-define=SENTRY_DSN=...` 로 주입한다.
-/// 비어 있으면 Sentry 를 아예 초기화하지 않아(테스트/로컬/DSN 미설정) 완전한
-/// no-op 이 된다. 값이 있어야만 크래시가 수집된다.
-const String _sentryDsn = String.fromEnvironment('SENTRY_DSN');
+/// 릴리스(AOT product) 빌드 여부 — 릴리스 기본값 상수 선택용.
+const bool _kIsReleaseBuild = bool.fromEnvironment('dart.vm.product');
+
+/// 크래시 리포팅 DSN. 릴리스는 프로덕션 DSN 이 기본값(주입을 잊어도 크래시
+/// 가시성이 꺼지지 않게 — 라이브 URL 과 같은 원칙), debug/profile/테스트는
+/// 빈 값이라 Sentry 를 아예 초기화하지 않는 완전한 no-op 이다.
+/// `--dart-define=SENTRY_DSN=...` 로 언제든 덮어쓸 수 있다.
+/// DSN 은 클라이언트 공개 키라 커밋해도 안전하다.
+const String _sentryDsn = String.fromEnvironment(
+  'SENTRY_DSN',
+  defaultValue: _kIsReleaseBuild
+      ? 'https://8f227640e3c22f90eba314ad044339f1@o4511880011120640.ingest.us.sentry.io/4511880013479936'
+      : '',
+);
 
 /// WorkManager 주기 작업 이름(변경 시 기존 등록과 충돌하지 않게 유지).
 const String _kWidgetRefreshUniqueName = 'fmk-widget-refresh';
