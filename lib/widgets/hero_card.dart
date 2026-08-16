@@ -4,14 +4,11 @@ import '../theme/app_colors.dart';
 
 /// 홈 "다음 그랑프리" 히어로 표면 — 디자인 핸드오프 Home v2.dc.html(1a).
 ///
-/// 웹 원본 스펙:
-///   border-radius 22 / border 1px rgba(242,92,92,0.22)
-///   background linear-gradient(160deg, #221018 0%, #16121C 55%, #121218 100%)
-///   box-shadow 0 12px 36px rgba(226,54,68,0.12)
-///   + 대각선 핀스트라이프(115deg, rgba(242,92,92,0.05), 26px 간격)
-///
-/// 내용은 child 로 받는다. 시안의 텍스처는 아이덴티티 영역에만 깔리지만,
-/// 알파가 낮아 카드 전체에 깔아도 시각 차가 없어 전면 페인트로 단순화.
+/// 웹 원본은 웜(레드-퍼플) 그라데이션 배경(#221018→#16121C→#121218)이었으나,
+/// 나머지 카드(AppCard #141828 쿨 네이비)와 배경 온도가 달라 홈에서 "다른
+/// 디자인의 박스"처럼 튀었다. 배경은 공용 카드와 동일한 네이비로 통일하고,
+/// 위계·브랜드 강조는 레드 테두리(rgba(242,92,92,0.22))만으로 준다
+/// ("강조는 액센트로, 바탕은 공유"). 테두리 원본 스펙은 border 1px 유지.
 class HeroCard extends StatelessWidget {
   const HeroCard({
     super.key,
@@ -32,7 +29,9 @@ class HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.heroGradBottom,
+        // 공용 카드(AppCard)와 동일한 네이비로 통일 — 아래 레드 테두리만이
+        // 히어로를 구분하는 액센트가 된다.
+        color: AppColors.card,
         borderRadius: _radius,
       ),
       // 테두리는 내용 위에 그려 모서리에서 가려지지 않게 한다.
