@@ -69,14 +69,14 @@ void main() {
         ),
       );
 
-      expect(find.text('챔피언십 TOP 3'), findsOneWidget);
+      expect(find.text('챔피언십 순위'), findsOneWidget);
       expect(find.text('드라이버A'), findsOneWidget);
       expect(find.text('드라이버B'), findsOneWidget);
       expect(find.text('드라이버C'), findsOneWidget);
       expect(find.text('표시 안 됨'), findsNothing);
-      expect(find.text('▲2'), findsOneWidget);
-      expect(find.text('▼1'), findsOneWidget);
-      expect(find.text('—'), findsOneWidget);
+      // 홈 미니 카드는 변동(▲/▼) 없이 순위·팀컬러·포인트만 보여준다
+      // (변동 표시는 순위 탭 담당 — 나란히 2열 리디자인에서 제거됨).
+      expect(find.text('▲2'), findsNothing);
       expect(find.text('180.5'), findsOneWidget);
     });
 
@@ -86,7 +86,7 @@ void main() {
         HomeStandingsCard(repository: _FakeStandingsRepo(null)),
       );
 
-      expect(find.text('챔피언십 TOP 3'), findsOneWidget);
+      expect(find.text('챔피언십 순위'), findsOneWidget);
       // 정적 데이터 선두(순위 탭과 같은 출처).
       expect(find.text('키미 안토넬리'), findsOneWidget);
     });
@@ -101,7 +101,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('챔피언십 TOP 3'));
+      await tester.tap(find.text('챔피언십 순위'));
       expect(opened, isTrue);
     });
   });
