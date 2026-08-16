@@ -7,8 +7,10 @@ import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import 'app_card.dart';
 
-/// 홈 "챔피언십 TOP 3" 미니 카드. 순위 탭과 같은 데이터(정적 초기값 →
-/// 서버 갱신)를 3행만 보여주고, 탭하면 순위 탭으로 이동한다.
+/// 홈 "챔피언십 순위" 미니 카드. 순위 탭과 같은 데이터(정적 초기값 →
+/// 서버 갱신)를 드라이버·컨스트럭터 Top 3 씩 두 열로 보여주고, 탭하면
+/// 순위 탭으로 이동한다. 홈은 공간이 좁아 순위 변동(▲▼)은 생략한다
+/// (전체 변동은 순위 탭에서 확인).
 class HomeStandingsCard extends StatefulWidget {
   const HomeStandingsCard({super.key, this.repository, this.onOpenStandings});
 
@@ -23,7 +25,11 @@ class HomeStandingsCard extends StatefulWidget {
 }
 
 class _HomeStandingsCardState extends State<HomeStandingsCard> {
+  // 첫 프레임은 번들 정적 순위로 그리고(로딩 화면 없음), 서버 응답이 오면
+  // 최신 순위로 교체한다. 서버 실패 시 정적 데이터가 그대로 남는다.
   List<DriverStanding> _drivers = static_standings.driverStandings;
+  List<ConstructorStanding> _constructors =
+      static_standings.constructorStandings;
 
   @override
   void initState() {
@@ -35,13 +41,19 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
     final repository = widget.repository ?? const HttpStandingsRepository();
     final snapshot = await repository.fetchLatest();
     if (snapshot == null || !mounted) return;
-    setState(() => _drivers = snapshot.driverStandings);
+    setState(() {
+      _drivers = snapshot.driverStandings;
+      _constructors = snapshot.constructorStandings;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final top3 = _drivers.take(3).toList();
-    if (top3.isEmpty) return const SizedBox.shrink();
+    final drivers = _drivers.take(3).toList();
+    final constructors = _constructors.take(3).toList();
+    if (drivers.isEmpty && constructors.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -49,7 +61,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
         behavior: HitTestBehavior.opaque,
         onTap: widget.onOpenStandings,
         child: AppCard(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -57,7 +69,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
                 children: [
                   const Expanded(
                     child: Text(
-                      '챔피언십 TOP 3',
+                      '챔피언십 순위',
                       style: TextStyle(
                         color: AppColors.white,
                         fontSize: 16,
@@ -66,7 +78,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
                     ),
                   ),
                   const Text(
-                    '전체 순위',
+                    '전체 보기',
                     style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 11,
@@ -81,8 +93,41 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              for (final driver in top3) _DriverRow(driver: driver),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _StandingsColumn(
+                      label: '드라이버',
+                      rows: [
+                        for (final d in drivers)
+                          _RowData(
+                            position: d.position,
+                            teamKo: d.teamKo,
+                            title: d.driverKo,
+                            points: d.points,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: _StandingsColumn(
+                      label: '컨스트럭터',
+                      rows: [
+                        for (final c in constructors)
+                          _RowData(
+                            position: c.position,
+                            teamKo: c.teamKo,
+                            title: c.teamKo,
+                            points: c.points,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -91,46 +136,61 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
   }
 }
 
-class _DriverRow extends StatelessWidget {
-  const _DriverRow({required this.driver});
+class _StandingsColumn extends StatelessWidget {
+  const _StandingsColumn({required this.label, required this.rows});
 
-  final DriverStanding driver;
+  final String label;
+  final List<_RowData> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final row in rows) _StandingRow(data: row),
+      ],
+    );
+  }
+}
+
+class _StandingRow extends StatelessWidget {
+  const _StandingRow({required this.data});
+
+  final _RowData data;
 
   @override
   Widget build(BuildContext context) {
     final teamColor = getTeamColor(
-      driver.teamKo,
-    ).withValues(alpha: isLightTeamColor(driver.teamKo) ? 0.7 : 1.0);
+      data.teamKo,
+    ).withValues(alpha: isLightTeamColor(data.teamKo) ? 0.7 : 1.0);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          SizedBox(
-            width: 18,
-            child: Text(
-              '${driver.position}',
-              style: TextStyle(
-                color: driver.position == 1
-                    ? AppColors.redSoft
-                    : AppColors.slate300,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
+          _RankBadge(position: data.position),
+          const SizedBox(width: 8),
           Container(
             width: 3,
-            height: 22,
+            height: 20,
             decoration: BoxDecoration(
               color: teamColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              driver.driverKo,
+              data.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -140,26 +200,13 @@ class _DriverRow extends StatelessWidget {
               ),
             ),
           ),
-          _PositionChange(change: driver.positionChange),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           Text(
-            _formatPoints(driver.points),
+            _formatPoints(data.points),
             style: const TextStyle(
-              color: AppColors.white,
+              color: AppColors.slate300,
               fontSize: 13,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 3),
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Text(
-              'PTS',
-              style: TextStyle(
-                color: AppColors.textEnded,
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-              ),
             ),
           ),
         ],
@@ -168,35 +215,68 @@ class _DriverRow extends StatelessWidget {
   }
 }
 
-/// 순위 탭과 같은 표기: ▲초록/▼레드/0은 —, null(정적 폴백)은 미표시.
-class _PositionChange extends StatelessWidget {
-  const _PositionChange({required this.change});
+class _RankBadge extends StatelessWidget {
+  const _RankBadge({required this.position});
 
-  final int? change;
+  final int position;
 
   @override
   Widget build(BuildContext context) {
-    final value = change;
-    if (value == null) return const SizedBox.shrink();
+    final spec = _rankColor(position);
 
-    final isUp = value > 0;
-    final isDown = value < 0;
-    return Text(
-      isUp
-          ? '▲$value'
-          : isDown
-          ? '▼${value.abs()}'
-          : '—',
-      style: TextStyle(
-        fontSize: 10,
-        color: isUp
-            ? AppColors.greenSoft
-            : isDown
-            ? AppColors.redSoft
-            : AppColors.muted,
-        fontWeight: FontWeight.w800,
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: spec.background, shape: BoxShape.circle),
+      child: Text(
+        '$position',
+        style: TextStyle(
+          fontSize: 11,
+          fontFamily: 'Pretendard',
+          color: spec.foreground,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
+  }
+}
+
+class _RowData {
+  const _RowData({
+    required this.position,
+    required this.teamKo,
+    required this.title,
+    required this.points,
+  });
+
+  final int position;
+  final String teamKo;
+  final String title;
+  final num points;
+}
+
+// 웹 getRankColor. P1은 노란색 대신 레드 톤 사용(앱 규칙상 노란색 금지).
+// 순위 탭(standings_screen)의 배지와 동일 사양으로 유지한다.
+({Color background, Color foreground}) _rankColor(int position) {
+  switch (position) {
+    case 1:
+      return (
+        background: const Color(0x26EF4444),
+        foreground: AppColors.redSoft,
+      );
+    case 2:
+      return (
+        background: const Color(0x2694A3B8), // slate-400/15
+        foreground: AppColors.slate300,
+      );
+    case 3:
+      return (
+        background: const Color(0x26F97316), // orange-500/15
+        foreground: const Color(0xFFFB923C), // orange-400
+      );
+    default:
+      return (background: AppColors.rowBorder, foreground: AppColors.muted);
   }
 }
 
