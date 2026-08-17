@@ -23,7 +23,6 @@ const Color _heroSub = AppColors.heroSub; // #8088a8
 const Color _nameMuted = AppColors.nameMuted; // #aab0cc
 const Color _tileSurface = AppColors.tileSurface; // #0e1018
 const Color _faintBorder = AppColors.faintBorder; // white/6
-const Color _hairline = AppColors.hairline; // white/8
 
 class RaceDetailScreen extends StatefulWidget {
   const RaceDetailScreen({
@@ -84,7 +83,6 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
   Widget build(BuildContext context) {
     final status = getRaceDisplayStatus(race);
     final circuitInfo = getCircuitInfo(race.id);
-    final raceSession = _raceSessionOf(race);
     // 종료(취소 제외) 그랑프리면 결과 노출 (결과 없으면 placeholder).
     final showResultCard =
         getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
@@ -129,10 +127,6 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
                 const _RaceResultsPlaceholderCard()
               else
                 RaceResultClassificationPanel(results: results),
-            ],
-            if (raceSession != null) ...[
-              const SizedBox(height: 12),
-              _RaceStartCard(session: raceSession),
             ],
             const SizedBox(height: 12),
             _SessionScheduleCard(race: race),
@@ -457,73 +451,6 @@ class _Flag extends StatelessWidget {
   }
 }
 
-class _RaceStartCard extends StatelessWidget {
-  const _RaceStartCard({required this.session});
-
-  final RaceSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  '레이스 · 한국시간 기준',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _muted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  '레이스 시작',
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                session.date,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontFamily: 'Pretendard',
-                  color: _muted,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                session.time,
-                style: const TextStyle(
-                  fontSize: 27,
-                  fontFamily: 'Pretendard',
-                  height: 1,
-                  color: AppColors.redSoft,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SessionScheduleCard extends StatelessWidget {
   const _SessionScheduleCard({required this.race});
 
@@ -537,7 +464,7 @@ class _SessionScheduleCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionTitle('세션 일정'),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           if (race.sessions.isEmpty)
             Text(
               race.cancelNote ?? '세션 일정이 없습니다.',
@@ -546,16 +473,19 @@ class _SessionScheduleCard extends StatelessWidget {
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
             )
           else
-            _SessionTimeline(race: race),
+            _SessionScheduleList(race: race),
         ],
       ),
     );
   }
 }
 
-// 웹 RaceSessionTimeline: 날짜별 그룹 + 좌측 수직선 + 상태별 도트/박스.
-class _SessionTimeline extends StatelessWidget {
-  const _SessionTimeline({required this.race});
+// 세션 일정: 서킷 정보 박스와 같은 구조(tileSurface 박스 + 뮤트 라벨 +
+// 화이트 값)로 앱 언어에 맞춘다. 하루(금/토/일)를 뮤트 날짜 라벨로 구분하고
+// 그 아래 세션 행(명칭 좌 · 시간 우)을 나열한다. 세션 명칭·시간은 데이터
+// 그대로(24h KST). 레드는 라이브 세션에만(앱 액센트 규칙), 종료는 흐리게.
+class _SessionScheduleList extends StatelessWidget {
+  const _SessionScheduleList({required this.race});
 
   final Race race;
 
@@ -563,7 +493,7 @@ class _SessionTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
 
-    // 날짜별 그룹화(데이터 순서 유지).
+    // 날짜(=하루)별 그룹화 — 데이터 순서(금→토→일) 유지.
     final groups = <_SessionGroup>[];
     for (final session in race.sessions) {
       if (groups.isNotEmpty && groups.last.date == session.date) {
@@ -573,25 +503,14 @@ class _SessionTimeline extends StatelessWidget {
       }
     }
 
-    final rows = <Widget>[];
-    for (final group in groups) {
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.only(left: 24 + 12, bottom: 10),
-          child: Text(
-            group.date,
-            style: const TextStyle(
-              fontSize: 11,
-              fontFamily: 'Pretendard',
-              color: _muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      );
-      for (final session in group.sessions) {
-        rows.add(
-          _SessionTimelineRow(
+    final children = <Widget>[];
+    for (var g = 0; g < groups.length; g++) {
+      if (g > 0) children.add(const SizedBox(height: 12));
+      children.add(_DayLabel(date: groups[g].date));
+      children.add(const SizedBox(height: 2));
+      for (final session in groups[g].sessions) {
+        children.add(
+          _SessionRow(
             status: getSessionStatus(race, session, now),
             session: session,
           ),
@@ -599,23 +518,49 @@ class _SessionTimeline extends StatelessWidget {
       }
     }
 
-    return Stack(
-      children: [
-        // 수직 타임라인 라인(좌측 24px 칼럼 중앙).
-        Positioned(
-          left: 11,
-          top: 4,
-          bottom: 12,
-          child: Container(width: 2, color: _hairline),
-        ),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 }
 
-class _SessionTimelineRow extends StatelessWidget {
-  const _SessionTimelineRow({required this.status, required this.session});
+class _DayLabel extends StatelessWidget {
+  const _DayLabel({required this.date});
+
+  // date 포맷은 "8.21 금" — "8.21 (금)" 으로 표기한다.
+  final String date;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = date.split(' ');
+    final dateText = parts.isNotEmpty ? parts.first : date;
+    final dowText = parts.length > 1 ? parts[1] : '';
+    final label = dowText.isEmpty ? dateText : '$dateText ($dowText)';
+
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 12,
+        fontFamily: 'Pretendard',
+        color: _muted,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+}
+
+class _SessionRow extends StatelessWidget {
+  const _SessionRow({required this.status, required this.session});
 
   final SessionStatus status;
   final RaceSession session;
@@ -624,129 +569,42 @@ class _SessionTimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLive = status == SessionStatus.live;
     final isEnded = status == SessionStatus.ended;
-    // 강조는 진행중(라이브) 세션에만 적용한다. 레이스를 상시 강조하면
-    // 다음/진행중 세션 강조와 겹쳐 혼란스럽다.
-    final emphasize = isLive;
+    final color = isLive ? AppColors.redSoft : AppColors.white;
 
-    final labelStyle = TextStyle(
-      fontSize: emphasize ? 15 : 14,
-      color: emphasize ? AppColors.redSoft : _nameMuted,
-      fontWeight: emphasize ? FontWeight.w900 : FontWeight.w600,
-    );
-    final timeStyle = TextStyle(
-      fontSize: emphasize ? 17 : 15,
-      fontFamily: 'Pretendard',
-      color: emphasize ? AppColors.redSoft : _nameMuted,
-      fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
-    );
-
-    Widget box = Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: isLive
-          ? BoxDecoration(
-              color: const Color(0x14EF4444), // red-500/8
-              border: Border.all(color: const Color(0x4DEF4444)), // /30
-              borderRadius: BorderRadius.circular(12),
-            )
-          : null,
+    Widget row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    session.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: labelStyle,
-                  ),
-                ),
-                if (isEnded) ...[
-                  const SizedBox(width: 8),
-                  const Text(
-                    '종료',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: _muted,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
+            child: Text(
+              session.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: color,
+                fontWeight: isLive ? FontWeight.w800 : FontWeight.w600,
+              ),
             ),
           ),
-          const SizedBox(width: 10),
-          Text(session.time, style: timeStyle),
+          const SizedBox(width: 12),
+          Text(
+            session.time,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Pretendard',
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
 
     if (isEnded) {
-      box = Opacity(opacity: 0.45, child: box);
+      row = Opacity(opacity: 0.4, child: row);
     }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 24,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 13),
-            child: Center(child: _TimelineDot(status: status)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: box),
-      ],
-    );
-  }
-}
-
-class _TimelineDot extends StatelessWidget {
-  const _TimelineDot({required this.status});
-
-  final SessionStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final isLive = status == SessionStatus.live;
-    final isEnded = status == SessionStatus.ended;
-
-    if (isLive) {
-      return Container(
-        width: 13,
-        height: 13,
-        decoration: const BoxDecoration(
-          color: AppColors.red,
-          shape: BoxShape.circle,
-        ),
-      );
-    }
-    if (isEnded) {
-      return Container(
-        width: 11,
-        height: 11,
-        decoration: const BoxDecoration(
-          color: AppColors.textEnded,
-          shape: BoxShape.circle,
-        ),
-      );
-    }
-    // upcoming: 빈 도트.
-    return Container(
-      width: 11,
-      height: 11,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0x33FFFFFF),
-          width: 2,
-        ), // white/20
-      ),
-    );
+    return row;
   }
 }
 
@@ -787,12 +645,12 @@ class _CircuitInfoCard extends StatelessWidget {
             style: const TextStyle(fontSize: 12, color: _muted),
           ),
           if (metrics.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _MetricGrid(metrics: metrics),
+            const SizedBox(height: 12),
+            _CompactMetrics(metrics: metrics),
           ],
-          const SizedBox(height: 14),
-          const Divider(height: 1, color: _faintBorder),
           const SizedBox(height: 12),
+          const Divider(height: 1, color: _faintBorder),
+          const SizedBox(height: 10),
           const Text(
             'Circuit layouts: F1DB (CC BY 4.0)',
             style: TextStyle(
@@ -807,39 +665,83 @@ class _CircuitInfoCard extends StatelessWidget {
   }
 }
 
-// 웹 grid-cols-2 gap-2.5 재현 (2열 그리드).
-class _MetricGrid extends StatelessWidget {
-  const _MetricGrid({required this.metrics});
+// 서킷 지표를 하나의 조밀한 3열 그리드로 묶는다(기존엔 지표마다 테두리
+// 타일이라 세로로 길었다). 값(위)·라벨(아래)만 남겨 높이를 압축한다.
+class _CompactMetrics extends StatelessWidget {
+  const _CompactMetrics({required this.metrics});
 
   final List<_MetricData> metrics;
+
+  static const int _cols = 3;
 
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[];
-    for (var i = 0; i < metrics.length; i += 2) {
-      final left = metrics[i];
-      final right = i + 1 < metrics.length ? metrics[i + 1] : null;
-      if (rows.isNotEmpty) rows.add(const SizedBox(height: 10));
-      rows.add(
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: _MetricTile(label: left.label, value: left.value),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: right == null
-                    ? const SizedBox.shrink()
-                    : _MetricTile(label: right.label, value: right.value),
-              ),
-            ],
+    for (var i = 0; i < metrics.length; i += _cols) {
+      final cells = <Widget>[];
+      for (var c = 0; c < _cols; c++) {
+        final idx = i + c;
+        if (c > 0) cells.add(const SizedBox(width: 12));
+        cells.add(
+          Expanded(
+            child: idx < metrics.length
+                ? _CompactMetric(data: metrics[idx])
+                : const SizedBox.shrink(),
           ),
-        ),
+        );
+      }
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 14));
+      rows.add(
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: cells),
       );
     }
-    return Column(children: rows);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(children: rows),
+    );
+  }
+}
+
+class _CompactMetric extends StatelessWidget {
+  const _CompactMetric({required this.data});
+
+  final _MetricData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          data.value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontFamily: 'Pretendard',
+            color: AppColors.white,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          data.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: _muted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -930,60 +832,11 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: _muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 19,
-              fontFamily: 'Pretendard',
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MetricData {
   const _MetricData(this.label, this.value);
 
   final String label;
   final String value;
-}
-
-RaceSession? _raceSessionOf(Race race) {
-  for (final session in race.sessions) {
-    if (session.id == 'race') return session;
-  }
-  return null;
 }
 
 String _circuitAssetPath(String raceId) => 'assets/circuits/$raceId.svg';

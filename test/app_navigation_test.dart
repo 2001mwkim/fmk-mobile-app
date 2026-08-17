@@ -45,8 +45,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('일정으로'), findsOneWidget);
     expect(find.text('레이스 결과'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('레이스 시작'), 200);
-    expect(find.text('레이스 시작'), findsOneWidget);
+    // '레이스 시작' 박스는 제거됨(세션 일정 카드가 동일 정보를 담음).
     await tester.scrollUntilVisible(find.text('세션 일정'), 200);
     expect(find.text('세션 일정'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('서킷 정보'), 200);
