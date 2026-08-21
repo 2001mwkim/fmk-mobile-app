@@ -11,45 +11,73 @@ const String kstTimeZoneName = 'Asia/Seoul';
 const int notificationGrandPrixWindow = 3;
 const String androidNotificationIcon = 'ic_notification';
 
-class NotificationPreferences {
-  const NotificationPreferences({
-    this.allSessions30m = false,
-    this.raceOnly30m = false,
-  });
+/// 알림을 켤 수 있는 세션 묶음. 연습(FP1~3) / 퀄리파잉 / 스프린트(스프린트
+/// 퀄리파잉·스프린트) / 레이스로 나눈다. 사용자가 종류별로 따로 켤 수 있다.
+enum SessionCategory { practice, qualifying, sprint, race }
 
-  final bool allSessions30m;
-  final bool raceOnly30m;
-
-  bool get hasAnyEnabled => allSessions30m || raceOnly30m;
-
-  NotificationPreferences copyWith({bool? allSessions30m, bool? raceOnly30m}) {
-    return NotificationPreferences(
-      allSessions30m: allSessions30m ?? this.allSessions30m,
-      raceOnly30m: raceOnly30m ?? this.raceOnly30m,
-    );
+/// 세션 id → 카테고리. 매핑 없는 id 는 null(알림 대상 아님).
+/// 세션 id 는 races.dart 데이터에서 온다(fp1/fp2/fp3/qualifying/
+/// sprint_qualifying/sprint/race).
+SessionCategory? sessionCategoryOf(String sessionId) {
+  switch (sessionId) {
+    case 'fp1':
+    case 'fp2':
+    case 'fp3':
+      return SessionCategory.practice;
+    case 'qualifying':
+      return SessionCategory.qualifying;
+    case 'sprint':
+    case 'sprint_qualifying':
+      return SessionCategory.sprint;
+    case 'race':
+      return SessionCategory.race;
+    default:
+      return null;
   }
 }
 
-enum ScheduledNotificationKind { allSession, raceOnly }
+class NotificationPreferences {
+  const NotificationPreferences({
+    this.categories = const <SessionCategory>{},
+  });
+
+  /// 알림을 켠 세션 카테고리 집합.
+  final Set<SessionCategory> categories;
+
+  bool get hasAnyEnabled => categories.isNotEmpty;
+
+  bool contains(SessionCategory category) => categories.contains(category);
+
+  /// [category] 를 켜거나(추가) 끈(제거) 새 설정을 만든다.
+  NotificationPreferences withCategory(SessionCategory category, bool enabled) {
+    final next = Set<SessionCategory>.of(categories);
+    if (enabled) {
+      next.add(category);
+    } else {
+      next.remove(category);
+    }
+    return NotificationPreferences(categories: next);
+  }
+}
 
 class ScheduledSessionNotification {
   const ScheduledSessionNotification({
     required this.id,
     required this.raceId,
     required this.sessionId,
+    required this.category,
     required this.title,
     required this.body,
     required this.scheduledAt,
-    required this.kind,
   });
 
   final int id;
   final String raceId;
   final String sessionId;
+  final SessionCategory category;
   final String title;
   final String body;
   final tz.TZDateTime scheduledAt;
-  final ScheduledNotificationKind kind;
 }
 
 class SessionNotificationPlanner {
@@ -119,10 +147,8 @@ class SessionNotificationPlanner {
 
     for (var index = 0; index < race.sessions.length; index++) {
       final session = race.sessions[index];
-      final shouldSchedule = preferences.allSessions30m
-          ? true
-          : preferences.raceOnly30m && session.id == 'race';
-      if (!shouldSchedule) continue;
+      final category = sessionCategoryOf(session.id);
+      if (category == null || !preferences.contains(category)) continue;
 
       final sessionStart = _sessionStartAt(race, session);
       if (sessionStart == null) continue;
@@ -130,16 +156,13 @@ class SessionNotificationPlanner {
       final reminderAt = sessionStart.subtract(sessionNotificationLeadTime);
       if (!reminderAt.isAfter(nowKst)) continue;
 
-      final kind = preferences.allSessions30m
-          ? ScheduledNotificationKind.allSession
-          : ScheduledNotificationKind.raceOnly;
-
       notifications.add(
         ScheduledSessionNotification(
           id: notificationIdFor(race, index),
           raceId: race.id,
           sessionId: session.id,
-          title: kind == ScheduledNotificationKind.raceOnly
+          category: category,
+          title: category == SessionCategory.race
               ? '비아 포뮬러 레이스 알림'
               : '비아 포뮬러 세션 알림',
           // 비정확 알람으로 폴백되거나 기기 정책으로 표시가 늦어져도
@@ -148,7 +171,6 @@ class SessionNotificationPlanner {
               '${race.nameKo} ${session.label} 시작: '
               '${_formatSessionStart(sessionStart)}',
           scheduledAt: reminderAt,
-          kind: kind,
         ),
       );
     }

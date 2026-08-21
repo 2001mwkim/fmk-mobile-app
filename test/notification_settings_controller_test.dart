@@ -7,27 +7,84 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Notification settings store', () {
-    test('defaults to all notifications off', () async {
+    test('defaults to all categories off', () async {
       SharedPreferences.setMockInitialValues({});
       const store = SharedPreferencesNotificationSettingsStore();
 
       final preferences = await store.load();
 
-      expect(preferences.allSessions30m, isFalse);
-      expect(preferences.raceOnly30m, isFalse);
+      expect(preferences.hasAnyEnabled, isFalse);
     });
 
-    test('saves and loads notification settings', () async {
+    test('saves and loads selected categories', () async {
       SharedPreferences.setMockInitialValues({});
       const store = SharedPreferencesNotificationSettingsStore();
 
       await store.save(
-        const NotificationPreferences(allSessions30m: true, raceOnly30m: true),
+        const NotificationPreferences(
+          categories: {SessionCategory.qualifying, SessionCategory.race},
+        ),
       );
       final preferences = await store.load();
 
-      expect(preferences.allSessions30m, isTrue);
-      expect(preferences.raceOnly30m, isTrue);
+      expect(preferences.contains(SessionCategory.qualifying), isTrue);
+      expect(preferences.contains(SessionCategory.race), isTrue);
+      expect(preferences.contains(SessionCategory.practice), isFalse);
+      expect(preferences.contains(SessionCategory.sprint), isFalse);
+    });
+
+    test('migrates legacy "all sessions" flag to every category', () async {
+      SharedPreferences.setMockInitialValues({
+        'notification_all_sessions_30m': true,
+      });
+      const store = SharedPreferencesNotificationSettingsStore();
+
+      final preferences = await store.load();
+
+      expect(preferences.categories, SessionCategory.values.toSet());
+    });
+
+    test('migrates legacy "race only" flag to race category', () async {
+      SharedPreferences.setMockInitialValues({
+        'notification_race_only_30m': true,
+      });
+      const store = SharedPreferencesNotificationSettingsStore();
+
+      final preferences = await store.load();
+
+      expect(preferences.categories, {SessionCategory.race});
+    });
+
+    test('new keys take precedence over legacy keys and clear them', () async {
+      SharedPreferences.setMockInitialValues({
+        // 레거시 켜짐 + 신형 레이스만 켜짐 → 신형 우선.
+        'notification_all_sessions_30m': true,
+        'notification_cat_race': true,
+        'notification_cat_practice': false,
+      });
+      const store = SharedPreferencesNotificationSettingsStore();
+
+      final loaded = await store.load();
+      expect(loaded.categories, {SessionCategory.race});
+
+      // 저장하면 레거시 키가 제거된다.
+      await store.save(loaded);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('notification_all_sessions_30m'), isFalse);
+      expect(prefs.containsKey('notification_race_only_30m'), isFalse);
+    });
+  });
+
+  group('sessionCategoryOf', () {
+    test('maps session ids to categories', () {
+      expect(sessionCategoryOf('fp1'), SessionCategory.practice);
+      expect(sessionCategoryOf('fp2'), SessionCategory.practice);
+      expect(sessionCategoryOf('fp3'), SessionCategory.practice);
+      expect(sessionCategoryOf('qualifying'), SessionCategory.qualifying);
+      expect(sessionCategoryOf('sprint_qualifying'), SessionCategory.sprint);
+      expect(sessionCategoryOf('sprint'), SessionCategory.sprint);
+      expect(sessionCategoryOf('race'), SessionCategory.race);
+      expect(sessionCategoryOf('unknown'), isNull);
     });
   });
 
@@ -35,10 +92,12 @@ void main() {
     final planner = SessionNotificationPlanner();
     final now = DateTime.utc(2026, 6, 30);
 
-    test('schedules every future session when all sessions is on', () {
+    test('schedules every future session when all categories are on', () {
       final notifications = planner.buildSchedule(
         races: [_futureRace()],
-        preferences: const NotificationPreferences(allSessions30m: true),
+        preferences: NotificationPreferences(
+          categories: SessionCategory.values.toSet(),
+        ),
         now: now,
       );
 
@@ -47,50 +106,68 @@ void main() {
         notifications.map((n) => n.sessionId),
         containsAll(['fp1', 'fp2', 'fp3', 'qualifying', 'race']),
       );
-      expect(
-        notifications.every(
-          (n) => n.kind == ScheduledNotificationKind.allSession,
-        ),
-        isTrue,
-      );
       expect(notifications.first.body, contains('7월 1일 10:00 (KST)'));
       expect(notifications.first.body, isNot(contains('30분 뒤')));
     });
 
-    test('schedules only race session when race only is on', () {
+    test('schedules only race session when only race category is on', () {
       final notifications = planner.buildSchedule(
         races: [_futureRace()],
-        preferences: const NotificationPreferences(raceOnly30m: true),
+        preferences: const NotificationPreferences(
+          categories: {SessionCategory.race},
+        ),
         now: now,
       );
 
       expect(notifications, hasLength(1));
       expect(notifications.single.sessionId, 'race');
+      expect(notifications.single.category, SessionCategory.race);
       expect(notifications.single.title, '비아 포뮬러 레이스 알림');
     });
 
-    test('does not duplicate race when both options are on', () {
+    test('schedules only practice sessions when only practice is on', () {
       final notifications = planner.buildSchedule(
         races: [_futureRace()],
         preferences: const NotificationPreferences(
-          allSessions30m: true,
-          raceOnly30m: true,
+          categories: {SessionCategory.practice},
         ),
         now: now,
       );
 
-      expect(notifications, hasLength(5));
-      expect(notifications.where((n) => n.sessionId == 'race'), hasLength(1));
+      expect(notifications.map((n) => n.sessionId), ['fp1', 'fp2', 'fp3']);
       expect(
-        notifications.singleWhere((n) => n.sessionId == 'race').kind,
-        ScheduledNotificationKind.allSession,
+        notifications.every((n) => n.category == SessionCategory.practice),
+        isTrue,
       );
+      expect(
+        notifications.every((n) => n.title == '비아 포뮬러 세션 알림'),
+        isTrue,
+      );
+    });
+
+    test('combines selected categories (practice + race)', () {
+      final notifications = planner.buildSchedule(
+        races: [_futureRace()],
+        preferences: const NotificationPreferences(
+          categories: {SessionCategory.practice, SessionCategory.race},
+        ),
+        now: now,
+      );
+
+      expect(notifications.map((n) => n.sessionId), [
+        'fp1',
+        'fp2',
+        'fp3',
+        'race',
+      ]);
     });
 
     test('excludes sessions whose reminder time has passed', () {
       final notifications = planner.buildSchedule(
         races: [_partlyPastRace()],
-        preferences: const NotificationPreferences(allSessions30m: true),
+        preferences: NotificationPreferences(
+          categories: SessionCategory.values.toSet(),
+        ),
         now: now,
       );
 
@@ -100,19 +177,23 @@ void main() {
     test('excludes cancelled races', () {
       final notifications = planner.buildSchedule(
         races: [_futureRace(isCancelled: true)],
-        preferences: const NotificationPreferences(allSessions30m: true),
+        preferences: NotificationPreferences(
+          categories: SessionCategory.values.toSet(),
+        ),
         now: now,
       );
 
       expect(notifications, isEmpty);
     });
 
-    test('limits all session notifications to next three grand prix', () {
+    test('limits notifications to next three grand prix', () {
       final races = _futureRaceWindow();
 
       final notifications = planner.buildSchedule(
         races: races,
-        preferences: const NotificationPreferences(allSessions30m: true),
+        preferences: NotificationPreferences(
+          categories: SessionCategory.values.toSet(),
+        ),
         now: now,
       );
 
@@ -125,12 +206,14 @@ void main() {
       expect(notifications.any((n) => n.raceId == 'test-4-2026'), isFalse);
     });
 
-    test('limits race only notifications to next three grand prix', () {
+    test('limits race-only notifications to next three grand prix', () {
       final races = _futureRaceWindow();
 
       final notifications = planner.buildSchedule(
         races: races,
-        preferences: const NotificationPreferences(raceOnly30m: true),
+        preferences: const NotificationPreferences(
+          categories: {SessionCategory.race},
+        ),
         now: now,
       );
 
@@ -142,37 +225,10 @@ void main() {
         'test-3-2026',
       });
     });
-
-    test('limits both toggles to next three grand prix without duplicates', () {
-      final races = _futureRaceWindow();
-
-      final notifications = planner.buildSchedule(
-        races: races,
-        preferences: const NotificationPreferences(
-          allSessions30m: true,
-          raceOnly30m: true,
-        ),
-        now: now,
-      );
-
-      expect(notifications, hasLength(15));
-      expect(notifications.where((n) => n.sessionId == 'race'), hasLength(3));
-      expect(
-        notifications.every(
-          (n) => n.kind == ScheduledNotificationKind.allSession,
-        ),
-        isTrue,
-      );
-      expect(notifications.map((n) => n.raceId).toSet(), {
-        'test-1-2026',
-        'test-2-2026',
-        'test-3-2026',
-      });
-    });
   });
 
   group('NotificationSettingsController', () {
-    test('updates and schedules all session notifications', () async {
+    test('enabling a category schedules its sessions', () async {
       final store = _MemoryNotificationSettingsStore();
       final scheduler = _FakeScheduler();
       final controller = NotificationSettingsController(
@@ -182,15 +238,66 @@ void main() {
         now: () => DateTime.utc(2026, 6, 30),
       );
 
-      final result = await controller.update(allSessions30m: true);
+      final result = await controller.update(
+        category: SessionCategory.race,
+        enabled: true,
+      );
 
-      expect(result.preferences.allSessions30m, isTrue);
-      expect(result.scheduledCount, 5);
-      expect(scheduler.scheduled.map((n) => n.sessionId), hasLength(5));
+      expect(result.preferences.contains(SessionCategory.race), isTrue);
+      expect(result.scheduledCount, 1);
+      expect(scheduler.scheduled.single.sessionId, 'race');
       expect(scheduler.cancelledIds, isNotEmpty);
     });
 
-    test('permission denial turns toggles back off', () async {
+    test('categories accumulate across updates', () async {
+      final store = _MemoryNotificationSettingsStore();
+      final scheduler = _FakeScheduler();
+      final controller = NotificationSettingsController(
+        store: store,
+        scheduler: scheduler,
+        races: [_futureRace()],
+        now: () => DateTime.utc(2026, 6, 30),
+      );
+
+      await controller.update(category: SessionCategory.race, enabled: true);
+      final result = await controller.update(
+        category: SessionCategory.qualifying,
+        enabled: true,
+      );
+
+      expect(result.preferences.categories, {
+        SessionCategory.race,
+        SessionCategory.qualifying,
+      });
+      expect(
+        scheduler.scheduled.map((n) => n.sessionId),
+        containsAll(['qualifying', 'race']),
+      );
+    });
+
+    test('disabling a category reschedules the rest', () async {
+      final store = _MemoryNotificationSettingsStore()
+        ..preferences = const NotificationPreferences(
+          categories: {SessionCategory.practice, SessionCategory.race},
+        );
+      final scheduler = _FakeScheduler();
+      final controller = NotificationSettingsController(
+        store: store,
+        scheduler: scheduler,
+        races: [_futureRace()],
+        now: () => DateTime.utc(2026, 6, 30),
+      );
+
+      final result = await controller.update(
+        category: SessionCategory.practice,
+        enabled: false,
+      );
+
+      expect(result.preferences.categories, {SessionCategory.race});
+      expect(scheduler.scheduled.map((n) => n.sessionId), ['race']);
+    });
+
+    test('permission denial turns every category off', () async {
       final store = _MemoryNotificationSettingsStore();
       final scheduler = _FakeScheduler(permissionGranted: false);
       final controller = NotificationSettingsController(
@@ -200,14 +307,15 @@ void main() {
         now: () => DateTime.utc(2026, 6, 30),
       );
 
-      final result = await controller.update(raceOnly30m: true);
+      final result = await controller.update(
+        category: SessionCategory.race,
+        enabled: true,
+      );
       final saved = await store.load();
 
       expect(result.permissionDenied, isTrue);
-      expect(result.preferences.allSessions30m, isFalse);
-      expect(result.preferences.raceOnly30m, isFalse);
-      expect(saved.allSessions30m, isFalse);
-      expect(saved.raceOnly30m, isFalse);
+      expect(result.preferences.hasAnyEnabled, isFalse);
+      expect(saved.hasAnyEnabled, isFalse);
       expect(scheduler.scheduled, isEmpty);
       expect(scheduler.cancelledIds, isNotEmpty);
     });

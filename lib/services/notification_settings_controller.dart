@@ -4,8 +4,13 @@ import '../data/races.dart' as race_data;
 import '../models/race.dart';
 import 'notification_service.dart';
 
-const String _allSessionsKey = 'notification_all_sessions_30m';
-const String _raceOnlyKey = 'notification_race_only_30m';
+// 신형: 카테고리별 on/off 키(notification_cat_<name>).
+String _categoryKey(SessionCategory category) =>
+    'notification_cat_${category.name}';
+
+// 레거시: 전체/레이스만 2개 불리언(구버전에서 저장된 값 마이그레이션용).
+const String _legacyAllSessionsKey = 'notification_all_sessions_30m';
+const String _legacyRaceOnlyKey = 'notification_race_only_30m';
 
 abstract class NotificationSettingsStore {
   Future<NotificationPreferences> load();
@@ -19,17 +24,47 @@ class SharedPreferencesNotificationSettingsStore
   @override
   Future<NotificationPreferences> load() async {
     final prefs = await SharedPreferences.getInstance();
-    return NotificationPreferences(
-      allSessions30m: prefs.getBool(_allSessionsKey) ?? false,
-      raceOnly30m: prefs.getBool(_raceOnlyKey) ?? false,
+
+    // 신형 키가 하나라도 있으면 신형으로 로드.
+    final hasNew = SessionCategory.values.any(
+      (category) => prefs.containsKey(_categoryKey(category)),
     );
+    if (hasNew) {
+      final categories = <SessionCategory>{
+        for (final category in SessionCategory.values)
+          if (prefs.getBool(_categoryKey(category)) ?? false) category,
+      };
+      return NotificationPreferences(categories: categories);
+    }
+
+    // 레거시(전체/레이스만) → 카테고리로 1회 마이그레이션.
+    final legacyAll = prefs.getBool(_legacyAllSessionsKey) ?? false;
+    final legacyRaceOnly = prefs.getBool(_legacyRaceOnlyKey) ?? false;
+    if (legacyAll) {
+      return NotificationPreferences(
+        categories: SessionCategory.values.toSet(),
+      );
+    }
+    if (legacyRaceOnly) {
+      return const NotificationPreferences(
+        categories: {SessionCategory.race},
+      );
+    }
+    return const NotificationPreferences();
   }
 
   @override
   Future<void> save(NotificationPreferences preferences) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_allSessionsKey, preferences.allSessions30m);
-    await prefs.setBool(_raceOnlyKey, preferences.raceOnly30m);
+    for (final category in SessionCategory.values) {
+      await prefs.setBool(
+        _categoryKey(category),
+        preferences.contains(category),
+      );
+    }
+    // 혼선 방지를 위해 레거시 키는 제거한다.
+    await prefs.remove(_legacyAllSessionsKey);
+    await prefs.remove(_legacyRaceOnlyKey);
   }
 }
 
@@ -67,16 +102,14 @@ class NotificationSettingsController {
   Future<NotificationPreferences> load() => _store.load();
 
   Future<NotificationSettingsUpdateResult> update({
-    bool? allSessions30m,
-    bool? raceOnly30m,
+    required SessionCategory category,
+    required bool enabled,
   }) async {
     final current = await _store.load();
-    final next = current.copyWith(
-      allSessions30m: allSessions30m,
-      raceOnly30m: raceOnly30m,
-    );
+    final next = current.withCategory(category, enabled);
 
-    if (next.hasAnyEnabled) {
+    // 켤 때만 권한을 확인한다(끄기만 할 땐 불필요). 거부되면 전부 끈다.
+    if (enabled) {
       final granted = await _scheduler.requestPermission();
       if (!granted) {
         const disabled = NotificationPreferences();

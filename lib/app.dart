@@ -8,6 +8,7 @@ import 'screens/home_screen.dart';
 import 'screens/live_center_screen.dart';
 import 'screens/standings_screen.dart';
 import 'services/fmk_home_widget_bridge.dart';
+import 'services/notification_service.dart';
 import 'services/notification_settings_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
@@ -124,7 +125,8 @@ class _MainShellState extends State<MainShell> {
       if (wantsOn != true || !mounted) return;
 
       final result = await notificationSettingsController.update(
-        raceOnly30m: true,
+        category: SessionCategory.race,
+        enabled: true,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

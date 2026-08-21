@@ -176,15 +176,15 @@ class _NotificationCardState extends State<_NotificationCard> {
     });
   }
 
-  Future<void> _update({bool? allSessions30m, bool? raceOnly30m}) async {
+  Future<void> _update(SessionCategory category, bool enabled) async {
     if (_saving) return;
     setState(() => _saving = true);
 
     NotificationSettingsUpdateResult result;
     try {
       result = await notificationSettingsController.update(
-        allSessions30m: allSessions30m,
-        raceOnly30m: raceOnly30m,
+        category: category,
+        enabled: enabled,
       );
     } catch (_) {
       if (!mounted) return;
@@ -226,26 +226,35 @@ class _NotificationCardState extends State<_NotificationCard> {
             ),
             const _RowDivider(),
             _NotificationToggleRow(
-              title: '전체 세션 30분 전 알림',
-              description: 'FP1, FP2, FP3, 스프린트, 퀄리파잉, 레이스 전에 알림',
-              value: _preferences.allSessions30m,
+              title: '프랙티스',
+              description: 'FP1, FP2, FP3 시작 30분 전에 알림',
+              value: _preferences.contains(SessionCategory.practice),
               enabled: !_loading && !_saving,
-              onChanged: (value) => _update(allSessions30m: value),
+              onChanged: (value) => _update(SessionCategory.practice, value),
             ),
             const _RowDivider(),
             _NotificationToggleRow(
-              title: '레이스 30분 전 알림',
-              description: '레이스 세션만 시작 30분 전에 알림',
-              value: _preferences.raceOnly30m,
+              title: '퀄리파잉',
+              description: '퀄리파잉 시작 30분 전에 알림',
+              value: _preferences.contains(SessionCategory.qualifying),
               enabled: !_loading && !_saving,
-              onChanged: (value) => _update(raceOnly30m: value),
+              onChanged: (value) => _update(SessionCategory.qualifying, value),
             ),
             const _RowDivider(),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 12, 18, 16),
-              child: _InsetNote(
-                '두 옵션을 모두 켜면 전체 세션 알림 기준으로만 예약되어 레이스 알림은 중복되지 않습니다.',
-              ),
+            _NotificationToggleRow(
+              title: '스프린트',
+              description: '스프린트 퀄리파잉·스프린트 시작 30분 전에 알림',
+              value: _preferences.contains(SessionCategory.sprint),
+              enabled: !_loading && !_saving,
+              onChanged: (value) => _update(SessionCategory.sprint, value),
+            ),
+            const _RowDivider(),
+            _NotificationToggleRow(
+              title: '레이스',
+              description: '레이스 시작 30분 전에 알림',
+              value: _preferences.contains(SessionCategory.race),
+              enabled: !_loading && !_saving,
+              onChanged: (value) => _update(SessionCategory.race, value),
             ),
           ],
         ),
@@ -359,33 +368,6 @@ class _CardHeaderRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _InsetNote extends StatelessWidget {
-  const _InsetNote(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: _muted,
-          height: 1.45,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
     );
   }
 }
