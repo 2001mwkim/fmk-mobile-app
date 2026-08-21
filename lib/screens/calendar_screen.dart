@@ -4,6 +4,7 @@ import '../widgets/flag_icon.dart';
 import '../data/races.dart';
 import '../models/race.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/app_ui.dart';
@@ -94,7 +95,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: AppLayout.pagePadding(context),
           children: children,
         ),
       ),

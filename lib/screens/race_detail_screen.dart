@@ -10,6 +10,7 @@ import '../models/race_result.dart';
 import '../models/race_session.dart';
 import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/circuit_map.dart';
@@ -91,7 +92,7 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: AppLayout.pagePadding(context),
           children: [
             const _DetailBackButton(),
             const SizedBox(height: 14),

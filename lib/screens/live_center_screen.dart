@@ -7,6 +7,7 @@ import '../models/live_session.dart';
 import '../models/race_session.dart';
 import '../services/live_session_controller.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/classification_panel_parts.dart';
 import '../widgets/flag_icon.dart';
@@ -33,7 +34,7 @@ class LiveCenterScreen extends StatelessWidget {
               onRefresh: liveSessionController.refresh,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                padding: AppLayout.pagePadding(context, top: 14, bottom: 28),
                 children: [
                   const AppPageHeader(
                     title: '라이브 센터',

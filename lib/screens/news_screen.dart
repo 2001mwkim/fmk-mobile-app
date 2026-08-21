@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/news_item.dart';
 import '../services/news_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 
 /// 소식 탭 — AI 가 정리한 해외 F1 주요 소식(한국어 브리핑) 화면.
@@ -41,7 +42,7 @@ class _NewsScreenState extends State<NewsScreen> {
             final now = widget.nowOverride ?? DateTime.now();
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: AppLayout.pagePadding(context),
               children: [
                 const _NewsHeader(),
                 const SizedBox(height: 14),

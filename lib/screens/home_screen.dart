@@ -10,6 +10,7 @@ import '../models/race.dart';
 import '../models/race_session.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/flag_icon.dart';
 import '../widgets/hero_card.dart';
@@ -92,7 +93,7 @@ class _SeasonHomeContent extends StatelessWidget {
 
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+        padding: AppLayout.pagePadding(context, top: 10),
         children: [
           const AppPageHeader(
             title: 'Via Formula',

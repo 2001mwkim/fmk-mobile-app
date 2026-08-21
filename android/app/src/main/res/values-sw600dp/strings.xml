@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 태블릿은 가로 회전 허용. fullUser = 사용자의 회전 잠금 설정을 존중하는
+         전 방향(본문은 AppLayout.maxContentWidth 로 가운데 정렬된다). -->
+    <string name="fmk_screen_orientation" translatable="false">fullUser</string>
+</resources>
