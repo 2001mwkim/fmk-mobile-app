@@ -92,6 +92,10 @@ class FmkLiveActivityBridge {
     String name(int index) => index < drivers.length
         ? driverNameKo(drivers[index].code, drivers[index].displayName.trim())
         : '';
+    // 다이나믹 아일랜드 콤팩트 trailing 용 TLA(한글 이름은 폭 부족으로 잘림).
+    String code(int index) => index < drivers.length
+        ? drivers[index].code.trim().toUpperCase()
+        : '';
     String time(int index) => index < drivers.length
         ? drivers[index].time(raceLike: raceLike).trim()
         : '';
@@ -107,6 +111,7 @@ class FmkLiveActivityBridge {
       'lapCurrent': raceLike ? (snapshot.currentLap ?? 0) : 0,
       'lapTotal': raceLike ? (snapshot.totalLaps ?? 0) : 0,
       'p1Name': name(0), 'p1Time': time(0),
+      'p1Code': code(0),
       'p2Name': name(1), 'p2Time': time(1),
       'p3Name': name(2), 'p3Time': time(2),
       'updatedAt': '${two(kst.hour)}:${two(kst.minute)}',

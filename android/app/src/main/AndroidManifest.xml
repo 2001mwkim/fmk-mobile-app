@@ -25,7 +25,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
+            android:screenOrientation="@string/fmk_screen_orientation"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -85,6 +85,30 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/fmk_standings_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".FmkMyDriverWidgetProvider"
+            android:exported="true"
+            android:label="비아 포뮬러 MY DRIVER">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/fmk_my_driver_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".FmkMyTeamWidgetProvider"
+            android:exported="true"
+            android:label="비아 포뮬러 MY TEAM">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/fmk_my_team_widget_info" />
         </receiver>
 
         <!-- Now Bar 포그라운드 서비스(LiveActivityService)는 이번 릴리스에서

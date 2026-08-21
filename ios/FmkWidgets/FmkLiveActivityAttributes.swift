@@ -22,6 +22,11 @@ import Foundation
       var lapTotal: Int
       var p1Name: String
       var p1Time: String
+      // P1 TLA(예: "VER") — 다이나믹 아일랜드 콤팩트 trailing 전용. 한글 이름은
+      // 콤팩트 폭(~40pt)에 3자도 간신히 들어가서 잘리므로 영문 3자 코드를 쓴다.
+      // 옵셔널인 이유: 이 필드를 모르는 구버전 collector 푸시가 와도 디코딩
+      // 실패로 업데이트가 통째로 버려지지 않게 하기 위함(없으면 p1Name 폴백).
+      var p1Code: String?
       var p2Name: String
       var p2Time: String
       var p3Name: String

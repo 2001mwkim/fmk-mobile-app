@@ -154,8 +154,9 @@ class _WidgetPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 위젯이 4종이라 작은 화면/가로에서 시트 높이를 넘을 수 있다 → 스크롤.
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -185,6 +186,24 @@ class _WidgetPickerSheet extends StatelessWidget {
               onTap: () => Navigator.of(
                 context,
               ).pop(fmkStandingsWidgetProviderQualifiedName),
+            ),
+            const SizedBox(height: 8),
+            _WidgetOptionTile(
+              icon: Icons.person_outline,
+              title: 'MY DRIVER 위젯',
+              subtitle: '내 드라이버의 순위·포인트 (설정 > MY PICKS)',
+              onTap: () => Navigator.of(
+                context,
+              ).pop(fmkMyDriverWidgetProviderQualifiedName),
+            ),
+            const SizedBox(height: 8),
+            _WidgetOptionTile(
+              icon: Icons.groups_outlined,
+              title: 'MY TEAM 위젯',
+              subtitle: '내 팀의 순위·포인트와 소속 드라이버',
+              onTap: () => Navigator.of(
+                context,
+              ).pop(fmkMyTeamWidgetProviderQualifiedName),
             ),
           ],
         ),

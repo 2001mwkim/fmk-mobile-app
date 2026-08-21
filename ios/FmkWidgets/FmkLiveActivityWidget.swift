@@ -51,18 +51,31 @@ import WidgetKit
             .fmkIslandScheme()
           }
         } compactLeading: {
-          Circle()
-            .fill(FmkTheme.red)
-            .frame(width: 8, height: 8)
+          // 콤팩트 왼쪽: 빨간 점 + 세션 약어(FP2/Q/SQ/SPR) 또는 현재 랩(L23).
+          // 콤팩트 영역은 좌우 합쳐 ~90pt 라 한글은 넣지 않는다(영문 ≤4자).
+          HStack(spacing: 4) {
+            Circle()
+              .fill(FmkTheme.red)
+              .frame(width: 7, height: 7)
+            Text(context.state.compactLeadingText)
+              .font(.system(size: 11, weight: .heavy))
+              .foregroundColor(FmkTheme.white)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+          }
+          .fmkIslandScheme()
         } compactTrailing: {
-          // 콤팩트: P1 이름(성만 잘릴 수 있어 최소 축약) 또는 랩.
-          Text(
-            context.state.lapTotal > 0
-              ? "L\(context.state.lapCurrent)"
-              : String(context.state.p1Name.prefix(4))
-          )
-          .font(.system(size: 12, weight: .heavy))
-          .foregroundColor(FmkTheme.white)
+          // 콤팩트 오른쪽: "P1" + 선두 드라이버 TLA(예: P1 VER).
+          HStack(spacing: 3) {
+            Text("P1")
+              .font(.system(size: 10, weight: .heavy))
+              .foregroundColor(FmkTheme.red)
+            Text(context.state.compactP1Code)
+              .font(.system(size: 12, weight: .heavy))
+              .foregroundColor(FmkTheme.white)
+          }
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
           .fmkIslandScheme()
         } minimal: {
           Circle()
@@ -153,6 +166,38 @@ import WidgetKit
         .padding(.horizontal, 7)
         .padding(.vertical, 2.5)
         .background(Capsule().fill(FmkTheme.red))
+    }
+  }
+  // 다이나믹 아일랜드 콤팩트 표시용 파생 문자열.
+  @available(iOS 16.1, *)
+  extension FmkLiveActivityAttributes.ContentState {
+    /// 레이스/스프린트는 현재 랩(L23), 그 외에는 세션 약어.
+    var compactLeadingText: String {
+      if lapTotal > 0 { return "L\(lapCurrent)" }
+      return FmkLiveActivityAttributes.ContentState.sessionAbbrev(sessionName)
+    }
+
+    /// P1 TLA. 구버전 페이로드(p1Code 없음)면 이름 앞 3자를 대문자로 — 영문
+    /// 이름이면 그럭저럭, 한글이면 최소한 잘림 없이 3자만 보인다.
+    var compactP1Code: String {
+      let code = (p1Code ?? "").trimmingCharacters(in: .whitespaces)
+      if !code.isEmpty { return code.uppercased() }
+      return String(p1Name.prefix(3)).uppercased()
+    }
+
+    /// 한글 세션명(liveSessionLabelKo 출력) → 영문 약어. 콤팩트 폭 제약으로
+    /// 4자 이하. 매핑 안 되면 원문 앞 4자.
+    static func sessionAbbrev(_ name: String) -> String {
+      let n = name.trimmingCharacters(in: .whitespaces)
+      if n.contains("스프린트") && n.contains("퀄리") { return "SQ" }
+      if n.contains("스프린트") { return "SPR" }
+      if n.contains("퀄리") { return "Q" }
+      if n.contains("프랙티스") {
+        if let digit = n.first(where: { $0.isNumber }) { return "FP\(digit)" }
+        return "FP"
+      }
+      if n.contains("레이스") { return "RACE" }
+      return String(n.prefix(4))
     }
   }
 #endif

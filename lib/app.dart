@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/live_center_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/standings_screen.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/notification_service.dart';
@@ -169,8 +170,17 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _handleWidgetUri(Uri? uri) {
+    if (!mounted) return;
+    // MY DRIVER/MY TEAM 위젯 탭 → 설정(MY PICKS 섹션). 미설정 위젯의
+    // "앱에서 설정" 안내가 한 번의 탭으로 선택기까지 닿게 한다.
+    if (fmkWidgetOpensMyPicks(uri)) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+      );
+      return;
+    }
     final index = fmkWidgetTabIndexForUri(uri);
-    if (index == null || !mounted) return;
+    if (index == null) return;
     setState(() => _currentIndex = index);
   }
 

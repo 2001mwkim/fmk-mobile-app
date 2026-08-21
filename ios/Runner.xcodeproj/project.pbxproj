@@ -26,6 +26,7 @@
 		B5A444B5AB3A33895BEF2815 /* FmkLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A342FE814119DABD649F52B9 /* FmkLiveActivityAttributes.swift */; };
 		B7659B5939270BBFB107985A /* FmkLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03954A667D70AA7B8A1111AF /* FmkLiveActivityWidget.swift */; };
 		D885757DC622B06D7E8F0CC0 /* FmkStandingsWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */; };
+		5A1C0DE5C0FFEE0000A1B2C4 /* FmkMyPicksWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */; };
 		E712FF1BE135B00500986529 /* FmkWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F699FCD8E09592F0FCDB26E5 /* FmkWidgetsBundle.swift */; };
 		EC4A8FEDA7C7D201DF75856E /* FmkHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2E39432F7400F52EBE0B61 /* FmkHomeWidget.swift */; };
 		F20F35F2B015ED58CE53AA83 /* FmkWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3AAB328F776A344CFE4644DC /* FmkWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -91,6 +92,7 @@
 		4D280CC824B75B9265654C4F /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		5C7B9C44462DAF232BF6D4A7 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkStandingsWidgets.swift; sourceTree = "<group>"; };
+		5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkMyPicksWidgets.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		74F8C60FADEE1F451931A676 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 				8AC0364784948240C608E90E /* FmkLive.swift */,
 				3C2E39432F7400F52EBE0B61 /* FmkHomeWidget.swift */,
 				7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */,
+				5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */,
 				74F8C60FADEE1F451931A676 /* Info.plist */,
 				4369F349FDD225E88671462C /* FmkWidgets.entitlements */,
 				A342FE814119DABD649F52B9 /* FmkLiveActivityAttributes.swift */,
@@ -518,6 +521,7 @@
 				F5BB7D5F30BC644206537049 /* FmkLive.swift in Sources */,
 				EC4A8FEDA7C7D201DF75856E /* FmkHomeWidget.swift in Sources */,
 				D885757DC622B06D7E8F0CC0 /* FmkStandingsWidgets.swift in Sources */,
+				5A1C0DE5C0FFEE0000A1B2C4 /* FmkMyPicksWidgets.swift in Sources */,
 				3FA1E4C40B20C23F33374D90 /* FmkLiveActivityAttributes.swift in Sources */,
 				B7659B5939270BBFB107985A /* FmkLiveActivityWidget.swift in Sources */,
 			);

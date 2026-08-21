@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../widgets/my_picks_card.dart';
 import '../services/live_activity_service.dart';
 import '../services/notification_settings_controller.dart';
 import '../services/notification_service.dart';
@@ -30,13 +32,17 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: AppLayout.pagePadding(context),
           children: [
             const _BackButtonRow(),
             const SizedBox(height: 14),
             const _Header(),
             const SizedBox(height: 20),
             const _Section(title: '알림', child: _NotificationCard()),
+            const SizedBox(height: 20),
+            // MY PICKS — 홈 위젯(MY DRIVER/MY TEAM)의 선택 진입점. 위젯 딥링크
+            // fmkwidget://mypicks 가 이 화면을 연다(app.dart).
+            const _Section(title: 'MY PICKS', child: MyPicksCard()),
             const SizedBox(height: 20),
             const _Section(title: '포뮬러 매거진 코리아', child: _FmkCard()),
             const SizedBox(height: 20),

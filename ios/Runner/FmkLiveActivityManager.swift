@@ -64,6 +64,7 @@ class FmkLiveActivityManager: NSObject {
       lapCurrent: num("lapCurrent"),
       lapTotal: num("lapTotal"),
       p1Name: str("p1Name"), p1Time: str("p1Time"),
+      p1Code: str("p1Code").isEmpty ? nil : str("p1Code"),
       p2Name: str("p2Name"), p2Time: str("p2Time"),
       p3Name: str("p3Name"), p3Time: str("p3Time"),
       updatedAt: str("updatedAt")

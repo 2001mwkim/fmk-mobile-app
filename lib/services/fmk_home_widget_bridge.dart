@@ -9,12 +9,14 @@ import '../data/drivers.dart';
 import '../data/races.dart';
 import '../data/standings.dart' as static_standings;
 import '../data/team_colors.dart';
+import '../data/teams.dart';
 import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../models/standing.dart';
 import 'live_session_controller.dart';
 import 'live_session_service.dart';
+import 'my_picks_controller.dart';
 import 'race_results_repository.dart';
 import 'standings_repository.dart';
 
@@ -25,6 +27,12 @@ const String fmkHomeWidgetProviderQualifiedName =
 const String fmkStandingsWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
 
+/// MY DRIVER / MY TEAM 위젯(각각 별도 위젯 종류)의 Provider.
+const String fmkMyDriverWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkMyDriverWidgetProvider';
+const String fmkMyTeamWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkMyTeamWidgetProvider';
+
 /// iOS App Group — Runner/FmkWidgets 익스텐션 entitlements 와 문자열로
 /// 수동 동기화(ios/Runner/Runner.entitlements, ios/FmkWidgets/*.entitlements).
 const String fmkWidgetAppGroupId = 'group.kr.formulamagazine.fmk';
@@ -34,6 +42,8 @@ const String fmkWidgetAppGroupId = 'group.kr.formulamagazine.fmk';
 const String fmkHomeWidgetIOSKind = 'FmkHomeWidget';
 const String fmkDriverStandingsWidgetIOSKind = 'FmkDriverStandingsWidget';
 const String fmkTeamStandingsWidgetIOSKind = 'FmkTeamStandingsWidget';
+const String fmkMyDriverWidgetIOSKind = 'FmkMyDriverWidget';
+const String fmkMyTeamWidgetIOSKind = 'FmkMyTeamWidget';
 
 /// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
 /// 인덱스는 app.dart 의 MainShell._screens / BottomNav._items 순서와 1:1
@@ -47,6 +57,12 @@ int? fmkWidgetTabIndexForUri(Uri? uri) {
     _ => null,
   };
 }
+
+/// MY DRIVER/MY TEAM 위젯 탭(fmkwidget://mypicks) — 탭 전환이 아니라 설정
+/// 화면(MY PICKS 섹션)을 연다. 미설정 상태의 위젯이 "앱에서 설정" 안내를
+/// 띄우므로, 탭 한 번에 선택기까지 닿아야 한다.
+bool fmkWidgetOpensMyPicks(Uri? uri) =>
+    uri != null && uri.scheme == 'fmkwidget' && uri.host == 'mypicks';
 
 const String _modeDefault = 'default';
 const String _modeLive = 'live';
@@ -230,6 +246,7 @@ class FmkHomeWidgetBridge {
       await _ensureAppGroup();
       await _savePayload(payload);
       await _saveStandingsPayload(_standings);
+      await _saveMyPicksPayload(_standings);
       if (_isIOS) await _saveIOSExtras();
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
@@ -242,6 +259,14 @@ class FmkHomeWidgetBridge {
       if (_isIOS) {
         await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
       }
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
+        iOSName: fmkMyDriverWidgetIOSKind,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
+        iOSName: fmkMyTeamWidgetIOSKind,
+      );
     } catch (error, stackTrace) {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -457,6 +482,295 @@ class FmkHomeWidgetBridge {
     writeRows('stTeam', teams);
     await Future.wait(writes);
   }
+
+  /// MY DRIVER / MY TEAM 위젯 데이터(myDriver*/myTeam* 키). 저장된 선택
+  /// (my_picks_controller)을 순위 행과 이어 붙인다. 키는 Kotlin
+  /// (FmkMyDriverWidgetProvider/FmkMyTeamWidgetProvider)·Swift
+  /// (FmkMyPicksWidgets.swift)와 수동 동기화 — 한쪽을 바꾸면 함께 수정할 것.
+  static Future<void> _saveMyPicksPayload(StandingsSnapshot? snapshot) async {
+    final picks = await myPicksController.load();
+    final payload = buildFmkMyPicksPayload(
+      picks: picks,
+      driverStandings:
+          snapshot?.driverStandings ?? static_standings.driverStandings,
+      constructorStandings:
+          snapshot?.constructorStandings ??
+          static_standings.constructorStandings,
+    );
+    final d = payload.driver;
+    final t = payload.team;
+    await Future.wait<bool?>([
+      // ── MY DRIVER ──
+      // set: 골랐는지(0 → 위젯이 "앱에서 설정" 안내), found: 순위에 있는지
+      // (0 → 이름/팀만, 순위·포인트는 '—').
+      HomeWidget.saveWidgetData<int>('myDriverSet', d == null ? 0 : 1),
+      HomeWidget.saveWidgetData<int>('myDriverFound', d?.found == true ? 1 : 0),
+      HomeWidget.saveWidgetData<String>('myDriverCode', d?.code ?? ''),
+      HomeWidget.saveWidgetData<String>('myDriverNameEn', d?.nameEn ?? ''),
+      HomeWidget.saveWidgetData<String>('myDriverNameKo', d?.nameKo ?? ''),
+      HomeWidget.saveWidgetData<String>('myDriverTeamKo', d?.teamKo ?? ''),
+      HomeWidget.saveWidgetData<String>('myDriverTeamEn', d?.teamEn ?? ''),
+      HomeWidget.saveWidgetData<int>('myDriverPos', d?.position ?? 0),
+      HomeWidget.saveWidgetData<String>('myDriverPts', d?.points ?? ''),
+      HomeWidget.saveWidgetData<String>('myDriverGap', d?.gapToLeader ?? ''),
+      HomeWidget.saveWidgetData<String>(
+        'myDriverChange',
+        d?.changeLabel ?? '',
+      ),
+      HomeWidget.saveWidgetData<int>(
+        'myDriverChangeColor',
+        _androidColorInt(d?.changeColor ?? 0xFF7880A0),
+      ),
+      HomeWidget.saveWidgetData<int>(
+        'myDriverColor',
+        _androidColorInt(d?.teamColor ?? 0xFFEF4444),
+      ),
+      // ── MY TEAM ──
+      HomeWidget.saveWidgetData<int>('myTeamSet', t == null ? 0 : 1),
+      HomeWidget.saveWidgetData<int>('myTeamFound', t?.found == true ? 1 : 0),
+      HomeWidget.saveWidgetData<String>('myTeamKo', t?.teamKo ?? ''),
+      HomeWidget.saveWidgetData<String>('myTeamEn', t?.teamEn ?? ''),
+      HomeWidget.saveWidgetData<String>('myTeamCode', t?.code ?? ''),
+      HomeWidget.saveWidgetData<int>('myTeamPos', t?.position ?? 0),
+      HomeWidget.saveWidgetData<String>('myTeamPts', t?.points ?? ''),
+      HomeWidget.saveWidgetData<String>('myTeamGap', t?.gapToLeader ?? ''),
+      HomeWidget.saveWidgetData<String>('myTeamChange', t?.changeLabel ?? ''),
+      HomeWidget.saveWidgetData<int>(
+        'myTeamChangeColor',
+        _androidColorInt(t?.changeColor ?? 0xFF7880A0),
+      ),
+      HomeWidget.saveWidgetData<int>(
+        'myTeamColor',
+        _androidColorInt(t?.teamColor ?? 0xFFEF4444),
+      ),
+      // 팀 소속 드라이버 2명(순위순) — 팀 위젯 medium 의 보조 행.
+      for (var i = 0; i < 2; i++) ...[
+        HomeWidget.saveWidgetData<String>(
+          'myTeamD${i + 1}Code',
+          t != null && i < t.drivers.length ? t.drivers[i].code : '',
+        ),
+        HomeWidget.saveWidgetData<int>(
+          'myTeamD${i + 1}Pos',
+          t != null && i < t.drivers.length ? t.drivers[i].position : 0,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'myTeamD${i + 1}Pts',
+          t != null && i < t.drivers.length ? t.drivers[i].points : '',
+        ),
+      ],
+    ]);
+  }
+}
+
+/// MY DRIVER 위젯 한 장의 표시 데이터.
+class FmkMyDriverWidgetData {
+  const FmkMyDriverWidgetData({
+    required this.code,
+    required this.nameEn,
+    required this.nameKo,
+    required this.teamKo,
+    required this.teamEn,
+    required this.teamColor,
+    required this.found,
+    this.position = 0,
+    this.points = '',
+    this.gapToLeader = '',
+    this.changeLabel = '',
+    this.changeColor = 0xFF7880A0,
+  });
+
+  final String code;
+  final String nameEn;
+  final String nameKo;
+  final String teamKo;
+  final String teamEn;
+  final int teamColor;
+
+  /// 순위 데이터에서 찾았는지. false 면 이름/팀만 유효(순위·포인트 '—').
+  final bool found;
+  final int position;
+  final String points;
+
+  /// 선두와의 포인트 차. 선두면 'LEADER', 모르면 빈 문자열, 그 외 '-41' 형식.
+  final String gapToLeader;
+  final String changeLabel;
+  final int changeColor;
+}
+
+/// MY TEAM 위젯 소속 드라이버 한 줄.
+class FmkMyTeamDriverData {
+  const FmkMyTeamDriverData({
+    required this.code,
+    required this.position,
+    required this.points,
+  });
+
+  final String code;
+  final int position;
+  final String points;
+}
+
+/// MY TEAM 위젯 한 장의 표시 데이터.
+class FmkMyTeamWidgetData {
+  const FmkMyTeamWidgetData({
+    required this.teamKo,
+    required this.teamEn,
+    required this.code,
+    required this.teamColor,
+    required this.found,
+    this.position = 0,
+    this.points = '',
+    this.gapToLeader = '',
+    this.changeLabel = '',
+    this.changeColor = 0xFF7880A0,
+    this.drivers = const [],
+  });
+
+  final String teamKo;
+  final String teamEn;
+  final String code;
+  final int teamColor;
+  final bool found;
+  final int position;
+  final String points;
+  final String gapToLeader;
+  final String changeLabel;
+  final int changeColor;
+
+  /// 소속 드라이버(순위순, 최대 2명).
+  final List<FmkMyTeamDriverData> drivers;
+}
+
+/// MY PICKS 위젯 페이로드. 미설정 항목은 null(위젯이 안내 문구 표시).
+class FmkMyPicksPayload {
+  const FmkMyPicksPayload({this.driver, this.team});
+
+  final FmkMyDriverWidgetData? driver;
+  final FmkMyTeamWidgetData? team;
+}
+
+/// 저장된 선택([picks])을 순위 데이터와 결합해 위젯 페이로드를 만든다.
+/// 순수 함수 — 서버 순위가 없으면 호출부가 정적 순위를 넘긴다.
+FmkMyPicksPayload buildFmkMyPicksPayload({
+  required MyPicks picks,
+  required List<DriverStanding> driverStandings,
+  required List<ConstructorStanding> constructorStandings,
+}) {
+  FmkMyDriverWidgetData? driver;
+  if (picks.hasDriver) {
+    final code = picks.driverCode!.trim().toUpperCase();
+    final nameKo = driverNameKoByCode[code];
+    DriverStanding? row;
+    for (final d in driverStandings) {
+      if (nameKo != null && d.driverKo == nameKo) {
+        row = d;
+        break;
+      }
+    }
+    // 한글 이름 매핑이 없으면(신인 등) 서버 영문 이름의 성(lastName)으로 한 번 더.
+    if (row == null && nameKo == null) {
+      for (final d in driverStandings) {
+        final en = d.driverEn.trim().toUpperCase();
+        if (en.isNotEmpty && _lastNameCode(en) == code) {
+          row = d;
+          break;
+        }
+      }
+    }
+    final leaderPoints = driverStandings.isEmpty
+        ? null
+        : driverStandings.first.points;
+    final change = _changeStyle(row?.positionChange);
+    final teamKo = row?.teamKo ?? '';
+    driver = FmkMyDriverWidgetData(
+      code: code,
+      nameEn: driverNameEn(code, row?.driverEn ?? code),
+      nameKo: nameKo ?? row?.driverKo ?? code,
+      teamKo: teamKo,
+      teamEn: teamNameEn(teamKo, row?.teamEn ?? ''),
+      teamColor: row != null
+          ? getTeamColorHex(row.teamKo)
+          : liveDriverAccent(code).toARGB32(),
+      found: row != null,
+      position: row?.position ?? 0,
+      points: row == null ? '' : _formatWidgetPoints(row.points),
+      gapToLeader: row == null || leaderPoints == null
+          ? ''
+          : _gapLabel(row.position, row.points, leaderPoints),
+      changeLabel: change.label,
+      changeColor: change.color,
+    );
+  }
+
+  FmkMyTeamWidgetData? team;
+  if (picks.hasTeam) {
+    final teamKo = picks.teamKo!.trim();
+    ConstructorStanding? row;
+    for (final c in constructorStandings) {
+      if (c.teamKo == teamKo) {
+        row = c;
+        break;
+      }
+    }
+    final leaderPoints = constructorStandings.isEmpty
+        ? null
+        : constructorStandings.first.points;
+    final change = _changeStyle(row?.positionChange);
+    final members = [
+      for (final d in driverStandings)
+        if (d.teamKo == teamKo)
+          FmkMyTeamDriverData(
+            code: driverCodeByNameKo[d.driverKo] ?? _lastNameCode(d.driverEn),
+            position: d.position,
+            points: _formatWidgetPoints(d.points),
+          ),
+    ]..sort((a, b) => a.position.compareTo(b.position));
+    team = FmkMyTeamWidgetData(
+      teamKo: teamKo,
+      teamEn: teamNameEn(teamKo, row?.teamEn ?? teamKo),
+      code: teamCode(teamKo, fallbackEn: row?.teamEn ?? ''),
+      teamColor: getTeamColorHex(teamKo),
+      found: row != null,
+      position: row?.position ?? 0,
+      points: row == null ? '' : _formatWidgetPoints(row.points),
+      gapToLeader: row == null || leaderPoints == null
+          ? ''
+          : _gapLabel(row.position, row.points, leaderPoints),
+      changeLabel: change.label,
+      changeColor: change.color,
+      drivers: members.take(2).toList(),
+    );
+  }
+
+  return FmkMyPicksPayload(driver: driver, team: team);
+}
+
+/// 순위 탭 _PositionChange 와 같은 규칙/색(green/redSoft/muted).
+({String label, int color}) _changeStyle(int? change) {
+  if (change == null) return (label: '', color: 0xFF7880A0);
+  if (change > 0) return (label: '▲$change', color: 0xFF4ADE80);
+  if (change < 0) return (label: '▼${change.abs()}', color: 0xFFF87171);
+  return (label: '—', color: 0xFF7880A0);
+}
+
+/// 선두와의 격차 라벨: 1위는 'LEADER', 그 외 '-41'(소수점 포인트는 그대로).
+String _gapLabel(int position, num points, num leaderPoints) {
+  if (position == 1) return 'LEADER';
+  final gap = leaderPoints - points;
+  if (gap <= 0) return 'LEADER';
+  return '-${_formatWidgetPoints(gap)}';
+}
+
+/// 영문 이름의 성 앞 3글자(대문자) — 코드 매핑이 없을 때의 임시 TLA.
+String _lastNameCode(String nameEn) {
+  final parts = nameEn
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty && !p.endsWith('.'))
+      .toList();
+  if (parts.isEmpty) return '';
+  final last = parts.last.toUpperCase();
+  return last.length <= 3 ? last : last.substring(0, 3);
 }
 
 /// 순위 위젯 한 행의 표시 데이터(색상은 ARGB, 라벨은 표시 문자열 그대로).

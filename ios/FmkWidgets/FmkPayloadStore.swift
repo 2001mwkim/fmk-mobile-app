@@ -34,6 +34,47 @@ struct FmkStandingRow: Identifiable {
   var id: Int { position }
 }
 
+/// MY DRIVER 위젯 데이터(myDriver* 키). 브리지 _saveMyPicksPayload 와 동기화.
+struct FmkMyDriverData {
+  let isSet: Bool
+  let found: Bool
+  let code: String
+  let nameEn: String
+  let nameKo: String
+  let teamKo: String
+  let teamEn: String
+  let position: Int
+  let points: String
+  let gap: String
+  let changeLabel: String
+  let changeColorArgb: Int
+  let colorArgb: Int
+}
+
+/// MY TEAM 위젯 소속 드라이버 한 줄(myTeamD{n}* 키).
+struct FmkMyTeamDriver: Identifiable {
+  let code: String
+  let position: Int
+  let points: String
+  var id: String { code }
+}
+
+/// MY TEAM 위젯 데이터(myTeam* 키). 브리지 _saveMyPicksPayload 와 동기화.
+struct FmkMyTeamData {
+  let isSet: Bool
+  let found: Bool
+  let teamKo: String
+  let teamEn: String
+  let code: String
+  let position: Int
+  let points: String
+  let gap: String
+  let changeLabel: String
+  let changeColorArgb: Int
+  let colorArgb: Int
+  let drivers: [FmkMyTeamDriver]
+}
+
 struct FmkPayload {
   let mode: String
   let gpFlag: String
@@ -149,6 +190,59 @@ struct FmkPayload {
         ))
     }
     return rows
+  }
+}
+
+extension FmkPayload {
+  /// MY DRIVER 위젯 데이터 — Kotlin FmkMyDriverWidgetProvider 와 동일 키.
+  static func myDriver() -> FmkMyDriverData {
+    let store = UserDefaults(suiteName: fmkAppGroupId)
+    func str(_ key: String) -> String { store?.string(forKey: key) ?? "" }
+    func num(_ key: String) -> Int { store?.integer(forKey: key) ?? 0 }
+    return FmkMyDriverData(
+      isSet: num("myDriverSet") == 1,
+      found: num("myDriverFound") == 1,
+      code: str("myDriverCode"),
+      nameEn: str("myDriverNameEn"),
+      nameKo: str("myDriverNameKo"),
+      teamKo: str("myDriverTeamKo"),
+      teamEn: str("myDriverTeamEn"),
+      position: num("myDriverPos"),
+      points: str("myDriverPts"),
+      gap: str("myDriverGap"),
+      changeLabel: str("myDriverChange"),
+      changeColorArgb: normalizedColor(num("myDriverChangeColor"), fallback: 0xFFA1A1AA),
+      colorArgb: normalizedColor(num("myDriverColor"))
+    )
+  }
+
+  /// MY TEAM 위젯 데이터 — Kotlin FmkMyTeamWidgetProvider 와 동일 키.
+  static func myTeam() -> FmkMyTeamData {
+    let store = UserDefaults(suiteName: fmkAppGroupId)
+    func str(_ key: String) -> String { store?.string(forKey: key) ?? "" }
+    func num(_ key: String) -> Int { store?.integer(forKey: key) ?? 0 }
+    var drivers: [FmkMyTeamDriver] = []
+    for index in 1...2 {
+      let code = str("myTeamD\(index)Code")
+      guard !code.isEmpty else { continue }
+      drivers.append(
+        FmkMyTeamDriver(
+          code: code, position: num("myTeamD\(index)Pos"), points: str("myTeamD\(index)Pts")))
+    }
+    return FmkMyTeamData(
+      isSet: num("myTeamSet") == 1,
+      found: num("myTeamFound") == 1,
+      teamKo: str("myTeamKo"),
+      teamEn: str("myTeamEn"),
+      code: str("myTeamCode"),
+      position: num("myTeamPos"),
+      points: str("myTeamPts"),
+      gap: str("myTeamGap"),
+      changeLabel: str("myTeamChange"),
+      changeColorArgb: normalizedColor(num("myTeamChangeColor"), fallback: 0xFFA1A1AA),
+      colorArgb: normalizedColor(num("myTeamColor")),
+      drivers: drivers
+    )
   }
 }
 

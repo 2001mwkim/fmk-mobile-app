@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 화면 회전 정책: 폰은 세로 고정(웹 UI 이식 디자인), 태블릿(sw600dp)만
+         가로 허용 — values-sw600dp/strings.xml 에서 재정의한다.
+         iOS 는 같은 정책을 Info.plist 의 ~ipad 키로 처리한다. -->
+    <string name="fmk_screen_orientation" translatable="false">portrait</string>
     <string name="fmk_home_widget_description">비아 포뮬러 다음 세션 및 라이브 정보</string>
     <string name="fmk_standings_widget_description">2026 챔피언십 순위 (드라이버/팀)</string>
+    <string name="fmk_my_driver_widget_description">내 드라이버의 순위·포인트 (설정 › MY PICKS)</string>
+    <string name="fmk_my_team_widget_description">내 팀의 순위·포인트와 소속 드라이버 (설정 › MY PICKS)</string>
 </resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MY DRIVER/MY TEAM 위젯의 팀 컬러 글로우(우상단, 은은하게). 흰색 방사형
+     그라데이션에 RemoteViews setColorFilter 로 팀 컬러를 입힌다 — iOS
+     fmkMyPicksBackground 와 같은 연출. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="70dp"
+        android:startColor="#4DFFFFFF"
+        android:endColor="#00FFFFFF" />
+</shape>

@@ -9,6 +9,8 @@ struct FmkWidgetsBundle: WidgetBundle {
     FmkHomeWidget()
     FmkDriverStandingsWidget()
     FmkTeamStandingsWidget()
+    FmkMyDriverWidget()
+    FmkMyTeamWidget()
     liveActivities
   }
 
