@@ -38,10 +38,9 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 14),
             const _Header(),
             const SizedBox(height: 20),
-            const _Section(title: '알림', child: _NotificationCard()),
-            const SizedBox(height: 20),
             // MY PICKS — 홈 위젯(MY DRIVER/MY TEAM)의 선택 진입점. 위젯 딥링크
-            // fmkwidget://mypicks 가 이 화면을 연다(app.dart).
+            // fmkwidget://mypicks 가 이 화면을 연다(app.dart). 세션 알림은 홈
+            // 헤더의 알림 버튼 → NotificationSettingsScreen 으로 이동했다.
             const _Section(title: 'MY PICKS', child: MyPicksCard()),
             const SizedBox(height: 20),
             const _Section(title: '포뮬러 매거진 코리아', child: _FmkCard()),
@@ -52,6 +51,29 @@ class SettingsScreen extends StatelessWidget {
               SizedBox(height: 20),
               _Section(title: '개발자 (디버그)', child: _DebugLiveActivityCard()),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 세션별 알림을 한곳에서 관리하는 전용 화면.
+class NotificationSettingsScreen extends StatelessWidget {
+  const NotificationSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: const [
+            _BackButtonRow(),
+            SizedBox(height: 14),
+            _Header(title: '알림 설정'),
+            SizedBox(height: 20),
+            _Section(title: '세션 알림', child: _NotificationCard()),
           ],
         ),
       ),
@@ -93,16 +115,18 @@ class _BackButtonRow extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({this.title = '설정'});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'VIA FORMULA',
             style: TextStyle(
               fontSize: 11,
@@ -111,10 +135,10 @@ class _Header extends StatelessWidget {
               letterSpacing: 1.6,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            '설정',
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontSize: 26,
               color: AppColors.white,
               fontWeight: FontWeight.w800,
@@ -473,11 +497,7 @@ class _FmkCard extends StatelessWidget {
 }
 
 class _LinkRow extends StatelessWidget {
-  const _LinkRow({
-    required this.title,
-    required this.onTap,
-    this.subtitle,
-  });
+  const _LinkRow({required this.title, required this.onTap, this.subtitle});
 
   final String title;
   final String? subtitle;

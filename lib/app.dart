@@ -92,36 +92,9 @@ class _MainShellState extends State<MainShell> {
 
       final wantsOn = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: AppColors.card,
-          title: const Text(
-            '레이스 시작 알림 받기',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          content: const Text(
-            '레이스 시작 30분 전에 알려드려요.\n'
-            '연습·퀄리 등 다른 세션 알림은 설정에서 켤 수 있어요.',
-            style: TextStyle(
-              color: AppColors.nameMuted,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('나중에', style: TextStyle(color: AppColors.muted)),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.red),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('알림 받기'),
-            ),
-          ],
+        builder: (dialogContext) => _NotificationOptInDialog(
+          onLater: () => Navigator.of(dialogContext).pop(false),
+          onEnable: () => Navigator.of(dialogContext).pop(true),
         ),
       );
 
@@ -197,6 +170,170 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
+      ),
+    );
+  }
+}
+
+class _NotificationOptInDialog extends StatelessWidget {
+  const _NotificationOptInDialog({
+    required this.onLater,
+    required this.onEnable,
+  });
+
+  final VoidCallback onLater;
+  final VoidCallback onEnable;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.heroGradTop, AppColors.card],
+          ),
+          border: Border.all(color: const Color(0x33F25C5C)),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -42,
+              top: -54,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0x12F25C5C),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0x1FF25C5C),
+                      border: Border.all(color: const Color(0x4DF25C5C)),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.heroAccentBright,
+                      size: 25,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    '레이스 시작을 놓치지 마세요',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 20,
+                      height: 1.3,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '레이스 시작 30분 전에 알림을 보내드려요.',
+                    style: TextStyle(
+                      color: AppColors.nameMuted,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.black20,
+                      border: Border.all(color: AppColors.hairline),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 18,
+                          color: AppColors.redSoft,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '연습 · 퀄리 · 스프린트도 원하는 세션만 선택할 수 있어요',
+                            style: TextStyle(
+                              color: AppColors.heroSub,
+                              fontSize: 12,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: onLater,
+                        child: const Text(
+                          '다음에',
+                          style: TextStyle(color: AppColors.muted),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.red,
+                            foregroundColor: AppColors.white,
+                            minimumSize: const Size(0, 46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: onEnable,
+                          icon: const Icon(
+                            Icons.notifications_none_rounded,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            '레이스 알림 켜기',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

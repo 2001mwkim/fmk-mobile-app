@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/app.dart';
+import 'package:fmk_app/screens/settings_screen.dart';
 
 void main() {
   testWidgets('bottom tabs, race detail, and settings navigation work', (
@@ -11,6 +12,7 @@ void main() {
     expect(find.text('Via Formula'), findsOneWidget);
     expect(find.text('F1 관련 정보를 내 손안에'), findsOneWidget);
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_outlined), findsWidgets);
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
@@ -83,12 +85,21 @@ void main() {
     await tester.pumpAndSettle();
     await tester.fling(find.byType(ListView).first, const Offset(0, 800), 1000);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.settings_outlined));
+
+    await tester.tap(find.byKey(const ValueKey('home-notification-button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(NotificationSettingsScreen), findsOneWidget);
+    expect(find.text('프랙티스'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('home-settings-button')));
     await tester.pumpAndSettle();
     expect(find.text('설정'), findsWidgets);
     expect(find.text('일정 관리'), findsNothing);
     expect(find.text('캘린더에 추가'), findsNothing);
-    expect(find.text('알림 설정'), findsOneWidget);
+    expect(find.text('포뮬러 매거진 코리아'), findsOneWidget);
+    expect(find.text('알림 설정'), findsNothing);
     // 채널 정리: 제휴=이메일, 제보=인스타 DM(별도 인스타 행은 제거됨).
     await tester.scrollUntilVisible(find.text('오류 제보 / 기능 제안'), 200);
     expect(find.text('오류 제보 / 기능 제안'), findsOneWidget);

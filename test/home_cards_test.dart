@@ -107,14 +107,14 @@ void main() {
   });
 
   group('HomeQuickActionsCard', () {
-    testWidgets('알림 설정을 탭하면 설정 화면으로 이동한다', (tester) async {
+    testWidgets('알림 설정을 탭하면 알림 전용 화면으로 이동한다', (tester) async {
       await pump(tester, const HomeQuickActionsCard());
 
       expect(find.text('위젯 추가'), findsOneWidget);
       await tester.tap(find.text('알림 설정'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(NotificationSettingsScreen), findsOneWidget);
     });
 
     testWidgets('위젯 추가를 누르면 두 위젯 중 선택하는 시트가 뜬다', (tester) async {

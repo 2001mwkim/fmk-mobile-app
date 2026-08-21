@@ -98,7 +98,7 @@ class _SeasonHomeContent extends StatelessWidget {
           const AppPageHeader(
             title: 'Via Formula',
             eyebrow: 'F1 관련 정보를 내 손안에',
-            trailing: _HomeSettingsButton(),
+            trailing: _HomeHeaderActions(),
           ),
           const SizedBox(height: 16),
           // 라이브 Top 3 카드/히어로/주말 일정 모두 같은 스냅샷을 본다.
@@ -159,33 +159,73 @@ class _SeasonHomeContent extends StatelessWidget {
   }
 }
 
-class _HomeSettingsButton extends StatelessWidget {
-  const _HomeSettingsButton();
+class _HomeHeaderActions extends StatelessWidget {
+  const _HomeHeaderActions();
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HomeCircleButton(
+          key: const ValueKey('home-notification-button'),
+          icon: Icons.notifications_outlined,
+          tooltip: '알림 설정',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NotificationSettingsScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        _HomeCircleButton(
+          key: const ValueKey('home-settings-button'),
+          icon: Icons.settings_outlined,
+          tooltip: '설정',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeCircleButton extends StatelessWidget {
+  const _HomeCircleButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(999),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-          );
-        },
-        child: Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Icon(
-            Icons.settings_outlined,
-            size: 20,
-            color: AppColors.white,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(icon, size: 20, color: AppColors.white),
           ),
         ),
       ),
@@ -433,11 +473,17 @@ class _HeroCountdownRowState extends State<_HeroCountdownRow> {
 
     return Row(
       children: [
-        Expanded(child: _HeroCountSeg(value: pad(days), label: 'DAYS')),
+        Expanded(
+          child: _HeroCountSeg(value: pad(days), label: 'DAYS'),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: _HeroCountSeg(value: pad(hours), label: 'HRS')),
+        Expanded(
+          child: _HeroCountSeg(value: pad(hours), label: 'HRS'),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: _HeroCountSeg(value: pad(minutes), label: 'MIN')),
+        Expanded(
+          child: _HeroCountSeg(value: pad(minutes), label: 'MIN'),
+        ),
       ],
     );
   }
@@ -614,7 +660,7 @@ class _EmptyHomeContent extends StatelessWidget {
           children: [
             const Align(
               alignment: Alignment.centerRight,
-              child: _HomeSettingsButton(),
+              child: _HomeHeaderActions(),
             ),
             const SizedBox(height: 16),
             AppCard(

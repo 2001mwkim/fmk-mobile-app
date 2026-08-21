@@ -105,6 +105,8 @@ void main() {
       raceName: 'British Grand Prix',
       sessionType: 'Qualifying',
       sessionName: 'Qualifying',
+      qualifyingPart: 2,
+      remainingTime: '12:34',
       classification: [
         LiveDriverPosition(
           position: 1,
@@ -113,6 +115,14 @@ void main() {
           displayTime: '1:28.100',
           lastLapTime: '1:28.400',
           interval: '+0.100',
+        ),
+        LiveDriverPosition(
+          position: 16,
+          code: 'ALB',
+          displayName: '알렉산더 알본',
+          displayTime: '1:30.100',
+          inPit: true,
+          qualifyingEliminatedIn: 1,
         ),
       ],
     );
@@ -128,6 +138,44 @@ void main() {
     expect(find.text('INTERVAL'), findsNothing);
     expect(find.text('1:28.100'), findsOneWidget);
     expect(find.text('1:28.400'), findsOneWidget);
+    expect(find.text('Q2'), findsOneWidget);
+    expect(find.text('12:34'), findsOneWidget);
+    expect(find.text('Q1'), findsOneWidget);
+    expect(find.text('PIT'), findsNothing);
+  });
+
+  testWidgets('sprint qualifying uses SQ labels for eliminated drivers', (
+    tester,
+  ) async {
+    const snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-07-12T01:00:00Z',
+      sessionType: 'Sprint Qualifying',
+      sessionName: 'Sprint Qualifying',
+      qualifyingPart: 3,
+      remainingTime: '07:21',
+      classification: [
+        LiveDriverPosition(
+          position: 11,
+          code: 'HUL',
+          displayName: '니코 휠켄베르크',
+          inPit: true,
+          qualifyingEliminatedIn: 2,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const LiveCenterScreen(snapshotOverride: snapshot),
+      ),
+    );
+
+    expect(find.text('SQ2'), findsOneWidget);
+    expect(find.text('SQ3'), findsOneWidget);
+    expect(find.text('07:21'), findsOneWidget);
+    expect(find.text('PIT'), findsNothing);
   });
 
   testWidgets('tire timelines share one lap scale and show every driver', (
@@ -314,6 +362,7 @@ void main() {
     // (행에서 한글 이름을 뺐으므로 드라이버 식별은 코드로 확인한다.)
     expect(find.text('D3'), findsOneWidget);
     expect(find.text('D4'), findsNothing);
+    expect(find.text('+ 3 DRIVERS'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('4위 이하 순위 보기'),
       200,

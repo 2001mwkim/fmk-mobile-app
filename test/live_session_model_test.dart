@@ -24,7 +24,7 @@ void main() {
     ],
     "classification": [
       {"position": 1, "racingNumber": "4", "code": "NOR", "displayName": "랜도 노리스", "gapToLeader": null, "source": "timing-data"},
-      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "lapTime": "1:28.626", "displayTime": "1:28.626", "lastLapTime": "1:28.801", "bestLapTime": "1:28.626", "personalBestLapTime": "1:28.626", "source": "timing-data"}
+      {"position": 2, "racingNumber": "81", "code": "PIA", "displayName": "오스카 피아스트리", "interval": "+2.341", "lapTime": "1:28.626", "displayTime": "1:28.626", "lastLapTime": "1:28.801", "bestLapTime": "1:28.626", "personalBestLapTime": "1:28.626", "qualifyingEliminatedIn": 2, "source": "timing-data"}
     ]
   },
   "collector": {"feedUpdates": 10}
@@ -44,6 +44,7 @@ void main() {
     // interval 우선(race) 갭 규칙
     expect(snapshot.topThree[1].gap(raceLike: true), '+2.341');
     expect(snapshot.classification[1].displayTime, '1:28.626');
+    expect(snapshot.classification[1].qualifyingEliminatedIn, 2);
     expect(snapshot.classification[1].time(raceLike: false), '1:28.626');
 
     // 잘못된 본문은 null (앱 크래시 방지)
@@ -71,6 +72,7 @@ void main() {
   test('parseLiveJson maps live center details', () {
     const body = '''
 {"snapshot":{"status":"live","updatedAt":"2026-07-12T01:00:00Z",
+"sessionType":"Sprint Qualifying","sessionName":"Sprint Qualifying","qualifyingPart":2,
 "trackStatus":"6","remainingTime":"12:34","clockStopped":true,
 "weather":{"airTemp":"24.5","trackTemp":38.2,"humidity":61,"rainfall":"false","windSpeed":2.8},
 "classification":[{"position":1,"code":"NOR","displayName":"Lando Norris","compound":"MEDIUM","tyreAge":12,"pitStops":1,"sector1":"28.101","sector2":"35.202","sector3":"24.303",
@@ -86,6 +88,8 @@ void main() {
     expect(snapshot.trackStatus, '6');
     expect(snapshot.remainingTime, '12:34');
     expect(snapshot.clockStopped, isTrue);
+    expect(snapshot.qualifyingPart, 2);
+    expect(snapshot.qualifyingSegment, 'SQ2');
     expect(snapshot.weather!.airTemperature, 24.5);
     expect(snapshot.weather!.rainfall, isFalse);
     final driver = snapshot.classification.single;

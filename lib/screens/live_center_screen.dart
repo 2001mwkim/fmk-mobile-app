@@ -320,10 +320,7 @@ class _SessionHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // 좌우 분할: 좌측=국기+GP명+세션(아이덴티티), 우측=핵심 라이브 수치.
-          // 메트릭을 오른쪽에 몰아 기존의 넓은 하단 여백을 없앤다.
           Row(
-            // 상단 정렬: GP명과 우측 첫 메트릭(LAP)이 같은 높이에서 시작하도록.
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
@@ -373,41 +370,10 @@ class _SessionHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 14),
-              _HeaderMetrics(snapshot: snapshot, track: track),
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 세션 헤더 우측의 핵심 수치 클러스터(우측 정렬). 레이스/스프린트는 LAP,
-/// 프랙티스/퀄리는 남은 시간을 위에, 트랙 상태를 아래에 둔다.
-class _HeaderMetrics extends StatelessWidget {
-  const _HeaderMetrics({required this.snapshot, required this.track});
-
-  final LiveSessionSnapshot snapshot;
-  final String track;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (snapshot.showLap)
-          _HeaderMetric(
-            label: 'LAP',
-            value: '${snapshot.currentLap} / ${snapshot.totalLaps}',
-          ),
-        if (snapshot.showRemainingTime)
-          _RemainingMetric(
-            remaining: snapshot.remainingTime!,
-            stopped: snapshot.clockStopped || snapshot.isEnded,
-          ),
-      ],
     );
   }
 }
@@ -438,41 +404,46 @@ class _TrackStatusDot extends StatelessWidget {
   }
 }
 
-/// 우측 정렬 미니 메트릭(값 위 · 라벨 아래) — LAP / 남은 시간용.
-class _HeaderMetric extends StatelessWidget {
-  const _HeaderMetric({required this.label, required this.value});
+/// 실시간 순위 헤더 우측의 현재 세션 진행 정보.
+class _TimingMetricChip extends StatelessWidget {
+  const _TimingMetricChip({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.2,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.black20,
+        border: Border.all(color: AppColors.hairline),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.redSoft,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.faint,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
+          const SizedBox(width: 7),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.1,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -481,8 +452,13 @@ class _HeaderMetric extends StatelessWidget {
 /// 보인다. 수신 시점부터 1초씩 로컬로 감산하고, 새 스냅샷이 오면 그 값으로
 /// 재동기화한다. 시계 정지(레드 플래그 등, clockStopped) 중에는 멈춘다.
 class _RemainingMetric extends StatefulWidget {
-  const _RemainingMetric({required this.remaining, required this.stopped});
+  const _RemainingMetric({
+    required this.label,
+    required this.remaining,
+    required this.stopped,
+  });
 
+  final String label;
   final String remaining;
   final bool stopped;
 
@@ -556,8 +532,7 @@ class _RemainingMetricState extends State<_RemainingMetric> {
 
   @override
   Widget build(BuildContext context) {
-    // 헤더 우측 클러스터에 들어가므로 우측 정렬 스타일(_HeaderMetric)로 렌더.
-    return _HeaderMetric(label: '남은 시간', value: _display());
+    return _TimingMetricChip(label: widget.label, value: _display());
   }
 }
 
@@ -672,6 +647,7 @@ class _TimingCardState extends State<_TimingCard> {
     final topThree = drivers.take(3).toList();
     final remaining = drivers.skip(3).toList();
     final raceLike = snapshot.isRaceOrSprint;
+    final qualifyingPrefix = _qualifyingEliminationPrefix(snapshot);
     final overallBestLapMilliseconds = _overallBestLapMilliseconds(
       drivers,
       raceLike: raceLike,
@@ -690,6 +666,7 @@ class _TimingCardState extends State<_TimingCard> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Expanded(
                   child: Text(
@@ -701,15 +678,25 @@ class _TimingCardState extends State<_TimingCard> {
                     ),
                   ),
                 ),
-                if (headerLabel != null)
-                  Text(
-                    headerLabel,
-                    style: const TextStyle(
-                      color: AppColors.faint,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _TimingSessionMetric(snapshot: snapshot),
+                    if (headerLabel != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        headerLabel,
+                        style: const TextStyle(
+                          color: AppColors.faint,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -736,6 +723,7 @@ class _TimingCardState extends State<_TimingCard> {
                 tab: _tab,
                 overallBestLapMilliseconds: overallBestLapMilliseconds,
                 tireScaleLaps: tireScaleLaps,
+                qualifyingPrefix: qualifyingPrefix,
               ),
           ] else ...[
             for (final driver in topThree)
@@ -745,6 +733,7 @@ class _TimingCardState extends State<_TimingCard> {
                 tab: _tab,
                 overallBestLapMilliseconds: overallBestLapMilliseconds,
                 tireScaleLaps: tireScaleLaps,
+                qualifyingPrefix: qualifyingPrefix,
               ),
             if (remaining.isNotEmpty)
               ClassificationExpander(
@@ -754,6 +743,7 @@ class _TimingCardState extends State<_TimingCard> {
                 startPosition: remaining.first.position,
                 endPosition: remaining.last.position,
                 count: remaining.length,
+                collapsedCountLabel: '+ ${remaining.length} DRIVERS',
                 rows: [
                   for (final driver in remaining)
                     _DriverRow(
@@ -762,6 +752,7 @@ class _TimingCardState extends State<_TimingCard> {
                       tab: _tab,
                       overallBestLapMilliseconds: overallBestLapMilliseconds,
                       tireScaleLaps: tireScaleLaps,
+                      qualifyingPrefix: qualifyingPrefix,
                     ),
                 ],
               ),
@@ -770,6 +761,53 @@ class _TimingCardState extends State<_TimingCard> {
       ),
     );
   }
+}
+
+class _TimingSessionMetric extends StatelessWidget {
+  const _TimingSessionMetric({required this.snapshot});
+
+  final LiveSessionSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    if (snapshot.showLap) {
+      return _TimingMetricChip(
+        label: 'LAP',
+        value: '${snapshot.currentLap} / ${snapshot.totalLaps}',
+      );
+    }
+    if (snapshot.showRemainingTime) {
+      return _RemainingMetric(
+        label: _sessionAbbreviation(snapshot),
+        remaining: snapshot.remainingTime!,
+        stopped: snapshot.clockStopped || snapshot.isEnded,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+String _sessionAbbreviation(LiveSessionSnapshot snapshot) {
+  final qualifying = snapshot.qualifyingSegment;
+  if (qualifying != null) return qualifying;
+
+  final text = '${snapshot.sessionType ?? ''} ${snapshot.sessionName ?? ''}'
+      .toLowerCase();
+  if (text.contains('practice') || text.contains('프랙티스')) {
+    final part = RegExp(r'[123]').firstMatch(text)?.group(0);
+    return part == null ? 'FP' : 'FP$part';
+  }
+  if (text.contains('qualifying') ||
+      text.contains('qualy') ||
+      text.contains('shootout') ||
+      text.contains('퀄리')) {
+    final sprint =
+        text.contains('sprint') ||
+        text.contains('shootout') ||
+        text.contains('스프린트');
+    return sprint ? 'SQ' : 'Q';
+  }
+  return 'TIME';
 }
 
 /// LAP | SECTOR | TIRE 세그먼트 탭.
@@ -837,6 +875,7 @@ class _DriverRow extends StatelessWidget {
     required this.tab,
     required this.overallBestLapMilliseconds,
     required this.tireScaleLaps,
+    required this.qualifyingPrefix,
   });
 
   final LiveDriverPosition driver;
@@ -844,6 +883,7 @@ class _DriverRow extends StatelessWidget {
   final _BoardTab tab;
   final int? overallBestLapMilliseconds;
   final int tireScaleLaps;
+  final String? qualifyingPrefix;
 
   static const TextStyle _tinyLabelStyle = TextStyle(
     color: AppColors.faint,
@@ -1124,10 +1164,20 @@ class _DriverRow extends StatelessWidget {
   );
 
   Widget _trailing() {
-    // PIT/OUT 상태가 최우선. 그 외 LAP 탭 레이스는 INTERVAL,
-    // 나머지 탭/세션에서는 비워 본문에 폭을 양보한다.
+    // 퀄리파잉 탈락 구간이 확정되면 PIT 대신 Q1/Q2(SQ1/SQ2)를 표시한다.
+    // 그 외 PIT/OUT 상태, LAP 탭 레이스의 INTERVAL 순으로 표시한다.
+    final eliminatedIn = driver.qualifyingEliminatedIn;
+    final eliminationLabel =
+        qualifyingPrefix != null &&
+            eliminatedIn != null &&
+            eliminatedIn >= 1 &&
+            eliminatedIn <= 2
+        ? '$qualifyingPrefix$eliminatedIn'
+        : null;
     final String text;
-    if (driver.retired) {
+    if (eliminationLabel != null) {
+      text = eliminationLabel;
+    } else if (driver.retired) {
       text = 'OUT';
     } else if (driver.inPit) {
       text = 'PIT';
@@ -1139,7 +1189,7 @@ class _DriverRow extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        color: driver.inPit || driver.retired
+        color: eliminationLabel != null || driver.inPit || driver.retired
             ? AppColors.redSoft
             : AppColors.slate300,
         fontSize: 13,
@@ -1147,6 +1197,23 @@ class _DriverRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _qualifyingEliminationPrefix(LiveSessionSnapshot snapshot) {
+  final text = '${snapshot.sessionType ?? ''} ${snapshot.sessionName ?? ''}'
+      .toLowerCase();
+  final qualifying =
+      text.contains('qualifying') ||
+      text.contains('qualy') ||
+      text.contains('shootout') ||
+      text.contains('퀄리');
+  if (!qualifying) return null;
+
+  final sprint =
+      text.contains('sprint') ||
+      text.contains('shootout') ||
+      text.contains('스프린트');
+  return sprint ? 'SQ' : 'Q';
 }
 
 /// 미니섹터 상태 코드 → 색 점 바.
@@ -1626,7 +1693,8 @@ IconData _messageIcon(LiveRaceControlMessage message) {
       text.contains('VIRTUAL SAFETY')) {
     return Icons.directions_car_filled;
   }
-  final isFlag = (message.category ?? '').toUpperCase().contains('FLAG') ||
+  final isFlag =
+      (message.category ?? '').toUpperCase().contains('FLAG') ||
       message.flag != null ||
       text.contains('FLAG');
   if (isFlag) {

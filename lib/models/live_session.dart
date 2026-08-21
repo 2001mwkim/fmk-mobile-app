@@ -36,6 +36,7 @@ class LiveDriverPosition {
     this.pitStops,
     this.inPit = false,
     this.retired = false,
+    this.qualifyingEliminatedIn,
     this.speedTrap,
     this.lastLapFlag,
     this.bestLapIsOverall = false,
@@ -66,6 +67,9 @@ class LiveDriverPosition {
   final int? pitStops;
   final bool inPit;
   final bool retired;
+
+  /// 퀄리파잉에서 탈락이 확정된 구간(1=Q1/SQ1, 2=Q2/SQ2).
+  final int? qualifyingEliminatedIn;
   final String? speedTrap;
 
   // ── 라이브 보드 탭(LAP/SECTOR/TIRE) 상세 ──
@@ -165,8 +169,7 @@ class LiveLastSession {
   final DateTime? endedAt;
   final List<LiveDriverPosition> classification;
 
-  bool get isRaceOrSprint =>
-      liveTextIsRaceOrSprint(sessionType, sessionName);
+  bool get isRaceOrSprint => liveTextIsRaceOrSprint(sessionType, sessionName);
 
   /// 화면 표시용 한글 세션 이름.
   String get sessionTitleKo => liveSessionLabelKo(sessionName, sessionType);
@@ -220,6 +223,7 @@ class LiveSessionSnapshot {
     this.sessionKey,
     this.sessionType,
     this.sessionName,
+    this.qualifyingPart,
     this.currentLap,
     this.totalLaps,
     this.topThree = const [],
@@ -248,6 +252,9 @@ class LiveSessionSnapshot {
   final String? sessionKey;
   final String? sessionType;
   final String? sessionName;
+
+  /// 현재 퀄리파잉 구간(1=Q1/SQ1, 2=Q2/SQ2, 3=Q3/SQ3).
+  final int? qualifyingPart;
   final int? currentLap;
   final int? totalLaps;
   final List<LiveDriverPosition> topThree;
@@ -287,8 +294,7 @@ class LiveSessionSnapshot {
 
   /// practice/qualifying/shootout 이 아니고 race/sprint 면 true.
   /// 한글 세션명('레이스'/'스프린트'/'퀄리파잉'/'프랙티스')도 인식한다.
-  bool get isRaceOrSprint =>
-      liveTextIsRaceOrSprint(sessionType, sessionName);
+  bool get isRaceOrSprint => liveTextIsRaceOrSprint(sessionType, sessionName);
 
   bool get showLap => isRaceOrSprint && currentLap != null && totalLaps != null;
 
@@ -300,6 +306,12 @@ class LiveSessionSnapshot {
 
   /// 화면 표시용 한글 세션 이름(영문 live.json 안전 변환).
   String get sessionTitleKo => liveSessionLabelKo(sessionName, sessionType);
+
+  String? get qualifyingSegment => liveQualifyingSegment(
+    sessionName,
+    sessionType,
+    sessionPart: qualifyingPart,
+  );
 
   /// 갱신 시각을 KST 기준으로 표시(예: '업데이트 13:42 KST').
   /// updatedAt 이 ISO 면 KST(UTC+9)로 변환, 비어있으면 null(표시 생략),
@@ -340,7 +352,11 @@ class LiveSessionSnapshot {
 /// 'Sprint Qualifying 1') 이를 'Q2'/'Q3'/'SQ1' 로 반환한다. 세그먼트 정보가
 /// 없으면(현재의 'Qualifying' 처럼) null 을 돌려주고, 호출부는 세션 라벨로 대체한다.
 /// 퀄리파잉 계열이 아니면(레이스/프랙티스) 항상 null.
-String? liveQualifyingSegment(String? sessionName, String? sessionType) {
+String? liveQualifyingSegment(
+  String? sessionName,
+  String? sessionType, {
+  int? sessionPart,
+}) {
   final raw = '${sessionName ?? ''} ${sessionType ?? ''}'.trim();
   if (raw.isEmpty) return null;
 
@@ -352,7 +368,9 @@ String? liveQualifyingSegment(String? sessionName, String? sessionType) {
       lower.contains('퀄리');
   if (!isQualifying) return null;
 
-  final digit = RegExp(r'[123]').firstMatch(raw)?.group(0);
+  final digit = sessionPart != null && sessionPart >= 1 && sessionPart <= 3
+      ? '$sessionPart'
+      : RegExp(r'[123]').firstMatch(raw)?.group(0);
   if (digit == null) return null;
 
   final isSprint =

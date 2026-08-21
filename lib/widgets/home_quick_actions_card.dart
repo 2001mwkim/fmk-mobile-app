@@ -123,7 +123,7 @@ class HomeQuickActionsCard extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => const SettingsScreen(),
+                    builder: (_) => const NotificationSettingsScreen(),
                   ),
                 );
               },

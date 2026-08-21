@@ -252,6 +252,7 @@ class ClassificationExpander extends StatefulWidget {
     required this.endPosition,
     required this.count,
     required this.rows,
+    this.collapsedCountLabel,
   });
 
   /// 펼치기/접기 라벨 색(라이브면 레드, 종료면 중립).
@@ -260,6 +261,7 @@ class ClassificationExpander extends StatefulWidget {
   final int endPosition;
   final int count;
   final List<Widget> rows;
+  final String? collapsedCountLabel;
 
   @override
   State<ClassificationExpander> createState() => _ClassificationExpanderState();
@@ -299,7 +301,8 @@ class _ClassificationExpanderState extends State<ClassificationExpander> {
                       Text(
                         _expanded
                             ? '${widget.startPosition}-${widget.endPosition}위'
-                            : '+ ${widget.count}명 더',
+                            : widget.collapsedCountLabel ??
+                                  '+ ${widget.count}명 더',
                         style: const TextStyle(
                           fontSize: 10,
                           fontFamily: 'Pretendard',
