@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/country_flags.dart';
 import '../data/drivers.dart';
@@ -13,6 +14,7 @@ import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../models/standing.dart';
+import 'favorite_driver_controller.dart';
 import 'live_session_controller.dart';
 import 'live_session_service.dart';
 import 'race_results_repository.dart';
@@ -24,6 +26,10 @@ const String fmkHomeWidgetProviderQualifiedName =
 /// 챔피언십 순위 위젯(별도 위젯 종류)의 Provider.
 const String fmkStandingsWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
+
+/// 최애 드라이버 위젯(별도 위젯 종류)의 Provider.
+const String fmkFavoriteDriverWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkFavoriteDriverWidgetProvider';
 
 /// iOS App Group — Runner/FmkWidgets 익스텐션 entitlements 와 문자열로
 /// 수동 동기화(ios/Runner/Runner.entitlements, ios/FmkWidgets/*.entitlements).
@@ -238,6 +244,10 @@ class FmkHomeWidgetBridge {
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
+      );
+      // 최애 드라이버 위젯(Android v1 — iOS 대응은 후속).
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkFavoriteDriverWidgetProviderQualifiedName,
       );
       if (_isIOS) {
         await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
@@ -456,6 +466,56 @@ class FmkHomeWidgetBridge {
     writeRows('stDriver', drivers);
     writeRows('stTeam', teams);
     await Future.wait(writes);
+
+    await _saveFavoriteDriverPayload(drivers);
+  }
+
+  /// 최애 드라이버 위젯 데이터(favDriver* 키). 저장된 최애 이름(driverKo)과
+  /// 순위 행을 이름으로 매칭한다. 키는 Kotlin(FmkFavoriteDriverWidgetProvider)
+  /// 과 수동 동기화.
+  static Future<void> _saveFavoriteDriverPayload(
+    List<FmkStandingsWidgetRow> driverRows,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favName = prefs.getString(favoriteDriverPrefsKey);
+
+    FmkStandingsWidgetRow? row;
+    if (favName != null && favName.isNotEmpty) {
+      for (final r in driverRows) {
+        if (r.name == favName) {
+          row = r;
+          break;
+        }
+      }
+    }
+
+    // set: 최애를 골랐는지(0=미설정 → 위젯이 안내 문구 표시).
+    // found: 골랐지만 순위에 없을 때(0 → 이름만, 순위/포인트는 '—').
+    await Future.wait<bool?>([
+      HomeWidget.saveWidgetData<int>(
+        'favDriverSet',
+        (favName != null && favName.isNotEmpty) ? 1 : 0,
+      ),
+      HomeWidget.saveWidgetData<int>('favDriverFound', row == null ? 0 : 1),
+      HomeWidget.saveWidgetData<int>('favDriverPos', row?.position ?? 0),
+      HomeWidget.saveWidgetData<String>(
+        'favDriverName',
+        row?.name ?? favName ?? '',
+      ),
+      HomeWidget.saveWidgetData<String>('favDriverPts', row?.points ?? ''),
+      HomeWidget.saveWidgetData<String>(
+        'favDriverChange',
+        row?.changeLabel ?? '',
+      ),
+      HomeWidget.saveWidgetData<int>(
+        'favDriverChangeColor',
+        _androidColorInt(row?.changeColor ?? 0xFF7880A0),
+      ),
+      HomeWidget.saveWidgetData<int>(
+        'favDriverColor',
+        _androidColorInt(row?.teamColor ?? 0xFFEF4444),
+      ),
+    ]);
   }
 }
 

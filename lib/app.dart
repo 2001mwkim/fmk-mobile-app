@@ -51,7 +51,10 @@ class _MainShellState extends State<MainShell> {
   // 소식/직관 화면 파일은 유지하되, 하단 탭은 라이브 센터를 사용한다.
   // 홈의 TOP 3 카드가 순위 탭(인덱스 2)으로 점프할 수 있게 콜백을 연결한다.
   late final List<Widget> _screens = <Widget>[
-    HomeScreen(onOpenStandings: () => _onTabSelected(2)),
+    HomeScreen(
+      onOpenStandings: () => _onTabSelected(2),
+      onOpenLiveCenter: () => _onTabSelected(3),
+    ),
     const CalendarScreen(),
     const StandingsScreen(),
     const LiveCenterScreen(),

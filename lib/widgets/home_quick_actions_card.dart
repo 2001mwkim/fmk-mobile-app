@@ -186,6 +186,15 @@ class _WidgetPickerSheet extends StatelessWidget {
                 context,
               ).pop(fmkStandingsWidgetProviderQualifiedName),
             ),
+            const SizedBox(height: 8),
+            _WidgetOptionTile(
+              icon: Icons.star_outline,
+              title: '최애 드라이버 위젯',
+              subtitle: '설정한 최애 드라이버의 순위·포인트',
+              onTap: () => Navigator.of(
+                context,
+              ).pop(fmkFavoriteDriverWidgetProviderQualifiedName),
+            ),
           ],
         ),
       ),

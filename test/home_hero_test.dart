@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/home_screen.dart';
 import 'package:fmk_app/theme/app_theme.dart';
+import 'package:fmk_app/widgets/home_live_top_three_card.dart';
 
 void main() {
   testWidgets('home hero shows countdown and full weekend schedule', (
@@ -71,6 +72,33 @@ void main() {
     expect(find.text('벨기에 그랑프리'), findsWidgets);
     expect(find.text('헝가리 그랑프리'), findsNothing);
   });
+
+  testWidgets('tapping an ended session card opens the live center tab', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var openedLiveCenter = false;
+    await _pumpHome(
+      tester,
+      now: DateTime.parse('2026-07-05T18:00:00Z'),
+      snapshot: _homeHeroSnapshot(
+        status: LiveSessionStatus.ended,
+        raceId: 'great-britain-2026',
+        endedAt: DateTime.parse('2026-07-05T17:30:00Z'),
+      ),
+      onOpenLiveCenter: () => openedLiveCenter = true,
+    );
+
+    await tester.tap(find.byType(HomeLiveTopThreeCard));
+    await tester.pump();
+
+    expect(openedLiveCenter, isTrue);
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
 }
 
 final DateTime _beforeBritishSprint = DateTime.parse(
@@ -84,11 +112,16 @@ Future<void> _pumpHome(
   WidgetTester tester, {
   required DateTime now,
   LiveSessionSnapshot? snapshot,
+  VoidCallback? onOpenLiveCenter,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.dark(),
-      home: HomeScreen(nowOverride: now, liveSnapshotOverride: snapshot),
+      home: HomeScreen(
+        nowOverride: now,
+        liveSnapshotOverride: snapshot,
+        onOpenLiveCenter: onOpenLiveCenter,
+      ),
     ),
   );
   await tester.pump();

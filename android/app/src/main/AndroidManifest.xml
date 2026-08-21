@@ -87,6 +87,18 @@
                 android:resource="@xml/fmk_standings_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".FmkFavoriteDriverWidgetProvider"
+            android:exported="true"
+            android:label="비아 포뮬러 최애 드라이버">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/fmk_favorite_widget_info" />
+        </receiver>
+
         <!-- Now Bar 포그라운드 서비스(LiveActivityService)는 이번 릴리스에서
              선언 제거(위 권한 주석 참고). 재활성화 시 아래를 복구:
         <service

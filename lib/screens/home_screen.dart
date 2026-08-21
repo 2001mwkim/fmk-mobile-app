@@ -25,6 +25,7 @@ class HomeScreen extends StatelessWidget {
     this.nowOverride,
     this.liveSnapshotOverride,
     this.onOpenStandings,
+    this.onOpenLiveCenter,
     this.standingsRepository,
   });
 
@@ -33,6 +34,9 @@ class HomeScreen extends StatelessWidget {
 
   /// 순위 탭으로 전환(TOP 3 카드 탭). MainShell 이 연결한다.
   final VoidCallback? onOpenStandings;
+
+  /// 종료된 세션 카드에서 라이브 센터 탭으로 전환한다.
+  final VoidCallback? onOpenLiveCenter;
 
   /// TOP 3 카드용 — 테스트/개발 주입 지점.
   final StandingsRepository? standingsRepository;
@@ -46,6 +50,7 @@ class HomeScreen extends StatelessWidget {
               nowOverride: nowOverride,
               liveSnapshotOverride: liveSnapshotOverride,
               onOpenStandings: onOpenStandings,
+              onOpenLiveCenter: onOpenLiveCenter,
               standingsRepository: standingsRepository,
             ),
     );
@@ -57,12 +62,14 @@ class _SeasonHomeContent extends StatelessWidget {
     this.nowOverride,
     this.liveSnapshotOverride,
     this.onOpenStandings,
+    this.onOpenLiveCenter,
     this.standingsRepository,
   });
 
   final DateTime? nowOverride;
   final LiveSessionSnapshot? liveSnapshotOverride;
   final VoidCallback? onOpenStandings;
+  final VoidCallback? onOpenLiveCenter;
   final StandingsRepository? standingsRepository;
 
   /// 스케줄 기준 다음 그랑프리. 다만 라이브 데이터가 레이스의 실제 종료를
@@ -121,8 +128,17 @@ class _SeasonHomeContent extends StatelessWidget {
                     snapshot: liveSnapshot,
                     isStale: liveStale,
                     now: now,
-                    onTap: () =>
-                        _openLiveRace(builderContext, liveSnapshot?.raceId),
+                    onTap: () {
+                      final ended =
+                          liveSnapshot != null &&
+                          liveSnapshot.isEnded &&
+                          !isLiveSnapshotSessionActive(liveSnapshot, now);
+                      if (ended && onOpenLiveCenter != null) {
+                        onOpenLiveCenter!();
+                        return;
+                      }
+                      _openLiveRace(builderContext, liveSnapshot?.raceId);
+                    },
                   ),
                   // 챔피언십 TOP 3 — 순위 탭과 같은 데이터의 미리보기.
                   HomeStandingsCard(

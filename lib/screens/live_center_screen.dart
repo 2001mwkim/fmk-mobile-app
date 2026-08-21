@@ -634,6 +634,20 @@ int? _overallBestLapMilliseconds(
   return fastest;
 }
 
+int _driverStintLaps(LiveDriverPosition driver) => driver.stints.fold(
+  0,
+  (total, stint) => total + ((stint.laps ?? 0) > 0 ? stint.laps! : 0),
+);
+
+int _tireScaleLaps(Iterable<LiveDriverPosition> drivers) {
+  var maximum = 1;
+  for (final driver in drivers) {
+    final total = _driverStintLaps(driver);
+    if (total > maximum) maximum = total;
+  }
+  return maximum;
+}
+
 class _TimingCard extends StatefulWidget {
   const _TimingCard({required this.snapshot});
 
@@ -661,6 +675,7 @@ class _TimingCardState extends State<_TimingCard> {
       drivers,
       raceLike: raceLike,
     );
+    final tireScaleLaps = _tireScaleLaps(drivers);
     final headerLabel = switch (_tab) {
       _BoardTab.lap => raceLike ? 'INTERVAL' : 'BEST LAP',
       _BoardTab.sector => 'SECTOR TIME',
@@ -712,13 +727,23 @@ class _TimingCardState extends State<_TimingCard> {
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
             )
-          else ...[
+          else if (_tab == _BoardTab.tire) ...[
+            for (final driver in drivers)
+              _DriverRow(
+                driver: driver,
+                raceLike: raceLike,
+                tab: _tab,
+                overallBestLapMilliseconds: overallBestLapMilliseconds,
+                tireScaleLaps: tireScaleLaps,
+              ),
+          ] else ...[
             for (final driver in topThree)
               _DriverRow(
                 driver: driver,
                 raceLike: raceLike,
                 tab: _tab,
                 overallBestLapMilliseconds: overallBestLapMilliseconds,
+                tireScaleLaps: tireScaleLaps,
               ),
             if (remaining.isNotEmpty)
               ClassificationExpander(
@@ -735,6 +760,7 @@ class _TimingCardState extends State<_TimingCard> {
                       raceLike: raceLike,
                       tab: _tab,
                       overallBestLapMilliseconds: overallBestLapMilliseconds,
+                      tireScaleLaps: tireScaleLaps,
                     ),
                 ],
               ),
@@ -809,19 +835,14 @@ class _DriverRow extends StatelessWidget {
     required this.raceLike,
     required this.tab,
     required this.overallBestLapMilliseconds,
+    required this.tireScaleLaps,
   });
 
   final LiveDriverPosition driver;
   final bool raceLike;
   final _BoardTab tab;
   final int? overallBestLapMilliseconds;
-
-  /// 보조 정보(랩 수·PIT) 스타일.
-  static const TextStyle _metaStyle = TextStyle(
-    color: AppColors.nameMuted,
-    fontSize: 11,
-    fontWeight: FontWeight.w700,
-  );
+  final int tireScaleLaps;
 
   static const TextStyle _tinyLabelStyle = TextStyle(
     color: AppColors.faint,
@@ -852,6 +873,8 @@ class _DriverRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (tab == _BoardTab.tire) return _tireRow();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: const BoxDecoration(
@@ -903,7 +926,7 @@ class _DriverRow extends StatelessWidget {
     return switch (tab) {
       _BoardTab.lap => _lapContent(),
       _BoardTab.sector => _sectorContent(),
-      _BoardTab.tire => _tireContent(),
+      _BoardTab.tire => const SizedBox.shrink(),
     };
   }
 
@@ -1013,38 +1036,91 @@ class _DriverRow extends StatelessWidget {
     );
   }
 
-  /// TIRE 탭: 현재 타이어 + PIT 횟수 + 스틴트 히스토리 바.
-  Widget _tireContent() {
+  /// TIRE 탭: 드라이버별 실제 주행 랩을 공통 축에 그린 스틴트 타임라인.
+  Widget _tireRow() {
     final stints = driver.stints
-        .where((s) => s.compound != null || (s.laps ?? 0) > 0)
+        .where((stint) => (stint.laps ?? 0) > 0)
         .toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (driver.compound != null) ...[
-              _TyreBadge(compound: driver.compound!),
-              if (driver.tyreAge != null) ...[
-                const SizedBox(width: 5),
-                Text('${driver.tyreAge}랩', style: _metaStyle),
+    final pitStops =
+        driver.pitStops ?? (stints.isEmpty ? 0 : stints.length - 1);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.rowBorder)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 18,
+            child: Text(
+              '${driver.position}',
+              style: const TextStyle(
+                color: AppColors.nameMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Container(
+            width: 3,
+            height: 27,
+            decoration: BoxDecoration(
+              color: liveDriverAccent(driver.code),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 7),
+          SizedBox(
+            width: 31,
+            child: Text(
+              driver.code,
+              maxLines: 1,
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          if (driver.compound != null)
+            _TyreBadge(compound: driver.compound!)
+          else
+            const SizedBox(width: 17, height: 17),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 35,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${pitStops}PIT', style: _tireMetaStyle),
+                Text(
+                  driver.tyreAge == null ? '—LAP' : '${driver.tyreAge}LAP',
+                  style: _tireMetaStyle,
+                ),
               ],
-            ],
-            if (driver.pitStops != null) ...[
-              if (driver.compound != null) const SizedBox(width: 12),
-              Text('PIT ${driver.pitStops}', style: _metaStyle),
-            ],
-            if (driver.compound == null && driver.pitStops == null)
-              const Text('타이어 데이터 수신 대기', style: _tinyLabelStyle),
-          ],
-        ),
-        if (stints.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          _StintBar(stints: stints),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _StintTimeline(
+              driverCode: driver.code,
+              stints: stints,
+              scaleLaps: tireScaleLaps,
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
+
+  static const TextStyle _tireMetaStyle = TextStyle(
+    color: AppColors.slate300,
+    fontSize: 9.5,
+    height: 1.15,
+    fontWeight: FontWeight.w900,
+  );
 
   Widget _trailing() {
     // PIT/OUT 상태가 최우선. 그 외 LAP 탭 레이스는 INTERVAL,
@@ -1115,29 +1191,131 @@ class _MiniSectorBar extends StatelessWidget {
 }
 
 /// 스틴트 히스토리 바 — 컴파운드 색 구간을 사용 랩 수 비율로 나눈다.
-class _StintBar extends StatelessWidget {
-  const _StintBar({required this.stints});
+class _StintTimeline extends StatelessWidget {
+  const _StintTimeline({
+    required this.driverCode,
+    required this.stints,
+    required this.scaleLaps,
+  });
 
+  final String driverCode;
   final List<LiveStint> stints;
+  final int scaleLaps;
+
+  static const double _labelWidth = 24;
+  static const double _minimumLabelGap = 27;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < stints.length; i++)
-          Expanded(
-            flex: (stints[i].laps ?? 1).clamp(1, 999),
-            child: Container(
-              height: 7,
-              margin: EdgeInsets.only(right: i == stints.length - 1 ? 0 : 2),
-              decoration: BoxDecoration(
-                color: _compoundColor(stints[i].compound ?? ''),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    if (stints.isEmpty) {
+      return const SizedBox(
+        height: 30,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '타이어 데이터 대기',
+            style: TextStyle(
+              color: AppColors.faint,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
             ),
           ),
-      ],
+        ),
+      );
+    }
+
+    final boundaries = <int>[0];
+    for (final stint in stints) {
+      boundaries.add(boundaries.last + (stint.laps ?? 0));
+    }
+
+    return SizedBox(
+      key: ValueKey('tire-timeline-$driverCode'),
+      height: 30,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          if (!width.isFinite || width <= 0) return const SizedBox.shrink();
+          final scale = scaleLaps <= 0 ? 1 : scaleLaps;
+          final labelIndexes = _visibleLabelIndexes(boundaries, width, scale);
+
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final index in labelIndexes)
+                Positioned(
+                  left: _labelLeft(boundaries[index], width, scale),
+                  top: 0,
+                  width: _labelWidth,
+                  child: Text(
+                    '${boundaries[index]}',
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.slate300,
+                      fontSize: 9.5,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              for (var i = 0; i < stints.length; i++)
+                Positioned(
+                  key: ValueKey('tire-stint-$driverCode-$i'),
+                  left: boundaries[i] / scale * width,
+                  top: 17,
+                  width: (stints[i].laps ?? 0) / scale * width,
+                  height: 8,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: i == stints.length - 1 ? 0 : 2,
+                    ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: _compoundColor(stints[i].compound ?? ''),
+                        borderRadius: BorderRadius.horizontal(
+                          left: i == 0 ? const Radius.circular(4) : Radius.zero,
+                          right: i == stints.length - 1
+                              ? const Radius.circular(4)
+                              : Radius.zero,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
+  }
+
+  List<int> _visibleLabelIndexes(
+    List<int> boundaries,
+    double width,
+    int scale,
+  ) {
+    final selected = <int>[0];
+    for (var index = 1; index < boundaries.length; index++) {
+      final x = boundaries[index] / scale * width;
+      final last = index == boundaries.length - 1;
+      if (last) {
+        while (selected.length > 1 &&
+            x - boundaries[selected.last] / scale * width < _minimumLabelGap) {
+          selected.removeLast();
+        }
+        selected.add(index);
+      } else if (x - boundaries[selected.last] / scale * width >=
+          _minimumLabelGap) {
+        selected.add(index);
+      }
+    }
+    return selected;
+  }
+
+  double _labelLeft(int lap, double width, int scale) {
+    final centered = lap / scale * width - _labelWidth / 2;
+    return centered.clamp(0, width - _labelWidth);
   }
 }
 
@@ -1289,7 +1467,6 @@ class _RaceControlCardState extends State<_RaceControlCard> {
     );
   }
 }
-
 
 class _ControlMessage extends StatelessWidget {
   const _ControlMessage({required this.message});

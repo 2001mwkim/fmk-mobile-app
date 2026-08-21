@@ -80,8 +80,8 @@ void main() {
     await tester.tap(find.text('TIRE'));
     await tester.pump();
     expect(find.text('M'), findsOneWidget);
-    expect(find.text('11랩'), findsOneWidget);
-    expect(find.text('PIT 1'), findsOneWidget);
+    expect(find.text('11LAP'), findsOneWidget);
+    expect(find.text('1PIT'), findsOneWidget);
 
     // 'LAP' 텍스트는 헤더 랩 메트릭에도 있어 탭 라벨(뒤쪽)을 지정한다.
     await tester.tap(find.text('LAP').last);
@@ -128,6 +128,89 @@ void main() {
     expect(find.text('INTERVAL'), findsNothing);
     expect(find.text('1:28.100'), findsOneWidget);
     expect(find.text('1:28.400'), findsOneWidget);
+  });
+
+  testWidgets('tire timelines share one lap scale and show every driver', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-08-21T10:40:00Z',
+      raceName: 'Dutch Grand Prix',
+      sessionType: 'Practice',
+      sessionName: 'Practice 1',
+      classification: [
+        LiveDriverPosition(
+          position: 1,
+          code: 'ANT',
+          displayName: 'Kimi Antonelli',
+          compound: 'MEDIUM',
+          tyreAge: 3,
+          pitStops: 1,
+          stints: [
+            LiveStint(compound: 'SOFT', laps: 2),
+            LiveStint(compound: 'MEDIUM', laps: 3),
+          ],
+        ),
+        LiveDriverPosition(
+          position: 2,
+          code: 'NOR',
+          displayName: 'Lando Norris',
+          compound: 'MEDIUM',
+          tyreAge: 5,
+          pitStops: 1,
+          stints: [
+            LiveStint(compound: 'SOFT', laps: 5),
+            LiveStint(compound: 'MEDIUM', laps: 5),
+          ],
+        ),
+        LiveDriverPosition(
+          position: 3,
+          code: 'RUS',
+          displayName: 'George Russell',
+          compound: 'HARD',
+          tyreAge: 4,
+          pitStops: 0,
+          stints: [LiveStint(compound: 'HARD', laps: 4)],
+        ),
+        LiveDriverPosition(
+          position: 4,
+          code: 'HAM',
+          displayName: 'Lewis Hamilton',
+          compound: 'SOFT',
+          tyreAge: 6,
+          pitStops: 0,
+          stints: [LiveStint(compound: 'SOFT', laps: 6)],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const LiveCenterScreen(snapshotOverride: snapshot),
+      ),
+    );
+    await tester.tap(find.text('TIRE'));
+    await tester.pump();
+
+    expect(find.text('HAM'), findsOneWidget);
+    expect(find.text('4위 이하 순위 보기'), findsNothing);
+    expect(find.text('3LAP'), findsOneWidget);
+    expect(find.text('1PIT'), findsNWidgets(2));
+
+    final shortBar = tester.getRect(
+      find.byKey(const ValueKey('tire-stint-ANT-1')),
+    );
+    final longestBar = tester.getRect(
+      find.byKey(const ValueKey('tire-stint-NOR-1')),
+    );
+    expect(shortBar.right, lessThan(longestBar.right));
   });
 
   testWidgets(
