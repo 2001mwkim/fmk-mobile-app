@@ -221,6 +221,7 @@
         android:padding="16dp"
         android:visibility="gone">
         <TextView
+            android:id="@+id/tv_myTeam_empty_kicker"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
@@ -230,6 +231,7 @@
             android:textColor="@color/fmk_dim"
             android:textSize="10sp" />
         <TextView
+            android:id="@+id/tv_myTeam_empty_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"

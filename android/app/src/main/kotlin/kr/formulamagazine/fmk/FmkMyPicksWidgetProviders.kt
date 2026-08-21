@@ -27,6 +27,8 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
       val root: Int, val glow: Int, val bar: Int, val content: Int, val empty: Int,
       val kicker: Int, val change: Int, val code: Int, val name: Int, val sub: Int,
       val pos: Int, val pts: Int,
+      /** 빈 상태(미설정) 텍스트 — 킥커/안내는 콤팩트·와이드 공통, 힌트는 콤팩트 전용. */
+      val emptyKicker: Int, val emptyTitle: Int, val emptyHint: Int,
   )
 
   override fun onUpdate(
@@ -121,6 +123,11 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
         setViewVisibility(ids.content, View.GONE)
         setViewVisibility(ids.glow, View.GONE)
         setViewVisibility(ids.empty, View.VISIBLE)
+        // 빈 상태 텍스트도 테마 Context 로 강제 — 런처 모드에 맡기면 "다크 고정 +
+        // 기기 라이트"에서 어두운 배경에 어두운 글씨가 된다.
+        setTextColor(ids.emptyKicker, theme.fmkColor(R.color.fmk_dim))
+        setTextColor(ids.emptyTitle, theme.fmkColor(R.color.fmk_text))
+        if (!wide) setTextColor(ids.emptyHint, theme.fmkColor(R.color.fmk_ghost))
         return@apply
       }
       setViewVisibility(ids.content, View.VISIBLE)
@@ -187,7 +194,8 @@ class FmkMyDriverWidgetProvider : FmkMyPickWidgetProvider() {
       R.id.widget_root_my_driver, R.id.iv_myDriver_glow, R.id.iv_myDriver_bar,
       R.id.grp_myDriver_content, R.id.grp_myDriver_empty, R.id.tv_myDriver_kicker,
       R.id.tv_myDriver_change, R.id.tv_myDriver_code, R.id.tv_myDriver_name,
-      R.id.tv_myDriver_sub, R.id.tv_myDriver_pos, R.id.tv_myDriver_pts)
+      R.id.tv_myDriver_sub, R.id.tv_myDriver_pos, R.id.tv_myDriver_pts,
+      R.id.tv_myDriver_empty_kicker, R.id.tv_myDriver_empty_title, R.id.tv_myDriver_empty_hint)
 
   override fun identity(data: SharedPreferences): Triple<String, String, String> {
     val code = data.getString("myDriverCode", "").orEmpty()
@@ -214,7 +222,8 @@ class FmkMyTeamWidgetProvider : FmkMyPickWidgetProvider() {
       R.id.widget_root_my_team, R.id.iv_myTeam_glow, R.id.iv_myTeam_bar,
       R.id.grp_myTeam_content, R.id.grp_myTeam_empty, R.id.tv_myTeam_kicker,
       R.id.tv_myTeam_change, R.id.tv_myTeam_code, R.id.tv_myTeam_name,
-      R.id.tv_myTeam_sub, R.id.tv_myTeam_pos, R.id.tv_myTeam_pts)
+      R.id.tv_myTeam_sub, R.id.tv_myTeam_pos, R.id.tv_myTeam_pts,
+      R.id.tv_myTeam_empty_kicker, R.id.tv_myTeam_empty_title, R.id.tv_myTeam_empty_hint)
 
   override fun identity(data: SharedPreferences): Triple<String, String, String> {
     val code = data.getString("myTeamCode", "").orEmpty()

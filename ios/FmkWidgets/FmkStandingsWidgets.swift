@@ -80,14 +80,16 @@ struct FmkStandingsView: View {
   }
 
   var body: some View {
-    if isAccessory {
-      if #available(iOSApplicationExtension 16.0, *) {
-        accessoryBody
-          .fmkAccessoryBackground()
-          .widgetURL(URL(string: "fmkwidget://standings?homeWidget"))
+    Group {
+      if isAccessory {
+        if #available(iOSApplicationExtension 16.0, *) {
+          accessoryBody
+            .fmkAccessoryBackground()
+            .widgetURL(URL(string: "fmkwidget://standings?homeWidget"))
+        }
+      } else {
+        fullBody
       }
-    } else {
-      fullBody
     }
   }
 

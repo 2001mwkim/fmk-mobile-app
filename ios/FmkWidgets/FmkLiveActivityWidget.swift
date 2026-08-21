@@ -12,8 +12,8 @@ import WidgetKit
       ActivityConfiguration(for: FmkLiveActivityAttributes.self) { context in
         // 잠금화면 / 배너
         FmkLiveActivityLockScreenView(state: context.state)
-          .activityBackgroundTint(FmkTheme.bgBottom)
-          .activitySystemActionForegroundColor(FmkTheme.white)
+          .activityBackgroundTint(FmkTheme.system.bgBottom)
+          .activitySystemActionForegroundColor(FmkTheme.system.white)
       } dynamicIsland: { context in
         DynamicIsland {
           DynamicIslandExpandedRegion(.leading) {
@@ -21,7 +21,7 @@ import WidgetKit
               FmkLiveBadge(text: context.state.badge)
               Text(context.state.sessionName)
                 .font(.system(size: 12, weight: .bold))
-                .foregroundColor(FmkTheme.dim)
+                .foregroundColor(FmkTheme.system.dim)
                 .lineLimit(1)
             }
             .padding(.leading, 4)
@@ -32,10 +32,10 @@ import WidgetKit
               HStack(spacing: 3) {
                 Text("\(context.state.lapCurrent)")
                   .font(.system(size: 13, weight: .heavy))
-                  .foregroundColor(FmkTheme.white)
+                  .foregroundColor(FmkTheme.system.white)
                 Text("/ \(context.state.lapTotal) LAP")
                   .font(.system(size: 10, weight: .semibold))
-                  .foregroundColor(FmkTheme.dim)
+                  .foregroundColor(FmkTheme.system.dim)
               }
               .padding(.trailing, 4)
               .fmkIslandScheme()
@@ -55,11 +55,11 @@ import WidgetKit
           // 콤팩트 영역은 좌우 합쳐 ~90pt 라 한글은 넣지 않는다(영문 ≤4자).
           HStack(spacing: 4) {
             Circle()
-              .fill(FmkTheme.red)
+              .fill(FmkTheme.system.red)
               .frame(width: 7, height: 7)
             Text(context.state.compactLeadingText)
               .font(.system(size: 11, weight: .heavy))
-              .foregroundColor(FmkTheme.white)
+              .foregroundColor(FmkTheme.system.white)
               .lineLimit(1)
               .minimumScaleFactor(0.8)
           }
@@ -69,20 +69,20 @@ import WidgetKit
           HStack(spacing: 3) {
             Text("P1")
               .font(.system(size: 10, weight: .heavy))
-              .foregroundColor(FmkTheme.red)
+              .foregroundColor(FmkTheme.system.red)
             Text(context.state.compactP1Code)
               .font(.system(size: 12, weight: .heavy))
-              .foregroundColor(FmkTheme.white)
+              .foregroundColor(FmkTheme.system.white)
           }
           .lineLimit(1)
           .minimumScaleFactor(0.8)
           .fmkIslandScheme()
         } minimal: {
           Circle()
-            .fill(FmkTheme.red)
+            .fill(FmkTheme.system.red)
             .frame(width: 8, height: 8)
         }
-        .keylineTint(FmkTheme.red)
+        .keylineTint(FmkTheme.system.red)
       }
     }
   }
@@ -100,20 +100,20 @@ import WidgetKit
           FmkLiveBadge(text: state.badge)
           Text(state.gpName)
             .font(.system(size: 15, weight: .heavy))
-            .foregroundColor(FmkTheme.white)
+            .foregroundColor(FmkTheme.system.white)
             .lineLimit(1)
           Text(state.sessionName)
             .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(FmkTheme.dim)
+            .foregroundColor(FmkTheme.system.dim)
             .lineLimit(1)
           Spacer(minLength: 0)
           if state.lapTotal > 0 {
             Text("\(state.lapCurrent)")
               .font(.system(size: 15, weight: .heavy))
-              .foregroundColor(FmkTheme.white)
+              .foregroundColor(FmkTheme.system.white)
             Text("/ \(state.lapTotal) LAP")
               .font(.system(size: 11, weight: .semibold))
-              .foregroundColor(FmkTheme.dim)
+              .foregroundColor(FmkTheme.system.dim)
           }
         }
 
@@ -140,16 +140,16 @@ import WidgetKit
         HStack(spacing: 8) {
           Text("\(pos)")
             .font(.system(size: 14, weight: .heavy))
-            .foregroundColor(pos == 1 ? FmkTheme.red : FmkTheme.dim)
+            .foregroundColor(pos == 1 ? FmkTheme.system.red : FmkTheme.system.dim)
             .frame(width: 14, alignment: .center)
           Text(name)
             .font(.system(size: 14, weight: .bold))
-            .foregroundColor(FmkTheme.white)
+            .foregroundColor(FmkTheme.system.white)
             .lineLimit(1)
           Spacer(minLength: 4)
           Text(time.isEmpty ? "—" : time)
             .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(FmkTheme.text)
+            .foregroundColor(FmkTheme.system.text)
         }
       }
     }
@@ -165,7 +165,7 @@ import WidgetKit
         .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
         .padding(.horizontal, 7)
         .padding(.vertical, 2.5)
-        .background(Capsule().fill(FmkTheme.red))
+        .background(Capsule().fill(FmkTheme.system.red))
     }
   }
   // 다이나믹 아일랜드 콤팩트 표시용 파생 문자열.
