@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -23,6 +24,11 @@ import es.antonborri.home_widget.HomeWidgetProvider
  * 우상단 토글로 드라이버 ↔ 팀(컨스트럭터)을 전환하고, 2셀 폭으로 줄이면
  * 콤팩트(Top 3) 레이아웃으로 자동 전환된다(FmkHomeWidgetProvider 와 동일 규칙).
  */
+/** 시스템 라이트/다크(values / values-night)에 따라 해석되는 위젯 색. */
+private fun Context.fmkColor(resId: Int): Int =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) getColor(resId)
+    else @Suppress("DEPRECATION") resources.getColor(resId)
+
 class FmkStandingsWidgetProvider : HomeWidgetProvider() {
   override fun onUpdate(
       context: Context,
@@ -144,13 +150,13 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
           "setBackgroundResource",
           if (showTeams) 0 else R.drawable.widget_toggle_active_bg,
       )
-      setTextColor(R.id.btn_st_drivers, if (showTeams) COLOR_DIM else COLOR_WHITE)
+      setTextColor(R.id.btn_st_drivers, if (showTeams) context.fmkColor(R.color.fmk_dim) else context.fmkColor(R.color.fmk_white))
       setInt(
           R.id.btn_st_teams,
           "setBackgroundResource",
           if (showTeams) R.drawable.widget_toggle_active_bg else 0,
       )
-      setTextColor(R.id.btn_st_teams, if (showTeams) COLOR_WHITE else COLOR_DIM)
+      setTextColor(R.id.btn_st_teams, if (showTeams) context.fmkColor(R.color.fmk_white) else context.fmkColor(R.color.fmk_dim))
       setOnClickPendingIntent(R.id.btn_st_drivers, togglePendingIntent(context, ACTION_SHOW_DRIVERS))
       setOnClickPendingIntent(R.id.btn_st_teams, togglePendingIntent(context, ACTION_SHOW_TEAMS))
 
@@ -168,11 +174,11 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
         if (!visible) continue
 
         setTextViewText(posIds[i], data.getInt("${key}Pos", i + 1).toString())
-        setTextColor(posIds[i], if (i == 0) FMK_RED else COLOR_DIM)
+        setTextColor(posIds[i], if (i == 0) FMK_RED else context.fmkColor(R.color.fmk_dim))
         setInt(barIds[i], "setColorFilter", rowColor(data, "${key}Color"))
         setTextViewText(nameIds[i], data.getString("${key}Name", "").orEmpty())
         setTextViewText(changeIds[i], data.getString("${key}Change", "").orEmpty())
-        setTextColor(changeIds[i], rowColor(data, "${key}ChangeColor", COLOR_DIM))
+        setTextColor(changeIds[i], rowColor(data, "${key}ChangeColor", context.fmkColor(R.color.fmk_dim)))
         setTextViewText(ptsIds[i], data.getString("${key}Pts", "").orEmpty())
       }
     }
@@ -243,9 +249,6 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
     private const val KEY_SHOW_TEAMS = "showTeams"
     private const val ACTION_SHOW_DRIVERS = "kr.formulamagazine.fmk.widget.standings.SHOW_DRIVERS"
     private const val ACTION_SHOW_TEAMS = "kr.formulamagazine.fmk.widget.standings.SHOW_TEAMS"
-
-    private const val COLOR_WHITE = -328966 // 0xFFFAFAFA (@color/fmk_white)
-    private const val COLOR_DIM = -6184534 // 0xFFA1A1AA (@color/fmk_dim)
 
     /** 이 폭(dp) 미만이면 2셀로 보고 콤팩트 레이아웃을 쓴다. */
     private const val COMPACT_MAX_WIDTH_DP = 180

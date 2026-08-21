@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 위젯 팔레트(라이트 — 시스템 라이트 모드). 다크 값은 values-night/colors.xml.
+     iOS 위젯(ios/FmkWidgets/FmkTheme.swift)과 수동 동기화.
+     이름은 다크 기준 역할명 유지(fmk_white = 주 텍스트). -->
 <resources>
     <color name="fmk_red">#EF4444</color>
-    <color name="fmk_white">#FAFAFA</color>
-    <color name="fmk_text">#D4D4D8</color>
-    <color name="fmk_dim">#A1A1AA</color>
-    <color name="fmk_faint">#71717A</color>
-    <color name="fmk_ghost">#52525B</color>
-    <color name="fmk_divider">#14FFFFFF</color>
-    <!-- 위젯 배경: 앱 카드(#141828)/배경(#090b12)과 같은 네이비 계열로 통일.
-         중성 그레이(#161618)는 앱과 톤이 어긋나 위젯만 따로 놀아 보였다. -->
-    <color name="fmk_bg_top">#171B2C</color>
-    <color name="fmk_bg_bottom">#0B0D16</color>
-    <color name="fmk_stroke">#12FFFFFF</color>
-    <color name="fmk_track">#14FFFFFF</color>
-    <color name="fmk_card">#0AFFFFFF</color>
+    <color name="fmk_white">#11131C</color>
+    <color name="fmk_text">#3A3F52</color>
+    <color name="fmk_dim">#6B7287</color>
+    <color name="fmk_faint">#8A90A3</color>
+    <color name="fmk_ghost">#B5B9C8</color>
+    <color name="fmk_divider">#14000000</color>
+    <color name="fmk_bg_top">#FFFFFF</color>
+    <color name="fmk_bg_bottom">#EEF0F6</color>
+    <color name="fmk_stroke">#12000000</color>
+    <color name="fmk_track">#14000000</color>
+    <color name="fmk_card">#0A000000</color>
     <color name="fmk_p1">#EF4444</color>
-    <color name="fmk_p2">#A1A1AA</color>
-    <color name="fmk_p3">#71717A</color>
+    <color name="fmk_p2">#6B7287</color>
+    <color name="fmk_p3">#8A90A3</color>
 	<color name="ic_launcher_background">#000000</color>
 
     <!-- 위젯 피커 미리보기 전용 팀 컬러(lib/data/team_colors.dart 와 동일 값).

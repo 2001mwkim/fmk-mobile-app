@@ -334,7 +334,7 @@ struct FmkLiveView: View {
       HStack(spacing: 7) {
         Text(live.isLive ? "LIVE" : "결과")
           .font(.system(size: 10, weight: .heavy))
-          .foregroundColor(FmkTheme.white)
+          .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
           .padding(.horizontal, 7)
           .padding(.vertical, 2.5)
           .background(Capsule().fill(FmkTheme.red))
@@ -395,7 +395,7 @@ struct FmkLiveCompactView: View {
     VStack(alignment: .leading, spacing: 3) {
       Text(live.isLive ? "LIVE" : "결과")
         .font(.system(size: 8, weight: .heavy))
-        .foregroundColor(FmkTheme.white)
+        .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
         .background(Capsule().fill(FmkTheme.red))

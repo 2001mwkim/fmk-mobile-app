@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 위젯 팔레트(다크 — 시스템 다크 모드). 앱 팔레트(lib/theme/app_colors.dart)·
+     iOS 위젯(ios/FmkWidgets/FmkTheme.swift)과 수동 동기화. 라이트 값은 values/colors.xml. -->
+<resources>
+    <color name="fmk_red">#EF4444</color>
+    <color name="fmk_white">#FAFAFA</color>
+    <color name="fmk_text">#D4D4D8</color>
+    <color name="fmk_dim">#A1A1AA</color>
+    <color name="fmk_faint">#71717A</color>
+    <color name="fmk_ghost">#52525B</color>
+    <color name="fmk_divider">#14FFFFFF</color>
+    <!-- 위젯 배경: 앱 카드(#141828)/배경(#090b12)과 같은 네이비 계열로 통일. -->
+    <color name="fmk_bg_top">#171B2C</color>
+    <color name="fmk_bg_bottom">#0B0D16</color>
+    <color name="fmk_stroke">#12FFFFFF</color>
+    <color name="fmk_track">#14FFFFFF</color>
+    <color name="fmk_card">#0AFFFFFF</color>
+    <color name="fmk_p1">#EF4444</color>
+    <color name="fmk_p2">#A1A1AA</color>
+    <color name="fmk_p3">#71717A</color>
+</resources>

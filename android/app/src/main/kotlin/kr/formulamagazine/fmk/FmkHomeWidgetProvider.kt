@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -14,6 +15,11 @@ import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
+
+/** 시스템 라이트/다크(values / values-night)에 따라 해석되는 위젯 색. */
+private fun Context.fmkColor(resId: Int): Int =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) getColor(resId)
+    else @Suppress("DEPRECATION") resources.getColor(resId)
 
 class FmkHomeWidgetProvider : HomeWidgetProvider() {
   override fun onUpdate(
@@ -197,14 +203,14 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
         "setBackgroundResource",
         if (scheduleActive) R.drawable.widget_toggle_active_bg else 0,
     )
-    setTextColor(scheduleId, if (scheduleActive) COLOR_WHITE else COLOR_DIM)
+    setTextColor(scheduleId, if (scheduleActive) context.fmkColor(R.color.fmk_white) else context.fmkColor(R.color.fmk_dim))
 
     setInt(
         liveId,
         "setBackgroundResource",
         if (scheduleActive) 0 else R.drawable.widget_toggle_active_bg,
     )
-    setTextColor(liveId, if (scheduleActive) COLOR_DIM else COLOR_WHITE)
+    setTextColor(liveId, if (scheduleActive) context.fmkColor(R.color.fmk_dim) else context.fmkColor(R.color.fmk_white))
 
     setOnClickPendingIntent(scheduleId, togglePendingIntent(context, ACTION_SHOW_SCHEDULE))
     setOnClickPendingIntent(liveId, togglePendingIntent(context, ACTION_SHOW_LIVE))
@@ -299,9 +305,9 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
         val isNext = highlight == index
         val isPast = highlight > index
         setViewVisibility(dotIds[i], if (isNext) View.VISIBLE else View.INVISIBLE)
-        setTextColor(nameIds[i], if (isNext) COLOR_WHITE else if (isPast) COLOR_GHOST else COLOR_TEXT)
-        setTextColor(dateIds[i], if (isPast) COLOR_GHOST else COLOR_DIM)
-        setTextColor(timeIds[i], if (isNext) FMK_RED else if (isPast) COLOR_GHOST else COLOR_WHITE)
+        setTextColor(nameIds[i], if (isNext) context.fmkColor(R.color.fmk_white) else if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_text))
+        setTextColor(dateIds[i], if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_dim))
+        setTextColor(timeIds[i], if (isNext) FMK_RED else if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_white))
       }
     }
   }
@@ -455,11 +461,6 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     private const val KEY_LAST_MODE = "lastSeenMode"
     private const val ACTION_SHOW_SCHEDULE = "kr.formulamagazine.fmk.widget.SHOW_SCHEDULE"
     private const val ACTION_SHOW_LIVE = "kr.formulamagazine.fmk.widget.SHOW_LIVE"
-
-    private const val COLOR_WHITE = -328966 // 0xFFFAFAFA (@color/fmk_white)
-    private const val COLOR_DIM = -6184534 // 0xFFA1A1AA (@color/fmk_dim)
-    private val COLOR_TEXT = 0xFFD4D4D8.toInt() // @color/fmk_text
-    private val COLOR_GHOST = 0xFF52525B.toInt() // @color/fmk_ghost — 지난 세션
 
     /** 이 폭(dp) 미만이면 2셀로 보고 콤팩트 레이아웃을 쓴다(2셀 ≈ 110~150dp). */
     private const val COMPACT_MAX_WIDTH_DP = 180

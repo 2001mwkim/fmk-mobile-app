@@ -25,6 +25,7 @@ import WidgetKit
                 .lineLimit(1)
             }
             .padding(.leading, 4)
+            .fmkIslandScheme()
           }
           DynamicIslandExpandedRegion(.trailing) {
             if context.state.lapTotal > 0 {
@@ -37,6 +38,7 @@ import WidgetKit
                   .foregroundColor(FmkTheme.dim)
               }
               .padding(.trailing, 4)
+              .fmkIslandScheme()
             }
           }
           DynamicIslandExpandedRegion(.bottom) {
@@ -46,6 +48,7 @@ import WidgetKit
               FmkLiveActivityRow(pos: 3, name: context.state.p3Name, time: context.state.p3Time)
             }
             .padding(.top, 2)
+            .fmkIslandScheme()
           }
         } compactLeading: {
           Circle()
@@ -60,6 +63,7 @@ import WidgetKit
           )
           .font(.system(size: 12, weight: .heavy))
           .foregroundColor(FmkTheme.white)
+          .fmkIslandScheme()
         } minimal: {
           Circle()
             .fill(FmkTheme.red)
@@ -145,7 +149,7 @@ import WidgetKit
     var body: some View {
       Text(text == "LIVE" ? "LIVE" : "결과")
         .font(.system(size: 10, weight: .heavy))
-        .foregroundColor(FmkTheme.white)
+        .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
         .padding(.horizontal, 7)
         .padding(.vertical, 2.5)
         .background(Capsule().fill(FmkTheme.red))
