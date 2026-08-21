@@ -665,25 +665,23 @@ class _TimingCardState extends State<_TimingCard> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-            // '실시간 순위'·남은시간(LAP)·BEST LAP 을 한 줄에 둔다. 남은 시간
-            // 칩은 왼쪽, BEST LAP(INTERVAL) 컬럼 라벨은 오른쪽 끝(시간 컬럼 위).
+            // 한 줄 구성: '실시간 순위' 바로 오른쪽에 세션/남은시간 칩을 붙이고,
+            // BEST LAP(INTERVAL) 컬럼 라벨은 오른쪽 끝(시간 컬럼 위)으로 민다.
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Expanded(
-                  child: Text(
-                    '실시간 순위',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                    ),
+                const Text(
+                  '실시간 순위',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 _TimingSessionMetric(snapshot: snapshot),
-                if (headerLabel != null) ...[
-                  const SizedBox(width: 10),
+                const Spacer(),
+                if (headerLabel != null)
                   Text(
                     headerLabel,
                     style: const TextStyle(
@@ -693,7 +691,6 @@ class _TimingCardState extends State<_TimingCard> {
                       letterSpacing: 0.4,
                     ),
                   ),
-                ],
               ],
             ),
           ),

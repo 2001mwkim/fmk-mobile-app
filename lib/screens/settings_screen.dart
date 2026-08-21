@@ -239,7 +239,6 @@ class _WidgetThemeCardState extends State<_WidgetThemeCard> {
         children: [
           const _CardHeaderRow(
             title: '위젯 테마',
-            description: '홈·순위·MY PICKS 위젯의 밝기를 직접 고릅니다. 기본은 다크.',
             badge: '화면 모드',
           ),
           const SizedBox(height: 16),
@@ -438,7 +437,7 @@ class _NotificationToggleRow extends StatelessWidget {
 class _CardHeaderRow extends StatelessWidget {
   const _CardHeaderRow({
     required this.title,
-    required this.description,
+    this.description = '',
     required this.badge,
   });
 
@@ -469,16 +468,18 @@ class _CardHeaderRow extends StatelessWidget {
             AppChip(label: badge, variant: AppChipVariant.neutral),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          description,
-          style: const TextStyle(
-            fontSize: 12,
-            color: _muted,
-            height: 1.45,
-            fontWeight: FontWeight.w500,
+        if (description.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _muted,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
