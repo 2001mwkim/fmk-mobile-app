@@ -137,7 +137,7 @@
                 android:includeFontPadding="false"
                 android:text="P4"
                 android:textColor="@color/fmk_white"
-                android:textSize="28sp" />
+                android:textSize="30sp" />
             <TextView
                 android:id="@+id/tv_myTeam_pts"
                 android:layout_width="wrap_content"
@@ -148,7 +148,7 @@
                 android:maxLines="1"
                 android:text="138 PTS"
                 android:textColor="@color/fmk_white"
-                android:textSize="18sp" />
+                android:textSize="20sp" />
         </LinearLayout>
     </LinearLayout>
 

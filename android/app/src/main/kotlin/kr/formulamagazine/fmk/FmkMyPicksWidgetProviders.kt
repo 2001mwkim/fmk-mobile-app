@@ -4,44 +4,29 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.util.Log
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
-/**
- * MY DRIVER / MY TEAM 위젯 — 설정(MY PICKS)에서 고른 드라이버·팀의 순위·포인트를
- * 팀 컬러로 보여준다. 데이터 키(myDriver* / myTeam*)는
- * lib/services/fmk_home_widget_bridge.dart 의 _saveMyPicksPayload 와 수동 동기화 —
- * 한쪽을 바꾸면 반드시 함께 수정할 것. iOS 대응: ios/FmkWidgets/FmkMyPicksWidgets.swift.
- *
- * my*Set=0 이면 미설정 안내(탭 → 설정 화면 딥링크 fmkwidget://mypicks),
- * my*Found=0(골랐지만 순위에 없음)이면 이름만, 순위/포인트는 '—'.
- * 두 위젯은 ID 접두(Driver/Team)만 다른 같은 레이아웃이라 베이스 클래스로 묶는다.
- */
+/** Responsive Android implementation of the iOS MY PICKS widgets. */
 abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
   protected abstract val tag: String
-  protected abstract val layoutRes: Int
+  protected abstract val compactLayoutRes: Int
+  protected abstract val wideLayoutRes: Int
   protected abstract val keyPrefix: String
   protected abstract val ids: Ids
-
-  /** 이름 줄 색(드라이버=fmk_text, 팀=fmk_dim) — 레이아웃 값과 일치시킨다. */
   protected abstract val nameColorRes: Int
 
   class Ids(
-      val root: Int,
-      val glow: Int,
-      val bar: Int,
-      val content: Int,
-      val empty: Int,
-      val kicker: Int,
-      val change: Int,
-      val code: Int,
-      val name: Int,
-      val sub: Int,
-      val pos: Int,
-      val pts: Int,
+      val root: Int, val glow: Int, val bar: Int, val content: Int, val empty: Int,
+      val kicker: Int, val change: Int, val code: Int, val name: Int, val sub: Int,
+      val pos: Int, val pts: Int,
   )
 
   override fun onUpdate(
@@ -51,7 +36,7 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
       widgetData: SharedPreferences,
   ) {
     appWidgetIds.forEach { widgetId ->
-      val views = buildViewsSafely(context, widgetData)
+      val views = buildViewsSafely(context, appWidgetManager, widgetId, widgetData)
       try {
         appWidgetManager.updateAppWidget(widgetId, views)
       } catch (error: Throwable) {
@@ -60,46 +45,87 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
     }
   }
 
-  private fun buildViewsSafely(context: Context, data: SharedPreferences): RemoteViews {
-    return try {
-      build(context, data)
+  override fun onAppWidgetOptionsChanged(
+      context: Context,
+      appWidgetManager: AppWidgetManager,
+      appWidgetId: Int,
+      newOptions: Bundle?,
+  ) {
+    super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+    try {
+      onUpdate(context, appWidgetManager, intArrayOf(appWidgetId), HomeWidgetPlugin.getData(context))
     } catch (error: Throwable) {
-      Log.e(tag, "build failed, using minimal fallback", error)
-      RemoteViews(context.packageName, layoutRes)
+      Log.e(tag, "options-changed rebuild failed for id=$appWidgetId", error)
     }
   }
 
-  /** 본문 텍스트(큰 약어/이름/보조 줄) — 드라이버/팀이 다르게 채운다. */
+  private fun buildViewsSafely(
+      context: Context,
+      manager: AppWidgetManager,
+      widgetId: Int,
+      data: SharedPreferences,
+  ): RemoteViews {
+    return try {
+      val compact = build(context, data, compactLayoutRes, wide = false)
+      val wide = build(context, data, wideLayoutRes, wide = true)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        RemoteViews(
+            mapOf(
+                SizeF(COMPACT_WIDTH_DP, WIDGET_HEIGHT_DP) to compact,
+                SizeF(WIDE_WIDTH_DP, WIDGET_HEIGHT_DP) to wide,
+            )
+        )
+      } else if (widgetMinWidth(manager, widgetId) >= WIDE_BREAKPOINT_DP) wide else compact
+    } catch (error: Throwable) {
+      Log.e(tag, "build failed, using minimal fallback", error)
+      RemoteViews(context.packageName, compactLayoutRes)
+    }
+  }
+
+  private fun widgetMinWidth(manager: AppWidgetManager, widgetId: Int): Int =
+      try {
+        manager.getAppWidgetOptions(widgetId)
+            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+      } catch (error: Throwable) {
+        Log.e(tag, "Failed to read widget width for id=$widgetId", error)
+        0
+      }
+
   protected abstract fun identity(data: SharedPreferences): Triple<String, String, String>
 
-  private fun build(context: Context, data: SharedPreferences): RemoteViews {
-    // 앱 설정(dark/light/system) 반영 색 해석용 Context(FmkWidgetTheme.kt).
+  protected open fun bindWide(
+      context: Context,
+      data: SharedPreferences,
+      views: RemoteViews,
+      theme: Context,
+  ) = Unit
+
+  private fun build(
+      context: Context,
+      data: SharedPreferences,
+      layoutRes: Int,
+      wide: Boolean,
+  ): RemoteViews {
     val theme = context.forFmkWidgetTheme(data)
     return RemoteViews(context.packageName, layoutRes).apply {
       applyFmkWidgetBackground(theme, data, ids.root)
       val isSet = data.getInt("${keyPrefix}Set", 0) == 1
-      // 설정됨 → 순위 탭, 미설정 → 설정 화면(MY PICKS). 딥링크 매핑은 앱
-      // fmk_home_widget_bridge.dart / app.dart.
       setOnClickPendingIntent(
           ids.root,
           HomeWidgetLaunchIntent.getActivity(
-              context,
-              MainActivity::class.java,
-              Uri.parse(if (isSet) "fmkwidget://standings" else "fmkwidget://mypicks")),
+              context, MainActivity::class.java,
+              Uri.parse(if (isSet) "fmkwidget://standings" else "fmkwidget://mypicks"),
+          ),
       )
-
       if (!isSet) {
         setViewVisibility(ids.content, View.GONE)
         setViewVisibility(ids.glow, View.GONE)
         setViewVisibility(ids.empty, View.VISIBLE)
         return@apply
       }
-
       setViewVisibility(ids.content, View.VISIBLE)
       setViewVisibility(ids.glow, View.VISIBLE)
       setViewVisibility(ids.empty, View.GONE)
-
-      // 정적 @color 텍스트를 renderContext(theme)로 강제해 배경과 테마를 맞춘다.
       setTextColor(ids.kicker, theme.fmkColor(R.color.fmk_red))
       setTextColor(ids.code, theme.fmkColor(R.color.fmk_white))
       setTextColor(ids.name, theme.fmkColor(nameColorRes))
@@ -107,115 +133,119 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
       setTextColor(ids.pos, theme.fmkColor(R.color.fmk_white))
       setTextColor(ids.pts, theme.fmkColor(R.color.fmk_white))
 
-      // 팀 컬러는 헤드라인 옆 바 + 우상단 글로우(킥커는 레이아웃의 레드 유지).
       val accent = color(data, "${keyPrefix}Color")
       setInt(ids.bar, "setColorFilter", accent)
       setInt(ids.glow, "setColorFilter", accent)
-
       val (code, name, sub) = identity(data)
       setTextViewText(ids.code, code)
       setTextViewText(ids.name, name)
       setTextViewText(ids.sub, sub)
       setViewVisibility(ids.sub, if (sub.isEmpty()) View.GONE else View.VISIBLE)
 
-      val found = data.getInt("${keyPrefix}Found", 0) == 1
-      if (found) {
+      if (data.getInt("${keyPrefix}Found", 0) == 1) {
         val pos = data.getInt("${keyPrefix}Pos", 0)
-        setTextViewText(ids.pos, if (pos > 0) "P$pos" else "—")
+        setTextViewText(ids.pos, if (pos > 0) "P$pos" else "–")
         val pts = data.getString("${keyPrefix}Pts", "").orEmpty()
-        setTextViewText(ids.pts, if (pts.isEmpty()) "" else "$pts PTS")
-        // '—'(변동 없음)는 숨긴다 — 큰 타이포 옆 대시는 오타처럼 보인다(iOS 동일).
+        setTextViewText(ids.pts, if (pts.isEmpty()) "" else if (wide) pts else "$pts PTS")
         val change = data.getString("${keyPrefix}Change", "").orEmpty()
-        setTextViewText(ids.change, if (change == "—") "" else change)
-        setTextColor(ids.change, color(data, "${keyPrefix}ChangeColor", theme.fmkColor(R.color.fmk_dim)))
+        setTextViewText(ids.change, if (change == "–") "" else change)
+        setTextColor(ids.change,
+            color(data, "${keyPrefix}ChangeColor", theme.fmkColor(R.color.fmk_dim)))
       } else {
-        // 골랐지만 순위 데이터에 없음(예: 미집계) — 이름만, 나머지는 '—'.
-        setTextViewText(ids.pos, "—")
+        setTextViewText(ids.pos, "–")
         setTextViewText(ids.pts, "")
         setTextViewText(ids.change, "")
       }
+      if (wide) bindWide(context, data, this, theme)
     }
   }
 
-  private fun color(data: SharedPreferences, key: String, fallback: Int = FMK_RED): Int {
-    val stored = try {
-      data.getInt(key, fallback)
-    } catch (error: Throwable) {
+  protected fun color(data: SharedPreferences, key: String, fallback: Int = FMK_RED): Int {
+    val stored = try { data.getInt(key, fallback) } catch (error: Throwable) {
       Log.e(tag, "Failed to read color for key=$key", error)
       fallback
     }
     return if (stored == 0) fallback else stored
   }
 
-  // 색/배경/테마 헬퍼(forFmkWidgetTheme, fmkColor, applyFmkWidgetBackground)는
-  // FmkWidgetTheme.kt 참조.
-
   companion object {
-    private const val FMK_RED = -1095588 // 0xFFEF4444
+    private const val COMPACT_WIDTH_DP = 110f
+    private const val WIDE_WIDTH_DP = 250f
+    private const val WIDGET_HEIGHT_DP = 110f
+    private const val WIDE_BREAKPOINT_DP = 220
+    private const val FMK_RED = -1095588
   }
 }
 
 class FmkMyDriverWidgetProvider : FmkMyPickWidgetProvider() {
   override val tag = "FmkMyDriverWidget"
-  override val layoutRes = R.layout.widget_fmk_my_driver
+  override val compactLayoutRes = R.layout.widget_fmk_my_driver
+  override val wideLayoutRes = R.layout.widget_fmk_my_driver_wide
   override val keyPrefix = "myDriver"
   override val nameColorRes = R.color.fmk_text
-  override val ids =
-      Ids(
-          root = R.id.widget_root_my_driver,
-          glow = R.id.iv_myDriver_glow,
-          bar = R.id.iv_myDriver_bar,
-          content = R.id.grp_myDriver_content,
-          empty = R.id.grp_myDriver_empty,
-          kicker = R.id.tv_myDriver_kicker,
-          change = R.id.tv_myDriver_change,
-          code = R.id.tv_myDriver_code,
-          name = R.id.tv_myDriver_name,
-          sub = R.id.tv_myDriver_sub,
-          pos = R.id.tv_myDriver_pos,
-          pts = R.id.tv_myDriver_pts,
-      )
+  override val ids = Ids(
+      R.id.widget_root_my_driver, R.id.iv_myDriver_glow, R.id.iv_myDriver_bar,
+      R.id.grp_myDriver_content, R.id.grp_myDriver_empty, R.id.tv_myDriver_kicker,
+      R.id.tv_myDriver_change, R.id.tv_myDriver_code, R.id.tv_myDriver_name,
+      R.id.tv_myDriver_sub, R.id.tv_myDriver_pos, R.id.tv_myDriver_pts)
 
-  /** 큰 TLA / 영문 이름 / 팀명. */
   override fun identity(data: SharedPreferences): Triple<String, String, String> {
     val code = data.getString("myDriverCode", "").orEmpty()
-    val nameEn = data.getString("myDriverNameEn", "").orEmpty()
-    val teamEn = data.getString("myDriverTeamEn", "").orEmpty()
-    return Triple(code.ifEmpty { "—" }, nameEn.ifEmpty { code }, teamEn)
+    return Triple(code.ifEmpty { "–" },
+        data.getString("myDriverNameEn", "").orEmpty().ifEmpty { code },
+        data.getString("myDriverTeamEn", "").orEmpty())
+  }
+
+  override fun bindWide(context: Context, data: SharedPreferences, views: RemoteViews, theme: Context) {
+    views.applyFmkWidgetCard(context, data, R.id.card_myDriver_pos)
+    views.applyFmkWidgetCard(context, data, R.id.card_myDriver_pts)
+    views.setTextColor(R.id.tv_myDriver_pos_label, theme.fmkColor(R.color.fmk_dim))
+    views.setTextColor(R.id.tv_myDriver_pts_label, theme.fmkColor(R.color.fmk_dim))
   }
 }
 
 class FmkMyTeamWidgetProvider : FmkMyPickWidgetProvider() {
   override val tag = "FmkMyTeamWidget"
-  override val layoutRes = R.layout.widget_fmk_my_team
+  override val compactLayoutRes = R.layout.widget_fmk_my_team
+  override val wideLayoutRes = R.layout.widget_fmk_my_team_wide
   override val keyPrefix = "myTeam"
   override val nameColorRes = R.color.fmk_dim
-  override val ids =
-      Ids(
-          root = R.id.widget_root_my_team,
-          glow = R.id.iv_myTeam_glow,
-          bar = R.id.iv_myTeam_bar,
-          content = R.id.grp_myTeam_content,
-          empty = R.id.grp_myTeam_empty,
-          kicker = R.id.tv_myTeam_kicker,
-          change = R.id.tv_myTeam_change,
-          code = R.id.tv_myTeam_code,
-          name = R.id.tv_myTeam_name,
-          sub = R.id.tv_myTeam_sub,
-          pos = R.id.tv_myTeam_pos,
-          pts = R.id.tv_myTeam_pts,
-      )
+  override val ids = Ids(
+      R.id.widget_root_my_team, R.id.iv_myTeam_glow, R.id.iv_myTeam_bar,
+      R.id.grp_myTeam_content, R.id.grp_myTeam_empty, R.id.tv_myTeam_kicker,
+      R.id.tv_myTeam_change, R.id.tv_myTeam_code, R.id.tv_myTeam_name,
+      R.id.tv_myTeam_sub, R.id.tv_myTeam_pos, R.id.tv_myTeam_pts)
 
-  /** 팀 풀네임(대문자, 레이아웃에서 최대 2줄) / 소속 드라이버("HAM · LEC") / (없음). */
   override fun identity(data: SharedPreferences): Triple<String, String, String> {
     val code = data.getString("myTeamCode", "").orEmpty()
-    val teamEn = data.getString("myTeamEn", "").orEmpty()
-    val drivers =
-        listOf("myTeamD1Code", "myTeamD2Code")
-            .map { data.getString(it, "").orEmpty() }
-            .filter { it.isNotEmpty() }
-            .joinToString(" · ")
-    val title = teamEn.ifEmpty { data.getString("myTeamKo", "").orEmpty().ifEmpty { code } }
-    return Triple(title.uppercase().ifEmpty { "—" }, drivers, "")
+    val team = data.getString("myTeamEn", "").orEmpty()
+        .ifEmpty { data.getString("myTeamKo", "").orEmpty().ifEmpty { code } }
+    val drivers = listOf("myTeamD1Code", "myTeamD2Code")
+        .map { data.getString(it, "").orEmpty() }.filter { it.isNotEmpty() }.joinToString(" · ")
+    return Triple(team.uppercase().ifEmpty { "–" }, drivers, "")
+  }
+
+  override fun bindWide(context: Context, data: SharedPreferences, views: RemoteViews, theme: Context) {
+    bindDriverCard(context, data, views, theme, 1, R.id.card_myTeam_driver1,
+        R.id.tv_myTeam_d1_pos, R.id.tv_myTeam_d1_code, R.id.tv_myTeam_d1_pts)
+    bindDriverCard(context, data, views, theme, 2, R.id.card_myTeam_driver2,
+        R.id.tv_myTeam_d2_pos, R.id.tv_myTeam_d2_code, R.id.tv_myTeam_d2_pts)
+  }
+
+  private fun bindDriverCard(
+      context: Context, data: SharedPreferences, views: RemoteViews, theme: Context,
+      index: Int, cardId: Int, posId: Int, codeId: Int, ptsId: Int,
+  ) {
+    val code = data.getString("myTeamD${index}Code", "").orEmpty()
+    views.setViewVisibility(cardId, if (code.isEmpty()) View.INVISIBLE else View.VISIBLE)
+    if (code.isEmpty()) return
+    views.applyFmkWidgetCard(context, data, cardId)
+    val position = data.getInt("myTeamD${index}Pos", 0)
+    views.setTextViewText(posId, if (position > 0) "P$position" else "–")
+    views.setTextViewText(codeId, code)
+    views.setTextViewText(ptsId, data.getString("myTeamD${index}Pts", "").orEmpty())
+    views.setTextColor(posId, theme.fmkColor(R.color.fmk_dim))
+    views.setTextColor(codeId, theme.fmkColor(R.color.fmk_white))
+    views.setTextColor(ptsId, theme.fmkColor(R.color.fmk_white))
   }
 }

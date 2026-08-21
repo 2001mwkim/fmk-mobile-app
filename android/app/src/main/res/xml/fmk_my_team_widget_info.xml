@@ -7,7 +7,7 @@
     android:minResizeWidth="110dp"
     android:minWidth="110dp"
     android:previewLayout="@layout/widget_fmk_my_team"
-    android:resizeMode="horizontal|vertical"
+    android:resizeMode="horizontal"
     android:targetCellHeight="2"
     android:targetCellWidth="2"
     android:updatePeriodMillis="0"

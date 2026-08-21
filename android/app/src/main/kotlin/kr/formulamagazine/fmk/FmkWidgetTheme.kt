@@ -58,3 +58,15 @@ internal fun RemoteViews.applyFmkWidgetBackground(
       else R.drawable.widget_bg_light
   setInt(rootId, "setBackgroundResource", drawable)
 }
+
+/** Subtle inset panel used by the wide MY PICKS layouts. */
+internal fun RemoteViews.applyFmkWidgetCard(
+    context: Context,
+    data: SharedPreferences,
+    viewId: Int,
+) {
+  val drawable =
+      if (context.fmkWidgetNight(data)) R.drawable.widget_stat_card_dark
+      else R.drawable.widget_stat_card_light
+  setInt(viewId, "setBackgroundResource", drawable)
+}
