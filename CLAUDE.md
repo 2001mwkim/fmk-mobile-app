@@ -53,5 +53,12 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 
 ## 미해결 사항
 
-- `android/app/build.gradle.kts`: release 서명이 debug key(스토어 배포 전 교체 필요)
 - iOS는 프로젝트 준비만 된 상태(위젯/알림 iOS 검증 안 됨)
+
+## 릴리스 서명
+
+- release 빌드는 실제 업로드 키로 서명됨(CN=Minuk Kim / Formula Magazine Korea).
+  키스토어 `C:/Users/2001m/upload-keystore.jks`(별칭 `upload`), 자격증명은
+  `android/key.properties`(gitignore 대상, 저장소에 없음). key.properties 가 없는
+  머신에서 `flutter build appbundle` 하면 서명 단계에서 실패하니, 릴리스 빌드는
+  이 파일이 있는 환경에서만 한다(디버그 빌드는 무관).
