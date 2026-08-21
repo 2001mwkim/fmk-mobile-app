@@ -1,10 +1,23 @@
 package kr.formulamagazine.fmk
 
+import android.content.pm.ActivityInfo
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+
+    // 폰은 매니페스트에서 portrait 고정(웹 UI 이식 디자인). 태블릿(sw≥600dp)만
+    // 전방향 허용. screenOrientation 은 매니페스트 리소스로 설정별 분기가 안 되므로
+    // (릴리스 lint: ManifestResource) 런타임에서 처리한다. smallestScreenWidthDp 는
+    // 기기 고정값이라 onCreate 1회 판정으로 충분하다.
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (resources.configuration.smallestScreenWidthDp >= 600) {
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
