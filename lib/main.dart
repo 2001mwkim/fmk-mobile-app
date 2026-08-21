@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -26,6 +27,23 @@ const String _sentryDsn = String.fromEnvironment(
       ? 'https://8f227640e3c22f90eba314ad044339f1@o4511880011120640.ingest.us.sentry.io/4511880013479936'
       : '',
 );
+
+/// EventChannel(예: home_widget/updates) 스트림 해제 경합으로 나는 무해한
+/// "No active stream to cancel" 인지 판별. 프레임워크가 FlutterError 로 재보고
+/// 하므로 throwable 이 유실될 수 있어 exceptions 값 문자열도 함께 확인한다.
+bool _isBenignStreamCancel(SentryEvent event) {
+  final throwable = event.throwable;
+  if (throwable is PlatformException &&
+      (throwable.message?.contains('No active stream to cancel') ?? false)) {
+    return true;
+  }
+  for (final exception in event.exceptions ?? const <SentryException>[]) {
+    if (exception.value?.contains('No active stream to cancel') ?? false) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /// WorkManager 주기 작업 이름(변경 시 기존 등록과 충돌하지 않게 유지).
 const String _kWidgetRefreshUniqueName = 'fmk-widget-refresh';
@@ -84,6 +102,15 @@ void main() {
         // 감지하게 둔다(하드코딩 시 실제 버전과 어긋나 크래시가 오분류됨).
         // 크래시(에러) 수집이 목적이라 성능 트레이싱은 끈다(쿼터/오버헤드 절약).
         options.tracesSampleRate = 0.0;
+        // 무해한 프레임워크 노이즈 필터링(실제 크래시 아님). home_widget 등
+        // EventChannel 스트림 해제 시 나는 "No active stream to cancel" 은
+        // 프레임워크가 내부에서 잡아 FlutterError.reportError 로 재보고하므로
+        // 앱 코드의 try/catch·cancel().catchError 로는 막을 수 없다. 여기서만
+        // 확실히 제외해 fatal 오집계를 막는다.
+        options.beforeSend = (event, hint) {
+          if (_isBenignStreamCancel(event)) return null;
+          return event;
+        };
       },
       appRunner: _bootstrap,
     ),

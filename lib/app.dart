@@ -144,11 +144,11 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-    // EventChannel.cancel() 은 네이티브 스트림이 이미 정리됐을 때
-    // "No active stream to cancel" 을 던진다(앱 종료 흐름의 무해한 경합).
-    // .listen 의 onError 는 데이터 경로만 잡으므로 여기서 별도로 삼켜
-    // unhandled 로 새어 Sentry fatal 로 집계되지 않게 한다.
-    _widgetClickSub?.cancel().catchError((Object _) {});
+    // 위젯 클릭 스트림 구독 해제. 단, 이때 프레임워크가 네이티브 스트림
+    // 해제 중 "No active stream to cancel" 을 FlutterError 로 재보고할 수
+    // 있는데(무해), 그건 앱 코드에서 못 잡으므로 main.dart 의 Sentry
+    // beforeSend(_isBenignStreamCancel) 에서 걸러낸다.
+    _widgetClickSub?.cancel();
     super.dispose();
   }
 
