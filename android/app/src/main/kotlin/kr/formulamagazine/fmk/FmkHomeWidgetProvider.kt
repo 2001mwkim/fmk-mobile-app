@@ -317,7 +317,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
         setViewVisibility(dotIds[i], if (isNext) View.VISIBLE else View.INVISIBLE)
         setTextColor(nameIds[i], if (isNext) context.fmkColor(R.color.fmk_white) else if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_text))
         setTextColor(dateIds[i], if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_dim))
-        setTextColor(timeIds[i], if (isNext) FMK_RED else if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_white))
+        setTextColor(timeIds[i], if (isNext) context.fmkColor(R.color.fmk_red) else if (isPast) context.fmkColor(R.color.fmk_ghost) else context.fmkColor(R.color.fmk_white))
       }
     }
   }

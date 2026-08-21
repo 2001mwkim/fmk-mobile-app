@@ -3,7 +3,10 @@
      iOS 위젯(ios/FmkWidgets/FmkTheme.swift)과 수동 동기화.
      이름은 다크 기준 역할명 유지(fmk_white = 주 텍스트). -->
 <resources>
-    <color name="fmk_red">#EF4444</color>
+    <!-- 라이트 위젯의 기본 레드는 밝은 #EF4444 가 흰 배경과 튀어, 깊은 레이싱
+         레드로 낮춘다(다크는 values-night 의 #EF4444 유지). 팀 컬러(페라리 등)는
+         데이터로 들어오므로 영향 없음. -->
+    <color name="fmk_red">#C1121F</color>
     <color name="fmk_white">#11131C</color>
     <color name="fmk_text">#3A3F52</color>
     <color name="fmk_dim">#6B7287</color>
@@ -15,7 +18,7 @@
     <color name="fmk_stroke">#12000000</color>
     <color name="fmk_track">#14000000</color>
     <color name="fmk_card">#0A000000</color>
-    <color name="fmk_p1">#EF4444</color>
+    <color name="fmk_p1">#C1121F</color>
     <color name="fmk_p2">#6B7287</color>
     <color name="fmk_p3">#8A90A3</color>
 	<color name="ic_launcher_background">#000000</color>

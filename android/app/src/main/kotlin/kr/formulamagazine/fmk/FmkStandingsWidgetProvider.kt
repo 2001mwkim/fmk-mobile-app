@@ -176,7 +176,7 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
         if (!visible) continue
 
         setTextViewText(posIds[i], data.getInt("${key}Pos", i + 1).toString())
-        setTextColor(posIds[i], if (i == 0) FMK_RED else context.fmkColor(R.color.fmk_dim))
+        setTextColor(posIds[i], if (i == 0) context.fmkColor(R.color.fmk_red) else context.fmkColor(R.color.fmk_dim))
         setInt(barIds[i], "setColorFilter", rowColor(data, "${key}Color"))
         setTextViewText(nameIds[i], data.getString("${key}Name", "").orEmpty())
         setTextColor(nameIds[i], context.fmkColor(R.color.fmk_white))
@@ -217,7 +217,7 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
         if (!visible) continue
 
         setTextViewText(posIds[i], data.getInt("${key}Pos", i + 1).toString())
-        setTextColor(posIds[i], if (i == 0) FMK_RED else context.fmkColor(R.color.fmk_dim))
+        setTextColor(posIds[i], if (i == 0) context.fmkColor(R.color.fmk_red) else context.fmkColor(R.color.fmk_dim))
         setInt(barIds[i], "setColorFilter", rowColor(data, "${key}Color"))
         setTextViewText(nameIds[i], data.getString("${key}Name", "").orEmpty())
         setTextColor(nameIds[i], context.fmkColor(R.color.fmk_white))
