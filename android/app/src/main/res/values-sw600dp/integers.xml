@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 태블릿은 전 방향 허용. 13 = SCREEN_ORIENTATION_FULL_USER
+         (사용자 회전잠금 설정을 존중하는 전 방향). 본문은 AppLayout.maxContentWidth
+         로 가운데 정렬된다. 폰 기본값은 values/integers.xml 의 1(PORTRAIT). -->
+    <integer name="fmk_screen_orientation">13</integer>
+</resources>

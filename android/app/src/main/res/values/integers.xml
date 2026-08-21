@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 화면 회전 정책. android:screenOrientation 은 정수 enum 이라 @string 로
+         "portrait" 문자열을 넘기면 매니페스트 파서가 숫자 파싱에 실패해 설치가
+         깨진다(INSTALL_PARSE_FAILED "For input string: portrait"). 그래서
+         ActivityInfo 상수값을 @integer 로 넘긴다. 1 = SCREEN_ORIENTATION_PORTRAIT
+         (폰은 세로 고정 — 웹 UI 이식 디자인). 태블릿(sw600dp)은
+         values-sw600dp/integers.xml 에서 13(FULL_USER)로 재정의한다. -->
+    <integer name="fmk_screen_orientation">1</integer>
+</resources>
