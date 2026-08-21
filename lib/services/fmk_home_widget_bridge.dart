@@ -273,6 +273,39 @@ class FmkHomeWidgetBridge {
     }
   }
 
+  /// 사용자가 고른 위젯 팔레트(dark/light/system)를 네이티브 위젯 저장소에
+  /// 기록하고 모든 위젯을 즉시 갱신한다. 값은 Android FmkWidgetTheme.kt·iOS
+  /// FmkTheme.swift 에서 'widgetThemeMode' 키로 동일하게 읽는다.
+  static Future<void> updateTheme(String mode) async {
+    if (!_supported) return;
+    try {
+      await _ensureAppGroup();
+      await HomeWidget.saveWidgetData<String>('widgetThemeMode', mode);
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
+        iOSName: fmkHomeWidgetIOSKind,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
+        iOSName: fmkDriverStandingsWidgetIOSKind,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
+        iOSName: fmkMyDriverWidgetIOSKind,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
+        iOSName: fmkMyTeamWidgetIOSKind,
+      );
+      if (_isIOS) {
+        await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Failed to update widget theme: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
   /// iOS 위젯 전용 보조 데이터. 위젯 익스텐션이 live.json 을 직접 fetch 할 때
   /// 필요한 것들을 앱(Dart)이 단일 출처로 내려보낸다:
   /// 드라이버 한글 이름/팀 액센트(drivers.dart), fetch URL(dart-define 반영).

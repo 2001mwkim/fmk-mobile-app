@@ -147,9 +147,9 @@ class _MainShellState extends State<MainShell> {
     // MY DRIVER/MY TEAM 위젯 탭 → 설정(MY PICKS 섹션). 미설정 위젯의
     // "앱에서 설정" 안내가 한 번의 탭으로 선택기까지 닿게 한다.
     if (fmkWidgetOpensMyPicks(uri)) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
       return;
     }
     final index = fmkWidgetTabIndexForUri(uri);
@@ -261,41 +261,7 @@ class _NotificationOptInDialog extends StatelessWidget {
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.black20,
-                      border: Border.all(color: AppColors.hairline),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.tune_rounded,
-                          size: 18,
-                          color: AppColors.redSoft,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '연습 · 퀄리 · 스프린트도 원하는 세션만 선택할 수 있어요',
-                            style: TextStyle(
-                              color: AppColors.heroSub,
-                              fontSize: 12,
-                              height: 1.4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       TextButton(

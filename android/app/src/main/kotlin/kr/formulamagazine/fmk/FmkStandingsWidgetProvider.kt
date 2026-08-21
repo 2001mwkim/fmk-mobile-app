@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -23,12 +22,10 @@ import es.antonborri.home_widget.HomeWidgetProvider
  *
  * 우상단 토글로 드라이버 ↔ 팀(컨스트럭터)을 전환하고, 2셀 폭으로 줄이면
  * 콤팩트(Top 3) 레이아웃으로 자동 전환된다(FmkHomeWidgetProvider 와 동일 규칙).
+ *
+ * 색/배경/테마 헬퍼(forFmkWidgetTheme, fmkColor, applyFmkWidgetBackground)는
+ * FmkWidgetTheme.kt 참조.
  */
-/** 시스템 라이트/다크(values / values-night)에 따라 해석되는 위젯 색. */
-private fun Context.fmkColor(resId: Int): Int =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) getColor(resId)
-    else @Suppress("DEPRECATION") resources.getColor(resId)
-
 class FmkStandingsWidgetProvider : HomeWidgetProvider() {
   override fun onUpdate(
       context: Context,
@@ -114,19 +111,22 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
     }
     val prefix = if (showTeams) "stTeam" else "stDriver"
 
+    // 앱 설정(dark/light/system) 반영 색 해석용 Context(FmkWidgetTheme.kt).
+    val renderContext = context.forFmkWidgetTheme(data)
+
     if (compact) {
       try {
-        return buildCompact(context, data, prefix, showTeams)
+        return buildCompact(renderContext, data, prefix, showTeams)
       } catch (error: Throwable) {
         Log.e(TAG, "buildCompact failed for id=$widgetId, falling back to full", error)
       }
     }
 
     return try {
-      buildFull(context, data, prefix, showTeams)
+      buildFull(renderContext, data, prefix, showTeams)
     } catch (error: Throwable) {
       Log.e(TAG, "buildFull failed for id=$widgetId, using minimal fallback", error)
-      RemoteViews(context.packageName, R.layout.widget_fmk_standings)
+      RemoteViews(renderContext.packageName, R.layout.widget_fmk_standings)
     }
   }
 
@@ -137,6 +137,8 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       showTeams: Boolean,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_standings)
+      setTextColor(R.id.tv_st_title, context.fmkColor(R.color.fmk_white))
       // 순위 위젯 탭 → 순위 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_standings,
@@ -177,9 +179,11 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
         setTextColor(posIds[i], if (i == 0) FMK_RED else context.fmkColor(R.color.fmk_dim))
         setInt(barIds[i], "setColorFilter", rowColor(data, "${key}Color"))
         setTextViewText(nameIds[i], data.getString("${key}Name", "").orEmpty())
+        setTextColor(nameIds[i], context.fmkColor(R.color.fmk_white))
         setTextViewText(changeIds[i], data.getString("${key}Change", "").orEmpty())
         setTextColor(changeIds[i], rowColor(data, "${key}ChangeColor", context.fmkColor(R.color.fmk_dim)))
         setTextViewText(ptsIds[i], data.getString("${key}Pts", "").orEmpty())
+        setTextColor(ptsIds[i], context.fmkColor(R.color.fmk_white))
       }
     }
   }
@@ -191,12 +195,14 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       showTeams: Boolean,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings_compact).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_standings_compact)
       setOnClickPendingIntent(
           R.id.widget_root_standings_compact,
           HomeWidgetLaunchIntent.getActivity(
               context, MainActivity::class.java, Uri.parse("fmkwidget://standings")),
       )
       setTextViewText(R.id.tv_stc_title, if (showTeams) "챔피언십 · 팀" else "챔피언십")
+      setTextColor(R.id.tv_stc_title, context.fmkColor(R.color.fmk_white))
 
       val rowIds = intArrayOf(R.id.row_stc_1, R.id.row_stc_2, R.id.row_stc_3)
       val posIds = intArrayOf(R.id.tv_stc1_pos, R.id.tv_stc2_pos, R.id.tv_stc3_pos)
@@ -211,9 +217,12 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
         if (!visible) continue
 
         setTextViewText(posIds[i], data.getInt("${key}Pos", i + 1).toString())
+        setTextColor(posIds[i], if (i == 0) FMK_RED else context.fmkColor(R.color.fmk_dim))
         setInt(barIds[i], "setColorFilter", rowColor(data, "${key}Color"))
         setTextViewText(nameIds[i], data.getString("${key}Name", "").orEmpty())
+        setTextColor(nameIds[i], context.fmkColor(R.color.fmk_white))
         setTextViewText(ptsIds[i], data.getString("${key}Pts", "").orEmpty())
+        setTextColor(ptsIds[i], context.fmkColor(R.color.fmk_text))
       }
     }
   }

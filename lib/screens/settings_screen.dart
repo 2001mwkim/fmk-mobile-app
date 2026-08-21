@@ -6,10 +6,12 @@ import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
+import '../widgets/app_ui.dart';
 import '../widgets/my_picks_card.dart';
 import '../services/live_activity_service.dart';
 import '../services/notification_settings_controller.dart';
 import '../services/notification_service.dart';
+import '../services/widget_theme_controller.dart';
 
 const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
@@ -42,6 +44,8 @@ class SettingsScreen extends StatelessWidget {
             // fmkwidget://mypicks 가 이 화면을 연다(app.dart). 세션 알림은 홈
             // 헤더의 알림 버튼 → NotificationSettingsScreen 으로 이동했다.
             const _Section(title: 'MY PICKS', child: MyPicksCard()),
+            const SizedBox(height: 20),
+            const _Section(title: '위젯', child: _WidgetThemeCard()),
             const SizedBox(height: 20),
             const _Section(title: '포뮬러 매거진 코리아', child: _FmkCard()),
             const SizedBox(height: 20),
@@ -175,6 +179,84 @@ class _Section extends StatelessWidget {
         ),
         child,
       ],
+    );
+  }
+}
+
+class _WidgetThemeCard extends StatefulWidget {
+  const _WidgetThemeCard();
+
+  @override
+  State<_WidgetThemeCard> createState() => _WidgetThemeCardState();
+}
+
+class _WidgetThemeCardState extends State<_WidgetThemeCard> {
+  WidgetThemeMode _mode = WidgetThemeMode.dark;
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final mode = await widgetThemeController.load();
+    if (!mounted) return;
+    setState(() {
+      _mode = mode;
+      _loading = false;
+    });
+  }
+
+  Future<void> _save(WidgetThemeMode mode) async {
+    if (_loading || _saving || mode == _mode) return;
+    final previous = _mode;
+    setState(() {
+      _mode = mode;
+      _saving = true;
+    });
+    try {
+      await widgetThemeController.save(mode);
+      if (!mounted) return;
+      _showSnackBar(context, '위젯 테마를 ${mode.label} 모드로 변경했습니다.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _mode = previous);
+      _showSnackBar(context, '위젯 테마를 저장하지 못했습니다.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardHeaderRow(
+            title: '위젯 테마',
+            description: '홈·순위·MY PICKS 위젯의 밝기를 직접 고릅니다. 기본은 다크.',
+            badge: '화면 모드',
+          ),
+          const SizedBox(height: 16),
+          IgnorePointer(
+            ignoring: _loading || _saving,
+            child: Opacity(
+              opacity: _loading || _saving ? 0.65 : 1,
+              child: AppSegmentedControl<WidgetThemeMode>(
+                values: WidgetThemeMode.values,
+                selected: _mode,
+                labelFor: (mode) => mode.label,
+                onChanged: _save,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

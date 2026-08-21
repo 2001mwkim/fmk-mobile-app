@@ -98,7 +98,7 @@ void main() {
     expect(find.text('설정'), findsWidgets);
     expect(find.text('일정 관리'), findsNothing);
     expect(find.text('캘린더에 추가'), findsNothing);
-    expect(find.text('포뮬러 매거진 코리아'), findsOneWidget);
+    expect(find.text('MY PICKS'), findsOneWidget);
     expect(find.text('알림 설정'), findsNothing);
     // 채널 정리: 제휴=이메일, 제보=인스타 DM(별도 인스타 행은 제거됨).
     await tester.scrollUntilVisible(find.text('오류 제보 / 기능 제안'), 200);

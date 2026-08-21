@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -26,6 +25,9 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
   protected abstract val layoutRes: Int
   protected abstract val keyPrefix: String
   protected abstract val ids: Ids
+
+  /** 이름 줄 색(드라이버=fmk_text, 팀=fmk_dim) — 레이아웃 값과 일치시킨다. */
+  protected abstract val nameColorRes: Int
 
   class Ids(
       val root: Int,
@@ -71,7 +73,10 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
   protected abstract fun identity(data: SharedPreferences): Triple<String, String, String>
 
   private fun build(context: Context, data: SharedPreferences): RemoteViews {
+    // 앱 설정(dark/light/system) 반영 색 해석용 Context(FmkWidgetTheme.kt).
+    val theme = context.forFmkWidgetTheme(data)
     return RemoteViews(context.packageName, layoutRes).apply {
+      applyFmkWidgetBackground(theme, data, ids.root)
       val isSet = data.getInt("${keyPrefix}Set", 0) == 1
       // 설정됨 → 순위 탭, 미설정 → 설정 화면(MY PICKS). 딥링크 매핑은 앱
       // fmk_home_widget_bridge.dart / app.dart.
@@ -94,6 +99,14 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
       setViewVisibility(ids.glow, View.VISIBLE)
       setViewVisibility(ids.empty, View.GONE)
 
+      // 정적 @color 텍스트를 renderContext(theme)로 강제해 배경과 테마를 맞춘다.
+      setTextColor(ids.kicker, theme.fmkColor(R.color.fmk_red))
+      setTextColor(ids.code, theme.fmkColor(R.color.fmk_white))
+      setTextColor(ids.name, theme.fmkColor(nameColorRes))
+      setTextColor(ids.sub, theme.fmkColor(R.color.fmk_dim))
+      setTextColor(ids.pos, theme.fmkColor(R.color.fmk_white))
+      setTextColor(ids.pts, theme.fmkColor(R.color.fmk_white))
+
       // 팀 컬러는 헤드라인 옆 바 + 우상단 글로우(킥커는 레이아웃의 레드 유지).
       val accent = color(data, "${keyPrefix}Color")
       setInt(ids.bar, "setColorFilter", accent)
@@ -114,7 +127,7 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
         // '—'(변동 없음)는 숨긴다 — 큰 타이포 옆 대시는 오타처럼 보인다(iOS 동일).
         val change = data.getString("${keyPrefix}Change", "").orEmpty()
         setTextViewText(ids.change, if (change == "—") "" else change)
-        setTextColor(ids.change, color(data, "${keyPrefix}ChangeColor", context.fmkColor(R.color.fmk_dim)))
+        setTextColor(ids.change, color(data, "${keyPrefix}ChangeColor", theme.fmkColor(R.color.fmk_dim)))
       } else {
         // 골랐지만 순위 데이터에 없음(예: 미집계) — 이름만, 나머지는 '—'.
         setTextViewText(ids.pos, "—")
@@ -134,10 +147,8 @@ abstract class FmkMyPickWidgetProvider : HomeWidgetProvider() {
     return if (stored == 0) fallback else stored
   }
 
-  /** 시스템 라이트/다크(values / values-night)에 따라 해석되는 위젯 색. */
-  protected fun Context.fmkColor(resId: Int): Int =
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) getColor(resId)
-      else @Suppress("DEPRECATION") resources.getColor(resId)
+  // 색/배경/테마 헬퍼(forFmkWidgetTheme, fmkColor, applyFmkWidgetBackground)는
+  // FmkWidgetTheme.kt 참조.
 
   companion object {
     private const val FMK_RED = -1095588 // 0xFFEF4444
@@ -148,6 +159,7 @@ class FmkMyDriverWidgetProvider : FmkMyPickWidgetProvider() {
   override val tag = "FmkMyDriverWidget"
   override val layoutRes = R.layout.widget_fmk_my_driver
   override val keyPrefix = "myDriver"
+  override val nameColorRes = R.color.fmk_text
   override val ids =
       Ids(
           root = R.id.widget_root_my_driver,
@@ -177,6 +189,7 @@ class FmkMyTeamWidgetProvider : FmkMyPickWidgetProvider() {
   override val tag = "FmkMyTeamWidget"
   override val layoutRes = R.layout.widget_fmk_my_team
   override val keyPrefix = "myTeam"
+  override val nameColorRes = R.color.fmk_dim
   override val ids =
       Ids(
           root = R.id.widget_root_my_team,

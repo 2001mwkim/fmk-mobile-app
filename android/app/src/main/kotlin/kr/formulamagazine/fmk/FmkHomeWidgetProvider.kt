@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -16,10 +15,8 @@ import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
-/** 시스템 라이트/다크(values / values-night)에 따라 해석되는 위젯 색. */
-private fun Context.fmkColor(resId: Int): Int =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) getColor(resId)
-    else @Suppress("DEPRECATION") resources.getColor(resId)
+// 위젯 색/배경/테마 헬퍼(Context.forFmkWidgetTheme, fmkColor,
+// RemoteViews.applyFmkWidgetBackground)는 FmkWidgetTheme.kt 참조.
 
 class FmkHomeWidgetProvider : HomeWidgetProvider() {
   override fun onUpdate(
@@ -116,9 +113,13 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       "default"
     }
 
+    // 앱 설정(dark/light/system)을 반영한 색 해석용 Context. 텍스트 색·배경을
+    // 이 Context 로 통일해 런처 모드와 무관하게 일치시킨다(FmkWidgetTheme.kt).
+    val renderContext = context.forFmkWidgetTheme(data)
+
     if (compact) {
       try {
-        return buildCompact(context, data, mode)
+        return buildCompact(renderContext, data, mode)
       } catch (error: Throwable) {
         Log.e(TAG, "buildCompact failed for id=$widgetId, falling back to full", error)
       }
@@ -136,17 +137,17 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
 
     if (hasRightPane && !showSchedule) {
       try {
-        return buildLive(context, data)
+        return buildLive(renderContext, data)
       } catch (error: Throwable) {
         Log.e(TAG, "buildLive failed for id=$widgetId, falling back to default", error)
       }
     }
 
     return try {
-      buildDefault(context, data, showLiveToggle = hasRightPane)
+      buildDefault(renderContext, data, showLiveToggle = hasRightPane)
     } catch (error: Throwable) {
       Log.e(TAG, "buildDefault failed for id=$widgetId, using minimal fallback", error)
-      buildMinimal(context)
+      buildMinimal(renderContext, data)
     }
   }
 
@@ -217,8 +218,12 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
   }
 
   /** Pure inflate of the default layout with no dynamic mutation — cannot fail on data. */
-  private fun buildMinimal(context: Context): RemoteViews {
-    return RemoteViews(context.packageName, R.layout.widget_fmk_default)
+  private fun buildMinimal(context: Context, data: SharedPreferences): RemoteViews {
+    return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_default)
+      setTextColor(R.id.tv_gp_flag, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_gp_name, context.fmkColor(R.color.fmk_white))
+    }
   }
 
   private fun buildDefault(
@@ -227,6 +232,7 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       showLiveToggle: Boolean = false,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_default)
       // 일정 화면 탭 → 홈 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_default,
@@ -240,6 +246,10 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       val name = data.getString("scheduleGpName", null) ?: data.getString("gpName", "비아 포뮬러")
       setTextViewText(R.id.tv_gp_flag, flag)
       setTextViewText(R.id.tv_gp_name, name)
+      // 정적 @color 에 의존하는 GP 이름/flag 는 renderContext 로 강제(그 외 스케줄
+      // 행은 아래에서 이미 context.fmkColor 로 칠한다).
+      setTextColor(R.id.tv_gp_flag, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_gp_name, context.fmkColor(R.color.fmk_white))
 
       if (showLiveToggle) {
         setViewVisibility(R.id.toggle_group_default, View.VISIBLE)
@@ -319,6 +329,22 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
 
     return RemoteViews(context.packageName, R.layout.widget_fmk_live).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_live)
+      // 정적 @color 텍스트를 renderContext 로 강제(테마 일치). 액센트 바 색은
+      // 팀 컬러라 별도(setColorFilter)로 유지된다.
+      setTextColor(R.id.tv_live_badge, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_gp_name_live, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_lap_cur, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_lap_total, context.fmkColor(R.color.fmk_faint))
+      setTextColor(R.id.tv_p1_pos, context.fmkColor(R.color.fmk_red))
+      setTextColor(R.id.tv_p2_pos, context.fmkColor(R.color.fmk_dim))
+      setTextColor(R.id.tv_p3_pos, context.fmkColor(R.color.fmk_dim))
+      setTextColor(R.id.tv_p1_name, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_p2_name, context.fmkColor(R.color.fmk_text))
+      setTextColor(R.id.tv_p3_name, context.fmkColor(R.color.fmk_text))
+      setTextColor(R.id.tv_p1_time, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_p2_time, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_p3_time, context.fmkColor(R.color.fmk_white))
       // 라이브/결과 화면 탭 → 라이브 센터 탭.
       setOnClickPendingIntent(
           R.id.widget_root_live,
@@ -368,6 +394,13 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       mode: String?,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_compact).apply {
+      applyFmkWidgetBackground(context, data, R.id.widget_root_compact)
+      setTextColor(R.id.tv_c_kicker, context.fmkColor(R.color.fmk_faint))
+      setTextColor(R.id.tv_c_badge, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_c_gp, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_c_label, context.fmkColor(R.color.fmk_red))
+      setTextColor(R.id.tv_c_big, context.fmkColor(R.color.fmk_white))
+      setTextColor(R.id.tv_c_sub, context.fmkColor(R.color.fmk_dim))
       // 콤팩트도 화면 내용에 맞춰: 라이브/결과 → 라이브 탭, 일정 → 홈 탭.
       val target = if (mode == "live" || mode == "result") "live" else "home"
       setOnClickPendingIntent(

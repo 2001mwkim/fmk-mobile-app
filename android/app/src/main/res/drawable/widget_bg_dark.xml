@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 강제 다크 위젯 배경. 하드코딩 색이라 런처 야간모드와 무관하게 항상 다크로
+     inflate 된다(RemoteViews 배경은 런처가 inflate 하므로 @color 를 쓰면 시스템
+     모드로 해석돼 텍스트와 어긋난다). 색은 values-night 의 fmk_bg_top/bottom/
+     stroke 와 동일. 시스템 추종용 기본 배경은 widget_bg.xml. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:endColor="#0B0D16"
+        android:startColor="#171B2C" />
+    <corners android:radius="22dp" />
+    <stroke android:width="1dp" android:color="#12FFFFFF" />
+</shape>
