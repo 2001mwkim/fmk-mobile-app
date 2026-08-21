@@ -28,6 +28,14 @@ struct FmkStandingsProvider: TimelineProvider {
   }
 }
 
+/// 잠금화면 패밀리 포함 지원 목록(iOS 16+에서만 accessory 추가).
+private var fmkStandingsFamilies: [WidgetFamily] {
+  if #available(iOSApplicationExtension 16.0, *) {
+    return [.systemSmall, .systemMedium, .accessoryInline, .accessoryRectangular]
+  }
+  return [.systemSmall, .systemMedium]
+}
+
 struct FmkDriverStandingsWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(
@@ -38,7 +46,7 @@ struct FmkDriverStandingsWidget: Widget {
     }
     .configurationDisplayName("챔피언십 순위 · 드라이버")
     .description("드라이버 챔피언십 Top 5와 순위 변동을 보여줍니다.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .supportedFamilies(fmkStandingsFamilies)
     .contentMarginsDisabled()
   }
 }
@@ -53,7 +61,7 @@ struct FmkTeamStandingsWidget: Widget {
     }
     .configurationDisplayName("챔피언십 순위 · 팀")
     .description("컨스트럭터 챔피언십 Top 5와 순위 변동을 보여줍니다.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .supportedFamilies(fmkStandingsFamilies)
     .contentMarginsDisabled()
   }
 }
@@ -63,7 +71,56 @@ struct FmkStandingsView: View {
   let title: String
   let entry: FmkStandingsEntry
 
+  /// 잠금화면(accessory) 패밀리 여부 — iOS 16 미만에선 항상 false.
+  private var isAccessory: Bool {
+    if #available(iOSApplicationExtension 16.0, *) {
+      return family == .accessoryInline || family == .accessoryRectangular
+    }
+    return false
+  }
+
   var body: some View {
+    if isAccessory {
+      if #available(iOSApplicationExtension 16.0, *) {
+        accessoryBody
+          .fmkAccessoryBackground()
+          .widgetURL(URL(string: "fmkwidget://standings?homeWidget"))
+      }
+    } else {
+      fullBody
+    }
+  }
+
+  /// 잠금화면 축약판: 인라인은 선두 1명, 직사각형은 Top 3.
+  @available(iOSApplicationExtension 16.0, *)
+  @ViewBuilder
+  private var accessoryBody: some View {
+    let rows = Array(entry.rows.prefix(3))
+    if family == .accessoryInline {
+      Text(
+        rows.first.map { "🏆 1위 \($0.name) \($0.points)pts" } ?? "🏆 비아 포뮬러"
+      )
+    } else {
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(rows) { row in
+          HStack(spacing: 4) {
+            Text("\(row.position)")
+              .font(.system(size: 11, weight: .heavy)).fmkMonoDigits()
+            Text(row.name)
+              .font(.system(size: 12, weight: .bold))
+              .lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 2)
+            Text(row.points)
+              .font(.system(size: 11, weight: .heavy)).fmkMonoDigits()
+          }
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+
+  @ViewBuilder
+  private var fullBody: some View {
     let compact = family == .systemSmall
     let rows = compact ? Array(entry.rows.prefix(3)) : entry.rows
 

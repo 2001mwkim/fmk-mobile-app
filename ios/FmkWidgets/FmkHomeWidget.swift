@@ -70,13 +70,25 @@ struct FmkHomeProvider: TimelineProvider {
 }
 
 struct FmkHomeWidget: Widget {
+  // 잠금화면(accessory) 패밀리는 iOS 16+ — 익스텐션 최소 버전(15)보다
+  // 높아서 가용성 분기로 추가한다.
+  private var families: [WidgetFamily] {
+    if #available(iOSApplicationExtension 16.0, *) {
+      return [
+        .systemSmall, .systemMedium,
+        .accessoryInline, .accessoryCircular, .accessoryRectangular,
+      ]
+    }
+    return [.systemSmall, .systemMedium]
+  }
+
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "FmkHomeWidget", provider: FmkHomeProvider()) { entry in
       FmkHomeWidgetView(entry: entry)
     }
     .configurationDisplayName("일정 · 라이브")
     .description("다음 그랑프리 세션 일정과 라이브 순위를 보여줍니다.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .supportedFamilies(families)
     .contentMarginsDisabled()
   }
 }
@@ -89,22 +101,116 @@ struct FmkHomeWidgetView: View {
     URL(string: entry.live != nil ? "fmkwidget://live?homeWidget" : "fmkwidget://home?homeWidget")
   }
 
+  /// 잠금화면(accessory) 패밀리 여부 — iOS 16 미만에선 항상 false.
+  private var isAccessory: Bool {
+    if #available(iOSApplicationExtension 16.0, *) {
+      return family == .accessoryInline || family == .accessoryCircular
+        || family == .accessoryRectangular
+    }
+    return false
+  }
+
   var body: some View {
     Group {
-      if entry.payload.isEmpty {
-        FmkEmptyView()
+      if isAccessory {
+        // 잠금화면: 시스템이 모노크롬/비브런트로 그린다 — 배경 없음.
+        if #available(iOSApplicationExtension 16.0, *) {
+          FmkLockWidgetView(entry: entry, family: family)
+            .fmkAccessoryBackground()
+        }
+      } else if entry.payload.isEmpty {
+        FmkEmptyView().fmkWidgetBackground()
       } else if let live = entry.live {
-        family == .systemSmall
+        (family == .systemSmall
           ? AnyView(FmkLiveCompactView(live: live))
-          : AnyView(FmkLiveView(live: live))
+          : AnyView(FmkLiveView(live: live)))
+          .fmkWidgetBackground()
       } else {
-        family == .systemSmall
+        (family == .systemSmall
           ? AnyView(FmkScheduleCompactView(entry: entry))
-          : AnyView(FmkScheduleView(entry: entry))
+          : AnyView(FmkScheduleView(entry: entry)))
+          .fmkWidgetBackground()
       }
     }
-    .fmkWidgetBackground()
     .widgetURL(deeplink)
+  }
+}
+
+// ── 잠금화면(accessory) 뷰 — 작은 공간·모노크롬 제약에 맞춘 축약판 ──
+
+@available(iOSApplicationExtension 16.0, *)
+struct FmkLockWidgetView: View {
+  let entry: FmkHomeEntry
+  let family: WidgetFamily
+
+  /// 다음 세션(하이라이트) 행 — 콤팩트 뷰와 같은 선택 규칙.
+  private var nextRow: FmkSessionRow? {
+    let highlight = entry.payload.highlightIndex(at: entry.date)
+    let index = (1...5).contains(highlight)
+        && highlight <= entry.payload.sessions.count
+      ? highlight - 1 : 0
+    return entry.payload.sessions.indices.contains(index)
+      ? entry.payload.sessions[index] : nil
+  }
+
+  /// 다음 세션까지 남은 일수(당일 0). 정보 없으면 nil.
+  private var daysLeft: Int? {
+    guard let start = nextRow?.start else { return nil }
+    let days = Calendar.current.dateComponents(
+      [.day], from: Calendar.current.startOfDay(for: entry.date),
+      to: Calendar.current.startOfDay(for: start)
+    ).day
+    return days.map { max($0, 0) }
+  }
+
+  var body: some View {
+    switch family {
+    case .accessoryInline:
+      // 시계 위 한 줄. 이모지+텍스트만 허용되는 가장 작은 표면.
+      if let live = entry.live {
+        Text("🔴 LIVE P1 \(live.rows.first?.name ?? "—")")
+      } else if let row = nextRow {
+        Text("🏁 \(row.name) \(row.date) \(row.time)")
+      } else {
+        Text("🏁 비아 포뮬러")
+      }
+    case .accessoryCircular:
+      VStack(spacing: 0) {
+        if let live = entry.live {
+          Text("LAP").font(.system(size: 10, weight: .heavy))
+          Text("\(live.lapCurrent)")
+            .font(.system(size: 16, weight: .heavy)).fmkMonoDigits()
+        } else {
+          Text(daysLeft.map { $0 == 0 ? "오늘" : "D-\($0)" } ?? "—")
+            .font(.system(size: 15, weight: .heavy)).fmkMonoDigits()
+          Text(nextRow?.name ?? "")
+            .font(.system(size: 9, weight: .semibold))
+            .lineLimit(1).minimumScaleFactor(0.7)
+        }
+      }
+    default: // .accessoryRectangular
+      VStack(alignment: .leading, spacing: 1) {
+        if let live = entry.live {
+          Text("● LIVE \(live.gpName)")
+            .font(.system(size: 12, weight: .heavy)).lineLimit(1)
+          Text("P1 \(live.rows.first?.name ?? "—")")
+            .font(.system(size: 13, weight: .bold)).lineLimit(1)
+          if live.lapTotal > 0 {
+            Text("LAP \(live.lapCurrent) / \(live.lapTotal)")
+              .font(.system(size: 11, weight: .semibold)).fmkMonoDigits()
+          }
+        } else {
+          Text(entry.payload.scheduleGpName.isEmpty
+            ? entry.payload.gpName : entry.payload.scheduleGpName)
+            .font(.system(size: 12, weight: .heavy)).lineLimit(1)
+          Text(nextRow.map { "\($0.name) · \($0.date)" } ?? "다음 세션 없음")
+            .font(.system(size: 12, weight: .semibold)).lineLimit(1)
+          Text(nextRow?.time ?? "")
+            .font(.system(size: 15, weight: .heavy)).fmkMonoDigits()
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
   }
 }
 

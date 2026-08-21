@@ -47,6 +47,17 @@ extension View {
     }
   }
 
+  /// 잠금화면(accessory) 위젯 배경 — 시스템이 비브런트/모노크롬으로 그리므로
+  /// 자체 배경 없이 컨테이너 요구사항(iOS 17+)만 충족시킨다.
+  @ViewBuilder
+  func fmkAccessoryBackground() -> some View {
+    if #available(iOSApplicationExtension 17.0, *) {
+      containerBackground(for: .widget) { Color.clear }
+    } else {
+      self
+    }
+  }
+
   /// iOS 17+ 는 containerBackground 필수, 이전 버전은 일반 background.
   @ViewBuilder
   func fmkWidgetBackground() -> some View {
