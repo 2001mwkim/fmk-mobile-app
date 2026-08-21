@@ -11,6 +11,7 @@ import '../models/race_session.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
+import '../widgets/flag_icon.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/home_live_top_three_card.dart';
 import '../widgets/home_quick_actions_card.dart';
@@ -225,27 +226,41 @@ class _NextRaceCard extends StatelessWidget {
                   children: [Flexible(child: _HeroBadge(label: statusLabel))],
                 ),
                 const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final largeText =
-                        MediaQuery.textScalerOf(context).scale(1) >= 1.25;
-                    final displayName = largeText && constraints.maxWidth < 330
-                        ? race.nameKo.replaceFirst('-', '-\n')
-                        : race.nameKo;
-                    return Text(
-                      displayName,
-                      semanticsLabel: race.nameKo,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 30,
-                        height: 1.1,
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
+                // GP명 앞에 국기(웹과 동일). 이름이 2줄로 늘어날 수 있어
+                // 국기는 첫 줄에 맞춰 상단 정렬한다.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3, right: 11),
+                      child: FlagIcon(countryKo: race.countryKo, size: 26),
+                    ),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final largeText =
+                              MediaQuery.textScalerOf(context).scale(1) >= 1.25;
+                          final displayName =
+                              largeText && constraints.maxWidth < 330
+                              ? race.nameKo.replaceFirst('-', '-\n')
+                              : race.nameKo;
+                          return Text(
+                            displayName,
+                            semanticsLabel: race.nameKo,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 30,
+                              height: 1.1,
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 5),
                 Text(

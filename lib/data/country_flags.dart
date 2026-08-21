@@ -33,7 +33,7 @@ const Map<String, String> _countryFlagMap = {
 /// (RemoteViews 텍스트)처럼 이미지가 어려운 곳의 폴백으로 유지한다.
 String getCountryFlag(String countryKo) => _countryFlagMap[countryKo] ?? '';
 
-// ISO 3166-1 alpha-2 코드 매핑 — assets/flags/{code}.svg (circle-flags, MIT).
+// ISO 3166-1 alpha-2 코드 매핑 — assets/flags/{code}.svg (flag-icons 4x3, MIT).
 const Map<String, String> _countryCodeMap = {
   '호주': 'au',
   '중국': 'cn',
@@ -59,7 +59,7 @@ const Map<String, String> _countryCodeMap = {
   '말레이시아': 'my', // 세팡(바레인 GP 이전 개최지)
 };
 
-/// countryKo에 해당하는 원형 국기 SVG 에셋 경로. 매핑이 없으면 null(이모지 폴백).
+/// countryKo에 해당하는 사각 국기 SVG 에셋 경로. 매핑이 없으면 null(이모지 폴백).
 String? getCountryFlagAsset(String countryKo) {
   final code = _countryCodeMap[countryKo];
   return code == null ? null : 'assets/flags/$code.svg';
