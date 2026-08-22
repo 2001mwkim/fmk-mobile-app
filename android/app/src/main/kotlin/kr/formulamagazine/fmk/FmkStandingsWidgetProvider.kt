@@ -1,10 +1,7 @@
 package kr.formulamagazine.fmk
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
@@ -16,17 +13,18 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
 /**
- * 챔피언십 순위 위젯. 데이터 키(stDriver·stTeam 접두)는
- * lib/services/fmk_home_widget_bridge.dart 의 _saveStandingsPayload 와 수동
- * 동기화 — 한쪽을 바꾸면 반드시 함께 수정할 것.
+ * 챔피언십 순위 위젯(기본 = 드라이버). 예전엔 토글로 드라이버↔컨스트럭터를
+ * 오갔지만, 위젯을 종류별로 분리(iOS 와 동일)하면서 토글을 제거하고 각 위젯이
+ * 한 순위만 고정 표시한다. 컨스트럭터는 [FmkConstructorStandingsWidgetProvider]
+ * 서브클래스가 [showTeams] 만 true 로 바꿔 재사용한다.
  *
- * 우상단 토글로 드라이버 ↔ 팀(컨스트럭터)을 전환하고, 2셀 폭으로 줄이면
- * 콤팩트(Top 3) 레이아웃으로 자동 전환된다(FmkHomeWidgetProvider 와 동일 규칙).
- *
- * 색/배경/테마 헬퍼(forFmkWidgetTheme, fmkColor, applyFmkWidgetBackground)는
- * FmkWidgetTheme.kt 참조.
+ * 데이터 키(stDriver·stTeam 접두)는 lib/services/fmk_home_widget_bridge.dart 의
+ * _saveStandingsPayload 와 수동 동기화. 색/배경/테마 헬퍼는 FmkWidgetTheme.kt.
  */
-class FmkStandingsWidgetProvider : HomeWidgetProvider() {
+open class FmkStandingsWidgetProvider : HomeWidgetProvider() {
+  /** false = 드라이버 순위(stDriver), true = 컨스트럭터 순위(stTeam). */
+  protected open val showTeams: Boolean = false
+
   override fun onUpdate(
       context: Context,
       appWidgetManager: AppWidgetManager,
@@ -58,33 +56,6 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
     }
   }
 
-  /** 드라이버/팀 토글 브로드캐스트 처리. */
-  override fun onReceive(context: Context, intent: Intent) {
-    val showTeams = when (intent.action) {
-      ACTION_SHOW_DRIVERS -> false
-      ACTION_SHOW_TEAMS -> true
-      else -> {
-        super.onReceive(context, intent)
-        return
-      }
-    }
-
-    try {
-      widgetState(context).edit().putBoolean(KEY_SHOW_TEAMS, showTeams).apply()
-
-      val manager = AppWidgetManager.getInstance(context)
-      val ids =
-          manager.getAppWidgetIds(
-              ComponentName(context, FmkStandingsWidgetProvider::class.java)
-          )
-      if (ids != null && ids.isNotEmpty()) {
-        onUpdate(context, manager, ids, HomeWidgetPlugin.getData(context))
-      }
-    } catch (error: Throwable) {
-      Log.e(TAG, "toggle standings view failed", error)
-    }
-  }
-
   private fun isCompact(manager: AppWidgetManager, widgetId: Int): Boolean {
     return try {
       val minWidth =
@@ -103,12 +74,6 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       widgetId: Int,
       compact: Boolean,
   ): RemoteViews {
-    val showTeams = try {
-      widgetState(context).getBoolean(KEY_SHOW_TEAMS, false)
-    } catch (error: Throwable) {
-      Log.e(TAG, "Failed to read toggle state for id=$widgetId", error)
-      false
-    }
     val prefix = if (showTeams) "stTeam" else "stDriver"
 
     // 앱 설정(dark/light/system) 반영 색 해석용 Context(FmkWidgetTheme.kt).
@@ -116,14 +81,14 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
 
     if (compact) {
       try {
-        return buildCompact(renderContext, data, prefix, showTeams)
+        return buildCompact(renderContext, data, prefix)
       } catch (error: Throwable) {
         Log.e(TAG, "buildCompact failed for id=$widgetId, falling back to full", error)
       }
     }
 
     return try {
-      buildFull(renderContext, data, prefix, showTeams)
+      buildFull(renderContext, data, prefix)
     } catch (error: Throwable) {
       Log.e(TAG, "buildFull failed for id=$widgetId, using minimal fallback", error)
       RemoteViews(renderContext.packageName, R.layout.widget_fmk_standings)
@@ -134,10 +99,15 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       context: Context,
       data: SharedPreferences,
       prefix: String,
-      showTeams: Boolean,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings).apply {
       applyFmkWidgetBackground(context, data, R.id.widget_root_standings)
+      // 토글 없는 단일 순위 위젯: 토글 그룹 숨기고 제목으로 종류를 구분한다.
+      setViewVisibility(R.id.toggle_group_standings, View.GONE)
+      setTextViewText(
+          R.id.tv_st_title,
+          if (showTeams) "컨스트럭터 챔피언십" else "드라이버 챔피언십",
+      )
       setTextColor(R.id.tv_st_title, context.fmkColor(R.color.fmk_white))
       // 순위 위젯 탭 → 순위 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
@@ -145,22 +115,6 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
           HomeWidgetLaunchIntent.getActivity(
               context, MainActivity::class.java, Uri.parse("fmkwidget://standings")),
       )
-
-      // 토글 활성/비활성 스타일 + 클릭 액션(FmkHomeWidgetProvider 와 동일 패턴).
-      setInt(
-          R.id.btn_st_drivers,
-          "setBackgroundResource",
-          if (showTeams) 0 else R.drawable.widget_toggle_active_bg,
-      )
-      setTextColor(R.id.btn_st_drivers, if (showTeams) context.fmkColor(R.color.fmk_dim) else context.fmkColor(R.color.fmk_white))
-      setInt(
-          R.id.btn_st_teams,
-          "setBackgroundResource",
-          if (showTeams) R.drawable.widget_toggle_active_bg else 0,
-      )
-      setTextColor(R.id.btn_st_teams, if (showTeams) context.fmkColor(R.color.fmk_white) else context.fmkColor(R.color.fmk_dim))
-      setOnClickPendingIntent(R.id.btn_st_drivers, togglePendingIntent(context, ACTION_SHOW_DRIVERS))
-      setOnClickPendingIntent(R.id.btn_st_teams, togglePendingIntent(context, ACTION_SHOW_TEAMS))
 
       val rowIds = intArrayOf(R.id.row_st_1, R.id.row_st_2, R.id.row_st_3, R.id.row_st_4, R.id.row_st_5)
       val posIds = intArrayOf(R.id.tv_st1_pos, R.id.tv_st2_pos, R.id.tv_st3_pos, R.id.tv_st4_pos, R.id.tv_st5_pos)
@@ -192,7 +146,6 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
       context: Context,
       data: SharedPreferences,
       prefix: String,
-      showTeams: Boolean,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_standings_compact).apply {
       applyFmkWidgetBackground(context, data, R.id.widget_root_standings_compact)
@@ -201,7 +154,7 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
           HomeWidgetLaunchIntent.getActivity(
               context, MainActivity::class.java, Uri.parse("fmkwidget://standings")),
       )
-      setTextViewText(R.id.tv_stc_title, if (showTeams) "챔피언십 · 팀" else "챔피언십")
+      setTextViewText(R.id.tv_stc_title, if (showTeams) "컨스트럭터" else "드라이버")
       setTextColor(R.id.tv_stc_title, context.fmkColor(R.color.fmk_white))
 
       val rowIds = intArrayOf(R.id.row_stc_1, R.id.row_stc_2, R.id.row_stc_3)
@@ -237,29 +190,16 @@ class FmkStandingsWidgetProvider : HomeWidgetProvider() {
     return if (stored == 0) fallback else stored
   }
 
-  private fun widgetState(context: Context): SharedPreferences =
-      context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
-
-  private fun togglePendingIntent(context: Context, action: String): PendingIntent {
-    val intent = Intent(context, FmkStandingsWidgetProvider::class.java).setAction(action)
-    return PendingIntent.getBroadcast(
-        context,
-        if (action == ACTION_SHOW_DRIVERS) 11 else 12,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
-  }
-
   companion object {
     private const val TAG = "FmkStandingsWidget"
     private const val FMK_RED = -1095588 // 0xFFEF4444
 
-    private const val STATE_PREFS = "FmkStandingsWidgetState"
-    private const val KEY_SHOW_TEAMS = "showTeams"
-    private const val ACTION_SHOW_DRIVERS = "kr.formulamagazine.fmk.widget.standings.SHOW_DRIVERS"
-    private const val ACTION_SHOW_TEAMS = "kr.formulamagazine.fmk.widget.standings.SHOW_TEAMS"
-
     /** 이 폭(dp) 미만이면 2셀로 보고 콤팩트 레이아웃을 쓴다. */
     private const val COMPACT_MAX_WIDTH_DP = 180
   }
+}
+
+/** 컨스트럭터(팀) 챔피언십 순위 위젯 — 드라이버 위젯과 렌더링을 공유한다. */
+class FmkConstructorStandingsWidgetProvider : FmkStandingsWidgetProvider() {
+  override val showTeams: Boolean = true
 }

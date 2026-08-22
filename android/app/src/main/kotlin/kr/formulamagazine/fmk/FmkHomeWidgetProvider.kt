@@ -1,10 +1,7 @@
 package kr.formulamagazine.fmk
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
@@ -18,7 +15,16 @@ import es.antonborri.home_widget.HomeWidgetProvider
 // 위젯 색/배경/테마 헬퍼(Context.forFmkWidgetTheme, fmkColor,
 // RemoteViews.applyFmkWidgetBackground)는 FmkWidgetTheme.kt 참조.
 
-class FmkHomeWidgetProvider : HomeWidgetProvider() {
+/**
+ * 일정 위젯(기본) — 다가오는/진행 중 그랑프리의 세션 일정을 보여준다. 예전엔
+ * 우상단 토글로 일정↔라이브/결과를 오갔지만, 위젯을 종류별로 분리(iOS 와 동일)
+ * 하면서 토글을 제거했다. 라이브·결과 화면은 [FmkLiveResultWidgetProvider]
+ * 서브클래스가 [liveResult] 만 true 로 바꿔 렌더링을 재사용한다.
+ */
+open class FmkHomeWidgetProvider : HomeWidgetProvider() {
+  /** false = 일정(buildDefault), true = 라이브·결과(buildLive). */
+  protected open val liveResult: Boolean = false
+
   override fun onUpdate(
       context: Context,
       appWidgetManager: AppWidgetManager,
@@ -67,33 +73,6 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     }
   }
 
-  /** 위젯 우상단 토글: 일정/결과(라이브) 화면 전환 브로드캐스트 처리. */
-  override fun onReceive(context: Context, intent: Intent) {
-    val showSchedule = when (intent.action) {
-      ACTION_SHOW_SCHEDULE -> true
-      ACTION_SHOW_LIVE -> false
-      else -> {
-        super.onReceive(context, intent)
-        return
-      }
-    }
-
-    try {
-      widgetState(context).edit().putBoolean(KEY_SHOW_SCHEDULE, showSchedule).apply()
-
-      val manager = AppWidgetManager.getInstance(context)
-      val ids =
-          manager.getAppWidgetIds(
-              ComponentName(context, FmkHomeWidgetProvider::class.java)
-          )
-      if (ids != null && ids.isNotEmpty()) {
-        onUpdate(context, manager, ids, HomeWidgetPlugin.getData(context))
-      }
-    } catch (error: Throwable) {
-      Log.e(TAG, "toggle view failed", error)
-    }
-  }
-
   /**
    * Builds the RemoteViews for a widget while guaranteeing that a non-null,
    * inflatable RemoteViews is always returned. If the live/default build throws
@@ -125,96 +104,23 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       }
     }
 
-    // 우측 화면 데이터: live(진행 중) 또는 result(최근 확정 결과 — 상시).
-    // 결과 데이터가 있는 한 토글을 항상 노출해 일정↔결과를 오갈 수 있다.
-    val hasRightPane = mode == "live" || mode == "result"
-    val showSchedule = try {
-      resolveShowSchedule(context, mode)
-    } catch (error: Throwable) {
-      Log.e(TAG, "Failed to resolve toggle state for id=$widgetId", error)
-      false
-    }
-
-    if (hasRightPane && !showSchedule) {
-      try {
-        return buildLive(renderContext, data)
+    // 위젯 종류에 따라 고정: 라이브·결과 위젯이면 라이브 레이아웃, 일정 위젯이면
+    // 일정 레이아웃(토글 없음).
+    if (liveResult) {
+      return try {
+        buildLive(renderContext, data)
       } catch (error: Throwable) {
-        Log.e(TAG, "buildLive failed for id=$widgetId, falling back to default", error)
+        Log.e(TAG, "buildLive failed for id=$widgetId, using minimal fallback", error)
+        buildMinimal(renderContext, data)
       }
     }
 
     return try {
-      buildDefault(renderContext, data, showLiveToggle = hasRightPane)
+      buildDefault(renderContext, data)
     } catch (error: Throwable) {
       Log.e(TAG, "buildDefault failed for id=$widgetId, using minimal fallback", error)
       buildMinimal(renderContext, data)
     }
-  }
-
-  /**
-   * 사용자가 마지막으로 고른 화면(라이브/일정)을 읽는다. default → live 로
-   * 모드가 바뀌는 순간(새 세션 시작)에는 일정 화면에 두었더라도 라이브 화면으로
-   * 복귀시킨다.
-   */
-  private fun resolveShowSchedule(context: Context, mode: String?): Boolean {
-    val state = widgetState(context)
-    val lastMode = state.getString(KEY_LAST_MODE, "")
-
-    if (mode != lastMode) {
-      val edit = state.edit().putString(KEY_LAST_MODE, mode)
-      if (mode == "live") edit.putBoolean(KEY_SHOW_SCHEDULE, false)
-      edit.apply()
-    }
-
-    return state.getBoolean(KEY_SHOW_SCHEDULE, false)
-  }
-
-  private fun widgetState(context: Context): SharedPreferences =
-      context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
-
-  private fun togglePendingIntent(context: Context, action: String): PendingIntent {
-    val intent = Intent(context, FmkHomeWidgetProvider::class.java).setAction(action)
-    return PendingIntent.getBroadcast(
-        context,
-        if (action == ACTION_SHOW_SCHEDULE) 1 else 2,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
-  }
-
-  /** 오른쪽 칸 라벨: 라이브 진행 중이면 LIVE, 종료 후 결과 표시 중이면 결과. */
-  private fun liveSideLabel(data: SharedPreferences): String =
-      if (data.getString("liveBadge", "LIVE") == "RESULT") "결과" else "LIVE"
-
-  /**
-   * 세그먼트 토글(일정 | 결과)의 활성/비활성 상태와 클릭 액션을 바인딩한다.
-   * 활성 칸: 빨간 배경 + 흰 글자, 비활성 칸: 배경 없음 + 회색 글자.
-   */
-  private fun RemoteViews.bindToggleGroup(
-      context: Context,
-      data: SharedPreferences,
-      scheduleId: Int,
-      liveId: Int,
-      scheduleActive: Boolean,
-  ) {
-    setTextViewText(liveId, liveSideLabel(data))
-
-    setInt(
-        scheduleId,
-        "setBackgroundResource",
-        if (scheduleActive) R.drawable.widget_toggle_active_bg else 0,
-    )
-    setTextColor(scheduleId, if (scheduleActive) context.fmkColor(R.color.fmk_white) else context.fmkColor(R.color.fmk_dim))
-
-    setInt(
-        liveId,
-        "setBackgroundResource",
-        if (scheduleActive) 0 else R.drawable.widget_toggle_active_bg,
-    )
-    setTextColor(liveId, if (scheduleActive) context.fmkColor(R.color.fmk_dim) else context.fmkColor(R.color.fmk_white))
-
-    setOnClickPendingIntent(scheduleId, togglePendingIntent(context, ACTION_SHOW_SCHEDULE))
-    setOnClickPendingIntent(liveId, togglePendingIntent(context, ACTION_SHOW_LIVE))
   }
 
   /** Pure inflate of the default layout with no dynamic mutation — cannot fail on data. */
@@ -229,10 +135,11 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
   private fun buildDefault(
       context: Context,
       data: SharedPreferences,
-      showLiveToggle: Boolean = false,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
       applyFmkWidgetBackground(context, data, R.id.widget_root_default)
+      // 토글 없는 일정 전용 위젯: 토글 그룹은 항상 숨긴다.
+      setViewVisibility(R.id.toggle_group_default, View.GONE)
       // 일정 화면 탭 → 홈 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_default,
@@ -250,19 +157,6 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       // 행은 아래에서 이미 context.fmkColor 로 칠한다).
       setTextColor(R.id.tv_gp_flag, context.fmkColor(R.color.fmk_white))
       setTextColor(R.id.tv_gp_name, context.fmkColor(R.color.fmk_white))
-
-      if (showLiveToggle) {
-        setViewVisibility(R.id.toggle_group_default, View.VISIBLE)
-        bindToggleGroup(
-            context,
-            data,
-            R.id.btn_toggle_schedule_default,
-            R.id.btn_toggle_live_default,
-            scheduleActive = true,
-        )
-      } else {
-        setViewVisibility(R.id.toggle_group_default, View.GONE)
-      }
 
       val rowIds =
           intArrayOf(R.id.row_s1, R.id.row_s2, R.id.row_s3, R.id.row_s4, R.id.row_s5)
@@ -352,13 +246,8 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
               context, MainActivity::class.java, Uri.parse("fmkwidget://live")),
       )
 
-      bindToggleGroup(
-          context,
-          data,
-          R.id.btn_toggle_schedule_live,
-          R.id.btn_toggle_live_live,
-          scheduleActive = false,
-      )
+      // 토글 없는 라이브·결과 전용 위젯: 토글 그룹은 항상 숨긴다.
+      setViewVisibility(R.id.toggle_group_live, View.GONE)
 
       setTextViewText(R.id.tv_live_badge, data.getString("liveBadge", "LIVE"))
       setTextViewText(R.id.tv_gp_name_live, listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "))
@@ -401,15 +290,15 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
       setTextColor(R.id.tv_c_label, context.fmkColor(R.color.fmk_red))
       setTextColor(R.id.tv_c_big, context.fmkColor(R.color.fmk_white))
       setTextColor(R.id.tv_c_sub, context.fmkColor(R.color.fmk_dim))
-      // 콤팩트도 화면 내용에 맞춰: 라이브/결과 → 라이브 탭, 일정 → 홈 탭.
-      val target = if (mode == "live" || mode == "result") "live" else "home"
+      // 위젯 종류에 맞춰 딥링크: 라이브·결과 → 라이브 탭, 일정 → 홈 탭.
+      val target = if (liveResult) "live" else "home"
       setOnClickPendingIntent(
           R.id.widget_root_compact,
           HomeWidgetLaunchIntent.getActivity(
               context, MainActivity::class.java, Uri.parse("fmkwidget://$target")),
       )
 
-      if (mode == "live" || mode == "result") {
+      if (liveResult) {
         val flag = data.getString("gpFlag", "").orEmpty()
         val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
         setTextViewText(
@@ -488,14 +377,16 @@ class FmkHomeWidgetProvider : HomeWidgetProvider() {
     private const val TAG = "FmkHomeWidget"
     private const val FMK_RED = -1095588 // 0xFFEF4444
 
-    /** 위젯 자체 상태(토글) 저장소 — home_widget 데이터와 분리해서 보관. */
-    private const val STATE_PREFS = "FmkWidgetState"
-    private const val KEY_SHOW_SCHEDULE = "showSchedule"
-    private const val KEY_LAST_MODE = "lastSeenMode"
-    private const val ACTION_SHOW_SCHEDULE = "kr.formulamagazine.fmk.widget.SHOW_SCHEDULE"
-    private const val ACTION_SHOW_LIVE = "kr.formulamagazine.fmk.widget.SHOW_LIVE"
-
     /** 이 폭(dp) 미만이면 2셀로 보고 콤팩트 레이아웃을 쓴다(2셀 ≈ 110~150dp). */
     private const val COMPACT_MAX_WIDTH_DP = 180
   }
+}
+
+/**
+ * 라이브·결과 위젯 — 라이브 세션이 있으면 라이브 순위, 평소엔 최근 확정 세션
+ * 결과 Top3 를 보여준다. 일정 위젯([FmkHomeWidgetProvider])과 렌더링을 공유하되
+ * [liveResult] 만 true 로 바꿔 라이브 레이아웃을 고정한다.
+ */
+class FmkLiveResultWidgetProvider : FmkHomeWidgetProvider() {
+  override val liveResult: Boolean = true
 }

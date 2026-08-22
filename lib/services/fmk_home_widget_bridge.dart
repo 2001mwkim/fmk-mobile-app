@@ -20,12 +20,21 @@ import 'my_picks_controller.dart';
 import 'race_results_repository.dart';
 import 'standings_repository.dart';
 
+/// 일정 위젯 Provider(과거 토글형 홈 위젯 → 일정 전용으로 분리, 클래스명은 유지).
 const String fmkHomeWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkHomeWidgetProvider';
 
-/// 챔피언십 순위 위젯(별도 위젯 종류)의 Provider.
+/// 라이브·결과 위젯 Provider(라이브 중이면 라이브, 평소엔 최근 세션 결과).
+const String fmkLiveResultWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkLiveResultWidgetProvider';
+
+/// 드라이버 챔피언십 순위 위젯 Provider.
 const String fmkStandingsWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkStandingsWidgetProvider';
+
+/// 컨스트럭터(팀) 챔피언십 순위 위젯 Provider.
+const String fmkConstructorStandingsWidgetProviderQualifiedName =
+    'kr.formulamagazine.fmk.FmkConstructorStandingsWidgetProvider';
 
 /// MY DRIVER / MY TEAM 위젯(각각 별도 위젯 종류)의 Provider.
 const String fmkMyDriverWidgetProviderQualifiedName =
@@ -248,17 +257,23 @@ class FmkHomeWidgetBridge {
       await _saveStandingsPayload(_standings);
       await _saveMyPicksPayload(_standings);
       if (_isIOS) await _saveIOSExtras();
+      // 일정 위젯(Android) · iOS 홈 위젯(일정/라이브/결과 자동 전환).
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
         iOSName: fmkHomeWidgetIOSKind,
+      );
+      // 라이브·결과 위젯(Android 전용 — iOS 는 홈 위젯이 겸한다).
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
       );
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
       );
-      if (_isIOS) {
-        await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
-      }
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
+        iOSName: fmkTeamStandingsWidgetIOSKind,
+      );
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
         iOSName: fmkMyDriverWidgetIOSKind,
@@ -286,8 +301,15 @@ class FmkHomeWidgetBridge {
         iOSName: fmkHomeWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
+      );
+      await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
+        iOSName: fmkTeamStandingsWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
@@ -297,9 +319,6 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
         iOSName: fmkMyTeamWidgetIOSKind,
       );
-      if (_isIOS) {
-        await HomeWidget.updateWidget(iOSName: fmkTeamStandingsWidgetIOSKind);
-      }
     } catch (error, stackTrace) {
       debugPrint('Failed to update widget theme: $error');
       debugPrintStack(stackTrace: stackTrace);

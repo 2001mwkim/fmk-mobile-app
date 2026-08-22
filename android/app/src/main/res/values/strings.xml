@@ -3,8 +3,10 @@
     <!-- 화면 회전 정책은 @integer/fmk_screen_orientation(values/integers.xml,
          values-sw600dp/integers.xml)로 옮겼다. screenOrientation 은 정수 enum 이라
          @string 로 넘기면 설치가 깨진다. iOS 는 Info.plist 의 ~ipad 키로 처리. -->
-    <string name="fmk_home_widget_description">비아 포뮬러 다음 세션 및 라이브 정보</string>
-    <string name="fmk_standings_widget_description">2026 챔피언십 순위 (드라이버/팀)</string>
+    <string name="fmk_schedule_widget_description">다가오는/진행 중 그랑프리 세션 일정</string>
+    <string name="fmk_live_widget_description">라이브 중인 세션, 평소엔 최근 세션 결과</string>
+    <string name="fmk_standings_widget_description">드라이버 챔피언십 순위 Top 5</string>
+    <string name="fmk_constructor_standings_widget_description">컨스트럭터(팀) 챔피언십 순위 Top 5</string>
     <string name="fmk_my_driver_widget_description">내 드라이버의 순위·포인트 (설정 › MY PICKS)</string>
     <string name="fmk_my_team_widget_description">내 팀의 순위·포인트와 소속 드라이버 (설정 › MY PICKS)</string>
 </resources>

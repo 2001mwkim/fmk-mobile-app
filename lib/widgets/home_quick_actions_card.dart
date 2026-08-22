@@ -173,19 +173,37 @@ class _WidgetPickerSheet extends StatelessWidget {
             const SizedBox(height: 12),
             _WidgetOptionTile(
               icon: Icons.calendar_today_outlined,
-              title: '일정 · 라이브 위젯',
-              subtitle: '다음 세션 일정, 라이브 순위와 최근 결과',
+              title: '일정 위젯',
+              subtitle: '다가오는 · 진행 중 그랑프리 세션 일정',
               onTap: () =>
                   Navigator.of(context).pop(fmkHomeWidgetProviderQualifiedName),
             ),
             const SizedBox(height: 8),
             _WidgetOptionTile(
+              icon: Icons.sensors,
+              title: '라이브 · 결과 위젯',
+              subtitle: '라이브 중인 세션, 평소엔 최근 결과',
+              onTap: () => Navigator.of(
+                context,
+              ).pop(fmkLiveResultWidgetProviderQualifiedName),
+            ),
+            const SizedBox(height: 8),
+            _WidgetOptionTile(
               icon: Icons.bar_chart,
-              title: '챔피언십 순위 위젯',
-              subtitle: '드라이버·팀 Top 5와 순위 변동',
+              title: '드라이버 순위 위젯',
+              subtitle: '드라이버 챔피언십 Top 5와 순위 변동',
               onTap: () => Navigator.of(
                 context,
               ).pop(fmkStandingsWidgetProviderQualifiedName),
+            ),
+            const SizedBox(height: 8),
+            _WidgetOptionTile(
+              icon: Icons.groups,
+              title: '컨스트럭터 순위 위젯',
+              subtitle: '팀 챔피언십 Top 5와 순위 변동',
+              onTap: () => Navigator.of(
+                context,
+              ).pop(fmkConstructorStandingsWidgetProviderQualifiedName),
             ),
             const SizedBox(height: 8),
             _WidgetOptionTile(

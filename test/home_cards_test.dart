@@ -117,7 +117,7 @@ void main() {
       expect(find.byType(NotificationSettingsScreen), findsOneWidget);
     });
 
-    testWidgets('위젯 추가를 누르면 두 위젯 중 선택하는 시트가 뜬다', (tester) async {
+    testWidgets('위젯 추가를 누르면 위젯 종류를 선택하는 시트가 뜬다', (tester) async {
       String? requested;
       await pump(
         tester,
@@ -133,10 +133,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('추가할 위젯 선택'), findsOneWidget);
-      expect(find.text('일정 · 라이브 위젯'), findsOneWidget);
-      expect(find.text('챔피언십 순위 위젯'), findsOneWidget);
+      expect(find.text('일정 위젯'), findsOneWidget);
+      expect(find.text('라이브 · 결과 위젯'), findsOneWidget);
+      expect(find.text('드라이버 순위 위젯'), findsOneWidget);
+      expect(find.text('컨스트럭터 순위 위젯'), findsOneWidget);
 
-      await tester.tap(find.text('챔피언십 순위 위젯'));
+      await tester.tap(find.text('드라이버 순위 위젯'));
       await tester.pumpAndSettle();
 
       expect(requested, fmkStandingsWidgetProviderQualifiedName);
@@ -151,7 +153,7 @@ void main() {
 
       await tester.tap(find.text('위젯 추가'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('일정 · 라이브 위젯'));
+      await tester.tap(find.text('일정 위젯'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('홈 화면을 길게 눌러'), findsOneWidget);
