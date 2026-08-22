@@ -254,6 +254,16 @@ class _WidgetThemeCardState extends State<_WidgetThemeCard> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          const Text(
+            '지금은 위젯 색상만 바뀌어요. 앱 전체 색상 변경은 추후 업데이트에 반영될 예정입니다.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: _muted,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
