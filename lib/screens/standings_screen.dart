@@ -8,6 +8,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_ui.dart';
+import 'driver_detail_screen.dart';
+import 'team_detail_screen.dart';
 
 // 웹 순위 페이지 전용 색.
 const Color _muted = AppColors.muted; // #7880a0
@@ -91,6 +93,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           teamLabel: d.teamKo,
           points: d.points,
           positionChange: d.positionChange,
+          onTap: () => _openDriver(d),
         ),
     ];
   }
@@ -106,8 +109,39 @@ class _StandingsScreenState extends State<StandingsScreen> {
           teamLabel: null,
           points: c.points,
           positionChange: c.positionChange,
+          onTap: () => _openTeam(c),
         ),
     ];
+  }
+
+  void _openDriver(DriverStanding standing) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DriverDetailScreen(
+          standing: standing,
+          allDrivers: _drivers,
+          onOpenTeam: () {
+            final teams = _constructors.where(
+              (team) => team.teamKo == standing.teamKo,
+            );
+            if (teams.isNotEmpty) _openTeam(teams.first);
+          },
+          onOpenDriver: _openDriver,
+        ),
+      ),
+    );
+  }
+
+  void _openTeam(ConstructorStanding standing) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TeamDetailScreen(
+          standing: standing,
+          allDrivers: _drivers,
+          onOpenDriver: _openDriver,
+        ),
+      ),
+    );
   }
 }
 
@@ -166,70 +200,82 @@ class _StandingRow extends StatelessWidget {
       data.teamKo,
     ).withValues(alpha: isLightTeamColor(data.teamKo) ? 0.7 : 1.0);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        border: isFirst
-            ? null
-            : const Border(top: BorderSide(color: _rowBorder)),
-      ),
-      child: Row(
-        children: [
-          _RankBadge(position: data.position),
-          const SizedBox(width: 10),
-          Container(
-            width: 3,
-            height: 32,
-            decoration: BoxDecoration(
-              color: teamColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: data.onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: isFirst
+                ? null
+                : const Border(top: BorderSide(color: _rowBorder)),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+          child: Row(
+            children: [
+              _RankBadge(position: data.position),
+              const SizedBox(width: 10),
+              Container(
+                width: 3,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: teamColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                if (data.teamLabel != null) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    data.teamLabel!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: _muted,
-                      fontWeight: FontWeight.w600,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    if (data.teamLabel != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        data.teamLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: _muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 36,
+                child: _PositionChange(change: data.positionChange),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 82,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _PointsLabel(points: data.points),
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textEnded,
+                size: 18,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 36,
-            child: _PositionChange(change: data.positionChange),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 92,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _PointsLabel(points: data.points),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -358,6 +404,7 @@ class _RowData {
     required this.teamLabel,
     required this.points,
     required this.positionChange,
+    this.onTap,
   });
 
   final int position;
@@ -366,6 +413,7 @@ class _RowData {
   final String? teamLabel;
   final num points;
   final int? positionChange;
+  final VoidCallback? onTap;
 }
 
 // 웹 getRankColor. P1은 노란색 대신 레드 톤 사용(앱 규칙상 노란색 금지).
