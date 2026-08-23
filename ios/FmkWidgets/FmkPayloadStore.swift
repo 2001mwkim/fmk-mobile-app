@@ -286,6 +286,8 @@ extension FmkPayload {
 }
 
 /// 0(미저장/투명)이면 레드 폴백 — Kotlin accentColor()/rowColor() 와 동일 규칙.
-private func normalizedColor(_ stored: Int, fallback: Int = 0xFFEF4444) -> Int {
-  stored == 0 ? Int(Int32(bitPattern: UInt32(fallback))) : stored
+/// fallback 은 UInt32 — 워치 실기기(arm64_32)는 Int 가 32비트라 0xFF… 리터럴이
+/// Int 파라미터로 들어가면 오버플로 컴파일 에러가 난다.
+private func normalizedColor(_ stored: Int, fallback: UInt32 = 0xFFEF4444) -> Int {
+  stored == 0 ? Int(Int32(bitPattern: fallback)) : stored
 }

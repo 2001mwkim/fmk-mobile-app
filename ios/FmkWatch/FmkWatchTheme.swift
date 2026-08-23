@@ -5,14 +5,18 @@ import SwiftUI
 // FmkTheme.swift 는 UIKit 동적 색(iOS 전용)을 써서 워치 타깃에 넣지 않고,
 // 여기서 필요한 최소만 다시 정의한다(Color(argb:) 포함).
 enum FmkWatchTheme {
-  static let white = Color(argb: 0xFFFAFAFA)
-  static let dim = Color(argb: 0xFFA1A1AA)
-  static let text = Color(argb: 0xFFD4D4D8)
-  static let ghost = Color(argb: 0xFF52525B)
-  static let red = Color(argb: 0xFFEF4444)
-  static let card = Color(argb: 0x14FFFFFF)
-  static let bgTop = Color(argb: 0xFF171B2C)
-  static let bgBottom = Color(argb: 0xFF0B0D16)
+  static let white = c(0xFFFAFAFA)
+  static let dim = c(0xFFA1A1AA)
+  static let text = c(0xFFD4D4D8)
+  static let ghost = c(0xFF52525B)
+  static let red = c(0xFFEF4444)
+  static let card = c(0x14FFFFFF)
+  static let bgTop = c(0xFF171B2C)
+  static let bgBottom = c(0xFF0B0D16)
+
+  /// ARGB 리터럴 → Color. 워치 실기기(arm64_32)는 Int 가 32비트라 0xFF… 리터럴이
+  /// Int 로 바로 못 들어가므로 UInt32 로 받아 비트 그대로 옮긴다.
+  private static func c(_ argb: UInt32) -> Color { Color(argb: Int(Int32(bitPattern: argb))) }
 }
 
 extension Color {

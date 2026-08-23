@@ -20,6 +20,10 @@
 		<string>fmk appstore</string>
 		<key>kr.formulamagazine.fmk.FmkWidgets</key>
 		<string>fmk widgets appstore</string>
+		<key>kr.formulamagazine.fmk.watchkitapp</key>
+		<string>fmk watch appstore</string>
+		<key>kr.formulamagazine.fmk.watchkitapp.FmkWatchWidgets</key>
+		<string>fmk watch widgets appstore</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>
