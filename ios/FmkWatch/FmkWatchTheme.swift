@@ -52,3 +52,14 @@ func fmkInLiveWindow(payload: FmkPayload, now: Date) -> Bool {
     return now >= start.addingTimeInterval(-5 * 60) && now <= end.addingTimeInterval(40 * 60)
   }
 }
+
+/// 드라이버 TLA — 행에 code 가 있으면 그대로, 없으면 한글 이름으로 역조회
+/// (브리지 driverNamesKoJson: code → 한글 이름). 못 찾으면 이름 앞 3글자.
+func fmkDriverCode(name: String, code: String = "", payload: FmkPayload) -> String {
+  if !code.isEmpty { return code.uppercased() }
+  let trimmed = name.trimmingCharacters(in: .whitespaces)
+  if let hit = payload.driverNamesKo.first(where: { $0.value == trimmed }) {
+    return hit.key.uppercased()
+  }
+  return String(trimmed.prefix(3)).uppercased()
+}

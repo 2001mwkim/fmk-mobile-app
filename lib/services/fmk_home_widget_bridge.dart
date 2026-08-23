@@ -290,9 +290,13 @@ class FmkHomeWidgetBridge {
         iOSName: fmkHomeWidgetIOSKind,
       );
       // 라이브·결과 위젯(Android 전용 — iOS 는 홈 위젯이 겸한다).
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
-      );
+      // iOS 에서 iOSName 없이 호출하면 PlatformException 으로 이후 갱신이
+      // 전부 끊기므로 반드시 Android 에서만 호출한다.
+      if (!_isIOS) {
+        await HomeWidget.updateWidget(
+          qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
+        );
+      }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
@@ -332,9 +336,11 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
         iOSName: fmkHomeWidgetIOSKind,
       );
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
-      );
+      if (!_isIOS) {
+        await HomeWidget.updateWidget(
+          qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
+        );
+      }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
@@ -379,6 +385,48 @@ class FmkHomeWidgetBridge {
       ),
       HomeWidget.saveWidgetData<String>('liveJsonUrl', kLiveJsonUrl),
     ]);
+    await _saveLatestResultExtras();
+  }
+
+  /// 최근 확정 결과(lr* 키) — mode 와 무관하게 항상 저장한다. 워치 앱 라이브
+  /// 페이지가 라이브/결과 노출 창 밖에서도 "최근 세션 결과"를 보여주기 위한
+  /// 것(iOS 위젯은 mode==result 의 p1~p3 를 쓰므로 미사용). 행 표시 규칙은
+  /// _buildResultPayload 와 동일(그 함수를 그대로 호출해 Top3 만 뽑는다).
+  static Future<void> _saveLatestResultExtras() async {
+    final latest = _latestResult;
+    final writes = <Future<bool?>>[];
+    if (latest == null || latest.data.entries.isEmpty) {
+      writes.add(HomeWidget.saveWidgetData<String>('lrGpName', ''));
+    } else {
+      final result = _buildResultPayload(latest, DateTime.now());
+      writes.addAll([
+        HomeWidget.saveWidgetData<String>('lrGpName', result.gpName),
+        HomeWidget.saveWidgetData<String>('lrGpFlag', result.gpFlag),
+        HomeWidget.saveWidgetData<String>('lrLabel', result.resultSessionLabel),
+      ]);
+      for (var i = 0; i < 3; i++) {
+        final has = i < result.topThreeNames.length;
+        writes.addAll([
+          HomeWidget.saveWidgetData<String>(
+            'lr${i + 1}Name',
+            has ? result.topThreeNames[i] : '',
+          ),
+          HomeWidget.saveWidgetData<String>(
+            'lr${i + 1}Time',
+            has ? result.topThreeTimes[i] : '',
+          ),
+          HomeWidget.saveWidgetData<int>(
+            'lr${i + 1}Pos',
+            has ? result.topThreePositions[i] : 0,
+          ),
+          HomeWidget.saveWidgetData<int>(
+            'lr${i + 1}Color',
+            has ? result.topThreeColors[i] : 0,
+          ),
+        ]);
+      }
+    }
+    await Future.wait(writes);
   }
 
   /// 앱이 위젯 탭으로 "시작"됐을 때의 딥링크 URI. 아니거나 실패하면 null

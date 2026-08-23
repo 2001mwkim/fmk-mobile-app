@@ -82,16 +82,24 @@ struct FmkWatchScheduleView: View {
 }
 
 // ── 라이브 · 결과 ──
+// 우선순위: 세션 창 안 라이브(직접 fetch) → 브리지 result 모드 Top3 →
+// 최근 확정 결과(lr* 키, 항상 있음) → 그래도 없으면 다음 세션 안내 카드.
 struct FmkWatchLiveView: View {
   private let payload = FmkPayload.load()
   @State private var live: FmkLiveState?
   @State private var loading = false
   private let timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
+  private var shown: FmkLiveState? {
+    live ?? payload.storedResultState ?? FmkPayload.latestResultState()
+  }
+
   var body: some View {
+    let now = Date()
+    let next = fmkNextSessionRow(payload: payload, at: now)
     ScrollView {
       VStack(alignment: .leading, spacing: 4) {
-        if let state = live ?? payload.storedResultState {
+        if let state = shown {
           HStack(spacing: 4) {
             Text(state.badgeText)
               .font(.system(size: 10, weight: .heavy)).foregroundColor(.white)
@@ -120,15 +128,24 @@ struct FmkWatchLiveView: View {
             }
             .padding(.vertical, 2)
           }
+          if !state.isLive, let next {
+            nextCard(next, now: now, compact: true)
+          }
         } else if loading {
           ProgressView().tint(FmkWatchTheme.red)
         } else {
-          Text("진행 중인 세션이 없습니다").font(.system(size: 12))
+          // 보여줄 결과가 아직 없을 때도 빈 화면 대신 다음 세션 카드로 구색을 갖춘다.
+          Text("라이브 · 결과").font(.system(size: 10, weight: .heavy))
             .foregroundColor(FmkWatchTheme.dim)
-          if let next = fmkNextSessionRow(payload: payload, at: Date()) {
-            Text("다음: \(next.name) \(next.date) \(next.time)")
-              .font(.system(size: 11)).foregroundColor(FmkWatchTheme.text)
+          if let next {
+            nextCard(next, now: now, compact: false)
+          } else {
+            Text("다음 세션 일정을 불러오는 중").font(.system(size: 11))
+              .foregroundColor(FmkWatchTheme.dim)
           }
+          Text("세션 시작 5분 전부터 라이브 순위가,\n종료 후에는 결과 Top 3가 표시됩니다.")
+            .font(.system(size: 10)).foregroundColor(FmkWatchTheme.ghost)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
       .padding(.horizontal, 4)
@@ -136,6 +153,42 @@ struct FmkWatchLiveView: View {
     .navigationTitle("라이브")
     .task { await refresh() }
     .onReceive(timer) { _ in Task { await refresh() } }
+  }
+
+  /// 다음 세션 카드 — compact 는 결과 아래 한 줄 푸터, 아니면 큼직한 카드.
+  @ViewBuilder
+  private func nextCard(_ row: FmkSessionRow, now: Date, compact: Bool) -> some View {
+    let dday = fmkDaysLeft(to: row.start, from: now).map { $0 == 0 ? "오늘" : "D-\($0)" } ?? ""
+    if compact {
+      HStack(spacing: 4) {
+        Text("다음").font(.system(size: 9, weight: .heavy)).foregroundColor(FmkWatchTheme.dim)
+        Text("\(row.name) \(row.date) \(row.time)").font(.system(size: 10))
+          .foregroundColor(FmkWatchTheme.text).lineLimit(1).minimumScaleFactor(0.7)
+        Spacer(minLength: 0)
+        Text(dday).font(.system(size: 10, weight: .heavy)).foregroundColor(FmkWatchTheme.red)
+      }
+      .padding(.top, 4)
+    } else {
+      HStack(spacing: 6) {
+        Rectangle().fill(FmkWatchTheme.red).frame(width: 3)
+        VStack(alignment: .leading, spacing: 1) {
+          Text("다음 세션").font(.system(size: 9, weight: .heavy)).foregroundColor(FmkWatchTheme.dim)
+          Text("\(payload.scheduleGpFlag) \(payload.scheduleGpName)")
+            .font(.system(size: 12, weight: .heavy)).foregroundColor(FmkWatchTheme.white)
+            .lineLimit(1).minimumScaleFactor(0.7)
+          HStack(spacing: 4) {
+            Text(row.name).font(.system(size: 12, weight: .semibold)).foregroundColor(FmkWatchTheme.text)
+            Spacer(minLength: 2)
+            Text(dday).font(.system(size: 14, weight: .heavy)).foregroundColor(FmkWatchTheme.red)
+          }
+          Text("\(row.date) \(row.time) KST").font(.system(size: 11)).monospacedDigit()
+            .foregroundColor(FmkWatchTheme.dim)
+        }
+        Spacer(minLength: 0)
+      }
+      .padding(6)
+      .background(FmkWatchTheme.card).cornerRadius(8)
+    }
   }
 
   /// 세션 창에서만 live.json 을 직접 가져온다(아이폰 위젯과 동일 정책).

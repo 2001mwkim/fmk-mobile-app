@@ -19,6 +19,8 @@ struct FmkTopRow: Identifiable {
   let name: String
   let time: String
   let colorArgb: Int
+  /// 드라이버 TLA(라이브 행만 채워짐, 저장 행은 "") — 워치 원형 컴플리케이션용.
+  var code: String = ""
 
   var id: Int { position }
 }
@@ -104,6 +106,31 @@ struct FmkPayload {
     return FmkLiveState(
       badge: "RESULT", gpName: gpName, lapCurrent: 0, lapTotal: 0,
       rows: topThree, sessionLabel: resultSessionLabel)
+  }
+
+  /// 최근 확정 결과(lr* 키, 브리지 _saveLatestResultExtras — iOS 에서 항상 저장).
+  /// mode 와 무관하게 읽히므로 워치 앱이 라이브/결과 창 밖에서 "최근 세션 결과"로
+  /// 쓴다. 없으면 nil.
+  static func latestResultState() -> FmkLiveState? {
+    let store = UserDefaults(suiteName: fmkAppGroupId)
+    func str(_ key: String) -> String { store?.string(forKey: key) ?? "" }
+    func num(_ key: String) -> Int { store?.integer(forKey: key) ?? 0 }
+    let gpName = str("lrGpName")
+    guard !gpName.isEmpty else { return nil }
+    var rows: [FmkTopRow] = []
+    for index in 1...3 {
+      let name = str("lr\(index)Name").trimmingCharacters(in: .whitespaces)
+      guard !name.isEmpty else { continue }
+      rows.append(
+        FmkTopRow(
+          position: num("lr\(index)Pos") == 0 ? index : num("lr\(index)Pos"),
+          name: name, time: str("lr\(index)Time"),
+          colorArgb: normalizedColor(num("lr\(index)Color"))))
+    }
+    guard !rows.isEmpty else { return nil }
+    return FmkLiveState(
+      badge: "RESULT", gpName: "\(str("lrGpFlag")) \(gpName)".trimmingCharacters(in: .whitespaces),
+      lapCurrent: 0, lapTotal: 0, rows: rows, sessionLabel: str("lrLabel"))
   }
 
   /// 저장된 하이라이트 대신 epoch 로 재계산 — 앱을 안 열어도 타임라인

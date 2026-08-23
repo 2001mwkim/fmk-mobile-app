@@ -182,7 +182,8 @@ enum FmkLive {
         name: payload.driverNamesKo[code] ?? driver.displayName,
         time: time,
         colorArgb: payload.driverAccents[code]
-          ?? Int(Int32(bitPattern: 0xFFEF4444))
+          ?? Int(Int32(bitPattern: 0xFFEF4444)),
+        code: code
       )
     }
 

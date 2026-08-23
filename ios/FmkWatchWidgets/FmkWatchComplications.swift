@@ -54,6 +54,26 @@ private let fmkWatchFamilies: [WidgetFamily] = [
   .accessoryInline, .accessoryCircular, .accessoryRectangular, .accessoryCorner,
 ]
 
+/// 원형 컴플리케이션 공용 2줄 레이아웃 — 윗줄 작게(P1 등), 아랫줄 크게(TLA 등).
+/// 원 안에서 글자가 넘치지 않도록 한 줄 고정 + 축소 허용, 좌우 여백 최소.
+struct FmkWatchCircularTwoLine: View {
+  let top: String
+  let bottom: String
+
+  var body: some View {
+    ZStack {
+      AccessoryWidgetBackground()
+      VStack(spacing: -1) {
+        Text(top).font(.system(size: 13, weight: .heavy))
+          .lineLimit(1).minimumScaleFactor(0.6)
+        Text(bottom).font(.system(size: 19, weight: .heavy)).monospacedDigit()
+          .lineLimit(1).minimumScaleFactor(0.5)
+      }
+      .padding(.horizontal, 3)
+    }
+  }
+}
+
 // ── 1) 일정 · 라이브 (자동 전환) ──
 struct FmkWatchScheduleWidget: Widget {
   var body: some WidgetConfiguration {
@@ -86,19 +106,13 @@ struct FmkWatchScheduleView: View {
         Text("🏁 비아 포뮬러")
       }
     case .accessoryCircular:
-      ZStack {
-        AccessoryWidgetBackground()
-        VStack(spacing: 0) {
-          if let live = entry.live, live.isLive {
-            Text("LAP").font(.system(size: 9, weight: .heavy))
-            Text("\(live.lapCurrent)").font(.system(size: 16, weight: .heavy)).monospacedDigit()
-          } else {
-            Text(dday).font(.system(size: 14, weight: .heavy)).monospacedDigit()
-              .minimumScaleFactor(0.7)
-            Text(nextRow?.name ?? "").font(.system(size: 8, weight: .semibold))
-              .lineLimit(1).minimumScaleFactor(0.6)
-          }
-        }
+      // 라이브/결과: P1 + 선두 TLA, 평상시: 다음 세션 D-day.
+      if let live = entry.live, let leader = live.rows.first {
+        FmkWatchCircularTwoLine(
+          top: "P\(leader.position)",
+          bottom: fmkDriverCode(name: leader.name, code: leader.code, payload: entry.payload))
+      } else {
+        FmkWatchCircularTwoLine(top: nextRow?.name ?? "NEXT", bottom: dday)
       }
     case .accessoryCorner:
       // 코너: 큰 글자 1개 + 곡선 라벨(widgetLabel).
@@ -157,6 +171,7 @@ struct FmkWatchStandingsWidget: Widget {
 struct FmkWatchStandingsView: View {
   @Environment(\.widgetFamily) private var family
   private let rows = FmkPayload.standings(prefix: "stDriver")
+  private let payload = FmkPayload.load()
 
   var body: some View {
     let leader = rows.first
@@ -164,17 +179,13 @@ struct FmkWatchStandingsView: View {
     case .accessoryInline:
       Text(leader.map { "🏆 P1 \($0.name) \($0.points)pt" } ?? "🏆 드라이버 순위")
     case .accessoryCircular:
-      ZStack {
-        AccessoryWidgetBackground()
-        VStack(spacing: 0) {
-          Text("P1").font(.system(size: 9, weight: .heavy))
-          Text(leader?.name ?? "—").font(.system(size: 13, weight: .heavy))
-            .lineLimit(1).minimumScaleFactor(0.5)
-        }
-      }
+      FmkWatchCircularTwoLine(
+        top: "P\(leader?.position ?? 1)",
+        bottom: leader.map { fmkDriverCode(name: $0.name, payload: payload) } ?? "—")
     case .accessoryCorner:
-      Text(leader?.name ?? "—").font(.system(size: 14, weight: .heavy)).minimumScaleFactor(0.5)
-        .widgetLabel { Text("P1 · \(leader?.points ?? "—") pt") }
+      Text(leader.map { fmkDriverCode(name: $0.name, payload: payload) } ?? "—")
+        .font(.system(size: 16, weight: .heavy)).minimumScaleFactor(0.5)
+        .widgetLabel { Text("P1 \(leader?.name ?? "") · \(leader?.points ?? "—") pt") }
     default:
       VStack(alignment: .leading, spacing: 1) {
         Text("드라이버 순위").font(.system(size: 11, weight: .heavy))
@@ -218,13 +229,8 @@ struct FmkWatchMyDriverView: View {
     case .accessoryInline:
       Text(ready ? "⭐ \(data.code) P\(data.position) \(data.points)pt" : "⭐ MY DRIVER 미설정")
     case .accessoryCircular:
-      ZStack {
-        AccessoryWidgetBackground()
-        VStack(spacing: 0) {
-          Text(ready ? data.code : "MY").font(.system(size: 11, weight: .heavy))
-          Text(ready ? "P\(data.position)" : "—").font(.system(size: 14, weight: .heavy)).monospacedDigit()
-        }
-      }
+      FmkWatchCircularTwoLine(
+        top: ready ? "P\(data.position)" : "MY", bottom: ready ? data.code : "—")
     case .accessoryCorner:
       Text(ready ? "P\(data.position)" : "—").font(.system(size: 16, weight: .heavy))
         .widgetLabel { Text(ready ? "\(data.code) · \(data.points) pt" : "MY DRIVER 미설정") }
