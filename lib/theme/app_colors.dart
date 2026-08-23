@@ -26,6 +26,13 @@ class AppColors {
   static const Color redSoft = Color(0xFFF87171);
   static const Color greenSoft = Color(0xFF4ADE80);
 
+  // Live Center weather metrics. Each metric keeps a stable accent so it can
+  // be recognized at a glance without relying on the label alone.
+  static const Color weatherAir = Color(0xFFFB7185);
+  static const Color weatherTrack = Color(0xFFF59E0B);
+  static const Color weatherHumidity = Color(0xFF38BDF8);
+  static const Color weatherWind = Color(0xFF2DD4BF);
+
   /// FIA 플래그/세이프티카 상태 전용 의미 색상. 일반 강조 UI에는 사용하지 않는다.
   static const Color flagYellow = Color(0xFFFACC15);
   static const Color warningAmber = Color(0xFFF59E0B);

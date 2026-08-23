@@ -6,6 +6,57 @@ import 'package:fmk_app/theme/app_colors.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 
 void main() {
+  testWidgets('weather metrics form a readable two-by-two grid on mobile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-08-23T01:00:00Z',
+      raceName: 'Dutch Grand Prix',
+      sessionType: 'Race',
+      sessionName: 'Race',
+      weather: LiveWeather(
+        airTemperature: 22.4,
+        trackTemperature: 31.8,
+        humidity: 66,
+        windSpeed: 2.7,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const LiveCenterScreen(snapshotOverride: snapshot),
+      ),
+    );
+
+    final air = tester.getRect(
+      find.byKey(const ValueKey('weather-metric-대기 온도')),
+    );
+    final track = tester.getRect(
+      find.byKey(const ValueKey('weather-metric-트랙 온도')),
+    );
+    final humidity = tester.getRect(
+      find.byKey(const ValueKey('weather-metric-습도')),
+    );
+    final wind = tester.getRect(
+      find.byKey(const ValueKey('weather-metric-바람')),
+    );
+
+    expect(air.top, track.top);
+    expect(humidity.top, wind.top);
+    expect(humidity.top, greaterThan(air.bottom));
+    expect(air.left, humidity.left);
+    expect(track.left, wind.left);
+    expect(find.text('22.4°'), findsOneWidget);
+    expect(find.text('2.7m/s'), findsOneWidget);
+  });
+
   testWidgets('live center renders timing, weather and race control', (
     tester,
   ) async {
@@ -67,6 +118,30 @@ void main() {
     expect(find.text('BEST'), findsWidgets);
     expect(find.text('LAST'), findsOneWidget);
     expect(find.text('28.100'), findsNothing);
+
+    // Weather metrics use a stable icon and accent color for quick scanning.
+    expect(find.text('대기 온도'), findsOneWidget);
+    expect(find.text('트랙 온도'), findsOneWidget);
+    expect(find.byIcon(Icons.thermostat_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.route_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.water_drop_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.air_rounded), findsOneWidget);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.thermostat_rounded)).color,
+      AppColors.weatherAir,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.route_rounded)).color,
+      AppColors.weatherTrack,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.water_drop_rounded)).color,
+      AppColors.weatherHumidity,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.air_rounded)).color,
+      AppColors.weatherWind,
+    );
 
     // SECTOR 탭: S1 라벨 + 값.
     await tester.tap(find.text('SECTOR'));

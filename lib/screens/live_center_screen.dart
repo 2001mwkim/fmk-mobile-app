@@ -203,14 +203,12 @@ class _WeatherPreviewCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 14),
-          Row(
-            children: [
-              _Metric(label: '대기', value: '—'),
-              _Metric(label: '트랙', value: '—'),
-              _Metric(label: '습도', value: '—'),
-              _Metric(label: '바람', value: '—'),
-            ],
+          SizedBox(height: 12),
+          _WeatherMetrics(
+            airTemperature: '—',
+            trackTemperature: '—',
+            humidity: '—',
+            windSpeed: '—',
           ),
         ],
       ),
@@ -536,35 +534,143 @@ class _RemainingMetricState extends State<_RemainingMetric> {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
+class _WeatherMetrics extends StatelessWidget {
+  const _WeatherMetrics({
+    required this.airTemperature,
+    required this.trackTemperature,
+    required this.humidity,
+    required this.windSpeed,
+  });
 
-  final String label;
-  final String value;
+  final String airTemperature;
+  final String trackTemperature;
+  final String humidity;
+  final String windSpeed;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnCount = constraints.maxWidth >= 520 ? 4 : 2;
+        const gap = 8.0;
+        final itemWidth =
+            (constraints.maxWidth - gap * (columnCount - 1)) / columnCount;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            SizedBox(
+              width: itemWidth,
+              child: _WeatherMetric(
+                label: '대기 온도',
+                value: airTemperature,
+                icon: Icons.thermostat_rounded,
+                color: AppColors.weatherAir,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _WeatherMetric(
+                label: '트랙 온도',
+                value: trackTemperature,
+                icon: Icons.route_rounded,
+                color: AppColors.weatherTrack,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _WeatherMetric(
+                label: '습도',
+                value: humidity,
+                icon: Icons.water_drop_rounded,
+                color: AppColors.weatherHumidity,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _WeatherMetric(
+                label: '바람',
+                value: windSpeed,
+                icon: Icons.air_rounded,
+                color: AppColors.weatherWind,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WeatherMetric extends StatelessWidget {
+  const _WeatherMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: ValueKey('weather-metric-$label'),
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: AppRadius.smallBorder,
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.faint,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              icon,
+              size: 19,
+              color: color,
+              semanticLabel: '$label 아이콘',
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1443,17 +1549,12 @@ class _WeatherCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _Metric(label: '대기', value: number(weather.airTemperature, '°')),
-              _Metric(
-                label: '트랙',
-                value: number(weather.trackTemperature, '°'),
-              ),
-              _Metric(label: '습도', value: number(weather.humidity, '%')),
-              _Metric(label: '바람', value: number(weather.windSpeed, 'm/s')),
-            ],
+          const SizedBox(height: 12),
+          _WeatherMetrics(
+            airTemperature: number(weather.airTemperature, '°'),
+            trackTemperature: number(weather.trackTemperature, '°'),
+            humidity: number(weather.humidity, '%'),
+            windSpeed: number(weather.windSpeed, 'm/s'),
           ),
           if (weather.rainfall == true) ...[
             const SizedBox(height: 12),
