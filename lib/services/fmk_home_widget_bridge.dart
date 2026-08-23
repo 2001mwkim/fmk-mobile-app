@@ -394,11 +394,12 @@ class FmkHomeWidgetBridge {
   /// _buildResultPayload 와 동일(그 함수를 그대로 호출해 Top3 만 뽑는다).
   static Future<void> _saveLatestResultExtras() async {
     final latest = _latestResult;
+    // 결과 fetch 실패(네트워크 등) 시에는 이전에 저장한 값을 지우지 않는다 —
+    // 확정 결과는 낡아도 틀리지 않으므로 마지막 성공값을 유지하는 편이 낫다.
+    if (latest == null || latest.data.entries.isEmpty) return;
+    final result = _buildResultPayload(latest, DateTime.now());
     final writes = <Future<bool?>>[];
-    if (latest == null || latest.data.entries.isEmpty) {
-      writes.add(HomeWidget.saveWidgetData<String>('lrGpName', ''));
-    } else {
-      final result = _buildResultPayload(latest, DateTime.now());
+    {
       writes.addAll([
         HomeWidget.saveWidgetData<String>('lrGpName', result.gpName),
         HomeWidget.saveWidgetData<String>('lrGpFlag', result.gpFlag),
