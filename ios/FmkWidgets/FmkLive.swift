@@ -79,8 +79,16 @@ struct FmkLiveState {
   let lapCurrent: Int
   let lapTotal: Int
   let rows: [FmkTopRow]
+  /// 결과 배지 앞에 붙는 세션 라벨("FP2 결과"). 비어 있으면 "결과"만 표기.
+  var sessionLabel: String = ""
 
   var isLive: Bool { badge == "LIVE" }
+
+  /// 헤더 배지 텍스트 — 라이브는 항상 "LIVE".
+  var badgeText: String {
+    if isLive { return "LIVE" }
+    return sessionLabel.isEmpty ? "결과" : "\(sessionLabel) 결과"
+  }
 }
 
 enum FmkLive {

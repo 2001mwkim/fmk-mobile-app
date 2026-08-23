@@ -153,9 +153,45 @@ void main() {
     // 1위는 총 시간, 이후는 갭(결과 패널과 동일 규칙)
     expect(payload.topThreeTimes, ['1:27:11.335', '+2.0', '+3.0']);
     expect(payload.topThreeColors.length, 3);
+    expect(payload.resultSessionLabel, '레이스'); // iOS 라이브·결과 위젯 배지
     // 토글 전환용 일정 데이터도 함께 채운다
     expect(payload.sessions, isNotEmpty);
     expect(payload.scheduleGpName, isNotEmpty);
+  });
+
+  test('퀄리/연습 결과 모드는 행별 랩타임을 쓰고 갭으로 폴백하지 않는다', () {
+    RaceResultEntry entry(int position, {String? time, String? gap}) =>
+        RaceResultEntry(
+          position: position,
+          positionLabel: '$position',
+          driverKo: '드라이버 $position',
+          driverEn: 'Driver $position',
+          teamKo: '페라리',
+          teamEn: 'Ferrari',
+          points: 0,
+          time: time,
+          gap: gap,
+        );
+
+    final payload = buildFmkHomeWidgetPayload(
+      now: DateTime.parse('2026-07-10T12:00:00+09:00'),
+      latestResult: LatestRaceResult(
+        raceId: 'great-britain-2026',
+        sessionType: 'QUALIFYING',
+        data: RaceResultData(
+          status: 'official',
+          entries: [
+            entry(1, time: '1:25.001'),
+            entry(2, time: '1:25.120', gap: '+0.119'),
+            entry(3, gap: '+0.300'), // 랩타임 없음 → '—'(갭 폴백 금지)
+          ],
+        ),
+      ),
+    );
+
+    expect(payload.mode, 'result');
+    expect(payload.resultSessionLabel, '퀄리파잉');
+    expect(payload.topThreeTimes, ['1:25.001', '1:25.120', '—']);
   });
 
   test('라이브 스냅샷이 있으면 확정 결과보다 라이브가 우선한다', () {

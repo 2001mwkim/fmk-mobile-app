@@ -11,7 +11,7 @@ import Foundation
 // - configure {registerUrl}: 토큰 등록 엔드포인트 설정 + push-to-start 토큰 관찰 시작
 // - sync {raceId, badge, gpName, sessionName, lapCurrent, lapTotal,
 //         p1Name...p3Time, updatedAt}: 활동 시작 또는 갱신
-// - end {}: 활동 종료(최종 상태 유지 후 시스템 기본 시점에 제거)
+// - end {}: 활동 종료(최종 상태 유지, 30분 뒤 잠금화면에서 제거)
 //
 // 푸시 갱신(방식2): 활동/push-to-start 토큰을 collector 에 등록하면
 // collector 가 APNs 로 직접 start/update/end 를 보낸다. 앱이 실행 중일 때는
@@ -121,8 +121,13 @@ class FmkLiveActivityManager: NSObject {
   private func endAll() {
     Task {
       for activity in Activity<FmkLiveActivityAttributes>.activities {
-        // 최종 상태를 유지한 채 종료 — 시스템 기본 제거 정책 사용.
-        await activity.end(using: activity.contentState, dismissalPolicy: .default)
+        // 최종 상태(RESULT)를 유지한 채 종료하고 30분 뒤 잠금화면에서 제거.
+        // collector 푸시 end 의 dismissal-date(+30분)와 동일 정책 — 한쪽만 바꾸면
+        // 앱 실행 여부에 따라 잔류 시간이 달라지므로 함께 수정할 것.
+        await activity.end(
+          using: activity.contentState,
+          dismissalPolicy: .after(Date().addingTimeInterval(30 * 60))
+        )
       }
     }
   }

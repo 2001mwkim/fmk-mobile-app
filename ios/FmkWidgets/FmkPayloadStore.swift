@@ -83,6 +83,8 @@ struct FmkPayload {
   let scheduleGpName: String
   let scheduleRaceId: String
   let liveBadge: String
+  /// result 모드의 세션 라벨('레이스'/'퀄리파잉'/'FP2' …, 다른 모드는 "").
+  let resultSessionLabel: String
   let lapCurrent: Int
   let lapTotal: Int
   let sessionHighlightIndex: Int
@@ -94,6 +96,15 @@ struct FmkPayload {
 
   /// 앱이 한 번도 데이터를 저장하지 않은 상태(위젯만 먼저 추가).
   var isEmpty: Bool { sessions.isEmpty && gpName.isEmpty }
+
+  /// 브리지가 저장한 최근 확정 결과(mode == "result", p1~p3) → 표시 상태.
+  /// 라이브·결과 전용 위젯이 세션 창 밖에서 그린다. 결과가 없으면 nil.
+  var storedResultState: FmkLiveState? {
+    guard mode == "result", !topThree.isEmpty else { return nil }
+    return FmkLiveState(
+      badge: "RESULT", gpName: gpName, lapCurrent: 0, lapTotal: 0,
+      rows: topThree, sessionLabel: resultSessionLabel)
+  }
 
   /// 저장된 하이라이트 대신 epoch 로 재계산 — 앱을 안 열어도 타임라인
   /// 엔트리 시점마다 다음 세션 표시가 맞는다. epoch 없으면 저장값 사용.
@@ -160,6 +171,7 @@ struct FmkPayload {
       scheduleGpName: str("scheduleGpName"),
       scheduleRaceId: str("scheduleRaceId"),
       liveBadge: str("liveBadge"),
+      resultSessionLabel: str("resultSessionLabel"),
       lapCurrent: num("lapCurrent"),
       lapTotal: num("lapTotal"),
       sessionHighlightIndex: num("sessionHighlightIndex"),

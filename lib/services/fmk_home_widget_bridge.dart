@@ -54,6 +54,12 @@ const String fmkTeamStandingsWidgetIOSKind = 'FmkTeamStandingsWidget';
 const String fmkMyDriverWidgetIOSKind = 'FmkMyDriverWidget';
 const String fmkMyTeamWidgetIOSKind = 'FmkMyTeamWidget';
 
+/// iOS 전용 분리형 위젯 2종(자동 전환 위젯의 "선택권" 보완 — Android 토글
+/// 대응). 일정 전용 / 라이브·최근 결과 전용. 데이터는 FmkHomeWidget 과 같은
+/// 키를 읽으므로 저장은 공유하고 갱신 호출만 추가한다.
+const String fmkScheduleWidgetIOSKind = 'FmkScheduleWidget';
+const String fmkLiveResultWidgetIOSKind = 'FmkLiveResultWidget';
+
 /// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
 /// 인덱스는 app.dart 의 MainShell._screens / BottomNav._items 순서와 1:1
 /// (홈 0 · 일정 1 · 순위 2 · 라이브 3). URI 는 Kotlin Provider 들이 만든다.
@@ -97,6 +103,7 @@ class FmkHomeWidgetPayload {
     required this.topThreeNames,
     required this.topThreeTimes,
     required this.topThreeColors,
+    this.resultSessionLabel = '',
   });
 
   final String mode;
@@ -126,6 +133,10 @@ class FmkHomeWidgetPayload {
   final List<String> topThreeNames;
   final List<String> topThreeTimes;
   final List<int> topThreeColors;
+
+  /// result 모드의 세션 라벨('레이스'/'퀄리파잉'/'FP2' …). iOS 라이브·결과
+  /// 위젯이 배지에 "FP2 결과"처럼 표기한다(Android 미사용, 다른 모드는 '').
+  final String resultSessionLabel;
 
   bool get isLive => mode == _modeLive;
   bool get isResult => mode == _modeResult;
@@ -274,6 +285,10 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
         iOSName: fmkTeamStandingsWidgetIOSKind,
       );
+      if (_isIOS) {
+        await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
+        await HomeWidget.updateWidget(iOSName: fmkLiveResultWidgetIOSKind);
+      }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
         iOSName: fmkMyDriverWidgetIOSKind,
@@ -319,6 +334,10 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
         iOSName: fmkMyTeamWidgetIOSKind,
       );
+      if (_isIOS) {
+        await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
+        await HomeWidget.updateWidget(iOSName: fmkLiveResultWidgetIOSKind);
+      }
     } catch (error, stackTrace) {
       debugPrint('Failed to update widget theme: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -415,6 +434,11 @@ class FmkHomeWidgetBridge {
         payload.scheduleRaceId,
       ),
       HomeWidget.saveWidgetData<String>('liveBadge', payload.liveBadge),
+      // iOS 라이브·결과 위젯 배지용(Android 미사용).
+      HomeWidget.saveWidgetData<String>(
+        'resultSessionLabel',
+        payload.resultSessionLabel,
+      ),
       HomeWidget.saveWidgetData<int>('lapCurrent', payload.lapCurrent),
       HomeWidget.saveWidgetData<int>('lapTotal', payload.lapTotal),
       HomeWidget.saveWidgetData<int>(
@@ -944,9 +968,14 @@ FmkHomeWidgetPayload _buildResultPayload(
   final race = getRaceById(latest.raceId);
   final schedule = _nextRaceSchedule(now);
   final topThree = latest.data.entries.take(3).toList();
+  // 결과 패널과 같은 표시 규칙: 레이스/스프린트는 1위 총시간+갭, 연습/퀄리는
+  // 행별 랩타임(time) — 갭 폴백 금지.
+  final raceLike =
+      latest.sessionType == 'RACE' || latest.sessionType == 'SPRINT';
 
   return FmkHomeWidgetPayload(
     mode: _modeResult,
+    resultSessionLabel: raceSessionTypeLabel(latest.sessionType),
     gpFlag: race != null ? _flagForRace(race) : '',
     gpName: race?.nameKo ?? '최근 레이스',
     scheduleGpFlag: _flagForRace(schedule.race),
@@ -961,10 +990,9 @@ FmkHomeWidgetPayload _buildResultPayload(
     topThree: List.filled(topThree.length, ''),
     topThreePositions: [for (final e in topThree) e.position],
     topThreeNames: [for (final e in topThree) e.driverKo],
-    // 결과 패널과 같은 규칙: 1위는 총 시간, 이후는 갭(DNF 등은 '—').
     topThreeTimes: [
       for (final e in topThree)
-        ((e.position == 1 ? e.time : e.gap) ?? '—').trim(),
+        ((raceLike && e.position != 1 ? e.gap : e.time) ?? '—').trim(),
     ],
     topThreeColors: [
       for (final e in topThree)

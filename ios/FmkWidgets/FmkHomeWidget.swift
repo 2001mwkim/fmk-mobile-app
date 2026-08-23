@@ -5,6 +5,8 @@ import WidgetKit
 // iOS 는 위젯 토글이 없으므로 상태 자동 전환으로 대신한다:
 //   라이브 중 → 라이브 순위, 종료 직후(노출 기한 내) → 결과, 평상시 → 일정.
 // systemMedium 이 기본(일정 5행), systemSmall 은 Android 콤팩트 대응.
+// 자동 전환이 불편한 사용자를 위해 FmkSplitWidgets.swift 에 일정 전용 /
+// 라이브·결과 전용 위젯이 따로 있다(이 파일의 뷰·타임라인 로직을 재사용).
 struct FmkHomeEntry: TimelineEntry {
   let date: Date
   let payload: FmkPayload
@@ -26,7 +28,7 @@ struct FmkHomeProvider: TimelineProvider {
 
     // 세션 창(시작 5분 전 ~ 종료 40분 후)에서만 live.json 을 직접 fetch.
     // WidgetKit 갱신 예산이 하루 수십 회라 평상시에는 네트워크를 아낀다.
-    if inLiveWindow(payload: payload, now: now) {
+    if Self.inLiveWindow(payload: payload, now: now) {
       Task {
         var live: FmkLiveState? = nil
         if let snapshot = await FmkLive.fetch(payload: payload) {
@@ -60,7 +62,8 @@ struct FmkHomeProvider: TimelineProvider {
     completion(Timeline(entries: entries, policy: .after(max(reload, now))))
   }
 
-  private func inLiveWindow(payload: FmkPayload, now: Date) -> Bool {
+  /// 세션 창 판정 — FmkLiveResultProvider 도 같은 규칙을 쓴다.
+  static func inLiveWindow(payload: FmkPayload, now: Date) -> Bool {
     payload.sessions.contains { row in
       guard let start = row.start, let end = row.end else { return false }
       return now >= start.addingTimeInterval(-5 * 60)
@@ -168,7 +171,9 @@ struct FmkLockWidgetView: View {
     case .accessoryInline:
       // 시계 위 한 줄. 이모지+텍스트만 허용되는 가장 작은 표면.
       if let live = entry.live {
-        Text("🔴 LIVE P1 \(live.rows.first?.name ?? "—")")
+        Text(live.isLive
+          ? "🔴 LIVE P1 \(live.rows.first?.name ?? "—")"
+          : "🏁 \(live.badgeText) P1 \(live.rows.first?.name ?? "—")")
       } else if let row = nextRow {
         Text("🏁 \(row.name) \(row.date) \(row.time)")
       } else {
@@ -191,7 +196,7 @@ struct FmkLockWidgetView: View {
     default: // .accessoryRectangular
       VStack(alignment: .leading, spacing: 1) {
         if let live = entry.live {
-          Text("● LIVE \(live.gpName)")
+          Text(live.isLive ? "● LIVE \(live.gpName)" : "\(live.badgeText) \(live.gpName)")
             .font(.system(size: 12, weight: .heavy)).lineLimit(1)
           Text("P1 \(live.rows.first?.name ?? "—")")
             .font(.system(size: 13, weight: .bold)).lineLimit(1)
@@ -332,7 +337,7 @@ struct FmkLiveView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(spacing: 7) {
-        Text(live.isLive ? "LIVE" : "결과")
+        Text(live.badgeText)
           .font(.system(size: 10, weight: .heavy))
           .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
           .padding(.horizontal, 7)
@@ -393,7 +398,7 @@ struct FmkLiveCompactView: View {
   var body: some View {
     let leader = live.rows.first
     VStack(alignment: .leading, spacing: 3) {
-      Text(live.isLive ? "LIVE" : "결과")
+      Text(live.badgeText)
         .font(.system(size: 8, weight: .heavy))
         .foregroundColor(.white) // 레드 배지 위 — 양쪽 모드 공통 흰색
         .padding(.horizontal, 6)
