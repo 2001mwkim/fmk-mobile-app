@@ -7,27 +7,44 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		024DEE87C4B6598A5D73B77E /* FmkWatchSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0510AF8408F2A2A0BF77930 /* FmkWatchSync.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		1FEEF75E9D6E64EA88BE39CA /* FmkWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 125A6BD6DD855DFA9E01328E /* FmkWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2D22831B45787113FB8BD2F8 /* FmkWatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117C6064F0DF5013C50FADF5 /* FmkWatchComplications.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		37454F6B6BA2D6308C6DB271 /* FmkWatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A0B9CF13222B651403E6E5 /* FmkWatchTheme.swift */; };
 		39BB405D364912B1B03CBE6D /* FmkPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1445E06C2C2B90EA322F5EEC /* FmkPayloadStore.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		3FA1E4C40B20C23F33374D90 /* FmkLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A342FE814119DABD649F52B9 /* FmkLiveActivityAttributes.swift */; };
 		439052860156DC5EE3C32D8C /* FmkTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337639F72BD345926842C442 /* FmkTheme.swift */; };
 		467B3647E981C13D991AFE44 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2FD922862E8B8B2E2CCF755A /* Foundation.framework */; };
+		56720603504486230129C99D /* FmkLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AC0364784948240C608E90E /* FmkLive.swift */; };
 		58BE3F62B01DE4A4A929D1A0 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA7FF89019F028E58DD3DAB4 /* Pods_RunnerTests.framework */; };
+		5A1C0DE5C0FFEE0000A1B2C4 /* FmkMyPicksWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */; };
+		5A1C0DE5C0FFEE0000A1B2D4 /* FmkSplitWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0DE5C0FFEE0000A1B2D3 /* FmkSplitWidgets.swift */; };
+		5F40D60B271D2913638F29B2 /* FmkLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AC0364784948240C608E90E /* FmkLive.swift */; };
+		6D3F643CF9CBD90CFF7EC0A7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43D651239F90D3625182B14E /* Foundation.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		7FB45C6D0065BB8B98E60C9C /* FmkWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3921233CD5A4837C1E3FF283 /* FmkWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		836C3B4E902EDB3F9A402843 /* FmkWatchSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F9F3FC17AB1DC298555C73 /* FmkWatchSessionBridge.swift */; };
+		8FA40FADD0E466AEB7A2E39B /* FmkWatchWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 993AEE0D6F5E35F6B9B71AB7 /* FmkWatchWidgetsBundle.swift */; };
+		8FE2D4593D72D9C15D53CD7D /* FmkWatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A0B9CF13222B651403E6E5 /* FmkWatchTheme.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		9EB8041C074823ABCBD5E439 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C422762CE3B7E581A7F397 /* Pods_Runner.framework */; };
+		A4FD47DEFDDE9A412707380A /* FmkPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1445E06C2C2B90EA322F5EEC /* FmkPayloadStore.swift */; };
 		AE33523B28182940A2C8E80B /* FmkLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A6C8F159167F27A1D49661 /* FmkLiveActivityManager.swift */; };
 		B5A444B5AB3A33895BEF2815 /* FmkLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A342FE814119DABD649F52B9 /* FmkLiveActivityAttributes.swift */; };
 		B7659B5939270BBFB107985A /* FmkLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03954A667D70AA7B8A1111AF /* FmkLiveActivityWidget.swift */; };
+		BCDBF740519EC0A44BC90E7A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43D651239F90D3625182B14E /* Foundation.framework */; };
+		C362C58FAAF3641DA71F7785 /* FmkWatchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A666D4BC817A59BBAB464971 /* FmkWatchRootView.swift */; };
+		D09775727CD219DC5D1B15D6 /* FmkPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1445E06C2C2B90EA322F5EEC /* FmkPayloadStore.swift */; };
+		D2C54B19A73DDB0C4AA72611 /* FmkWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3002BDAF20A8119843AA76B7 /* FmkWatchApp.swift */; };
 		D885757DC622B06D7E8F0CC0 /* FmkStandingsWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */; };
-		5A1C0DE5C0FFEE0000A1B2C4 /* FmkMyPicksWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */; };
-		5A1C0DE5C0FFEE0000A1B2D4 /* FmkSplitWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1C0DE5C0FFEE0000A1B2D3 /* FmkSplitWidgets.swift */; };
+		DB26D46ADA205BC46231C228 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 34DB78EBADC4B1521CDF347D /* Assets.xcassets */; };
 		E712FF1BE135B00500986529 /* FmkWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F699FCD8E09592F0FCDB26E5 /* FmkWidgetsBundle.swift */; };
 		EC4A8FEDA7C7D201DF75856E /* FmkHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2E39432F7400F52EBE0B61 /* FmkHomeWidget.swift */; };
 		F20F35F2B015ED58CE53AA83 /* FmkWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3AAB328F776A344CFE4644DC /* FmkWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -42,6 +59,13 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
+		3BBB8FED268C24C2C2277B6B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F7AE13AF55DCE6D86D6C024;
+			remoteInfo = FmkWatchWidgets;
+		};
 		615A4280AFE8C17301887730 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -49,9 +73,38 @@
 			remoteGlobalIDString = A4FA7E73034F38E57E2192BC;
 			remoteInfo = FmkWidgets;
 		};
+		8A29696FE1F60CEAED9E378B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8652FB6C5A74650B516AFE23;
+			remoteInfo = FmkWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		2B7A303288F4697CE737635E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7FB45C6D0065BB8B98E60C9C /* FmkWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		960EB26092C1927DADAC1802 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				1FEEF75E9D6E64EA88BE39CA /* FmkWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -78,23 +131,31 @@
 /* Begin PBXFileReference section */
 		03954A667D70AA7B8A1111AF /* FmkLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkLiveActivityWidget.swift; sourceTree = "<group>"; };
 		0FA50F2A4F2C3995AD2DD9A4 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		0FD2BB6374DF2BAD6C1C14B0 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		117C6064F0DF5013C50FADF5 /* FmkWatchComplications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchComplications.swift; sourceTree = "<group>"; };
+		125A6BD6DD855DFA9E01328E /* FmkWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FmkWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		136738CF10702AF7D94C0247 /* FmkWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FmkWatch.entitlements; sourceTree = "<group>"; };
 		1445E06C2C2B90EA322F5EEC /* FmkPayloadStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkPayloadStore.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		2FD922862E8B8B2E2CCF755A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		3002BDAF20A8119843AA76B7 /* FmkWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchApp.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		337639F72BD345926842C442 /* FmkTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkTheme.swift; sourceTree = "<group>"; };
+		34DB78EBADC4B1521CDF347D /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		37A6C8F159167F27A1D49661 /* FmkLiveActivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkLiveActivityManager.swift; sourceTree = "<group>"; };
+		3921233CD5A4837C1E3FF283 /* FmkWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = FmkWatchWidgets.appex; path = FmkWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AAB328F776A344CFE4644DC /* FmkWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FmkWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		3C2E39432F7400F52EBE0B61 /* FmkHomeWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkHomeWidget.swift; sourceTree = "<group>"; };
 		4369F349FDD225E88671462C /* FmkWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FmkWidgets.entitlements; sourceTree = "<group>"; };
+		43D651239F90D3625182B14E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		4D280CC824B75B9265654C4F /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
-		5C7B9C44462DAF232BF6D4A7 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
-		7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkStandingsWidgets.swift; sourceTree = "<group>"; };
 		5A1C0DE5C0FFEE0000A1B2C3 /* FmkMyPicksWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkMyPicksWidgets.swift; sourceTree = "<group>"; };
 		5A1C0DE5C0FFEE0000A1B2D3 /* FmkSplitWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkSplitWidgets.swift; sourceTree = "<group>"; };
+		5C7B9C44462DAF232BF6D4A7 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		7016FCA778FEE7BC1717A262 /* FmkStandingsWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkStandingsWidgets.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		74F8C60FADEE1F451931A676 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -104,6 +165,8 @@
 		7B2DD19BF7260E4E98EECD19 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		7FFBF7831627F75A6EEEFFF6 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		8AC0364784948240C608E90E /* FmkLive.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkLive.swift; sourceTree = "<group>"; };
+		8EEB4F4BE27B35B06ECB728D /* FmkWatchWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FmkWatchWidgets.entitlements; sourceTree = "<group>"; };
+		8F8FE2FC9108C00AFCF5AF90 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -111,15 +174,36 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		993AEE0D6F5E35F6B9B71AB7 /* FmkWatchWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchWidgetsBundle.swift; sourceTree = "<group>"; };
+		A0510AF8408F2A2A0BF77930 /* FmkWatchSync.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchSync.swift; sourceTree = "<group>"; };
 		A342FE814119DABD649F52B9 /* FmkLiveActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkLiveActivityAttributes.swift; sourceTree = "<group>"; };
+		A666D4BC817A59BBAB464971 /* FmkWatchRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchRootView.swift; sourceTree = "<group>"; };
+		B8F9F3FC17AB1DC298555C73 /* FmkWatchSessionBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchSessionBridge.swift; sourceTree = "<group>"; };
 		BC1200FBA54597BD2427EF25 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		D24BC26C7310A7712645FE33 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
+		E8A0B9CF13222B651403E6E5 /* FmkWatchTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWatchTheme.swift; sourceTree = "<group>"; };
 		E9C422762CE3B7E581A7F397 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA7FF89019F028E58DD3DAB4 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F699FCD8E09592F0FCDB26E5 /* FmkWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FmkWidgetsBundle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8251A851E57D530143B8418F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BCDBF740519EC0A44BC90E7A /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		83F815D4CEC4D838E48F24A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D3F643CF9CBD90CFF7EC0A7 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -190,6 +274,26 @@
 			path = RunnerTests;
 			sourceTree = "<group>";
 		};
+		44614A2C54895F8255DBA1E2 /* FmkWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				993AEE0D6F5E35F6B9B71AB7 /* FmkWatchWidgetsBundle.swift */,
+				117C6064F0DF5013C50FADF5 /* FmkWatchComplications.swift */,
+				0FD2BB6374DF2BAD6C1C14B0 /* Info.plist */,
+				8EEB4F4BE27B35B06ECB728D /* FmkWatchWidgets.entitlements */,
+			);
+			name = FmkWatchWidgets;
+			path = FmkWatchWidgets;
+			sourceTree = "<group>";
+		};
+		607001BB9B38937702460713 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				43D651239F90D3625182B14E /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		7EFE4C512817448BD4AE3BF5 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -220,6 +324,8 @@
 				1B695A6E6F67FB952C07A76C /* Pods */,
 				A64F2EA3A84FE00A15F3EE3B /* Frameworks */,
 				1ABBCC86B5BB21725BB36ECD /* FmkWidgets */,
+				E748163C135A1A49C8F041E4 /* FmkWatch */,
+				44614A2C54895F8255DBA1E2 /* FmkWatchWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -229,6 +335,8 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				3AAB328F776A344CFE4644DC /* FmkWidgets.appex */,
+				125A6BD6DD855DFA9E01328E /* FmkWatch.app */,
+				3921233CD5A4837C1E3FF283 /* FmkWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -247,6 +355,7 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				7FFBF7831627F75A6EEEFFF6 /* Runner.entitlements */,
 				37A6C8F159167F27A1D49661 /* FmkLiveActivityManager.swift */,
+				A0510AF8408F2A2A0BF77930 /* FmkWatchSync.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -257,8 +366,24 @@
 				E9C422762CE3B7E581A7F397 /* Pods_Runner.framework */,
 				EA7FF89019F028E58DD3DAB4 /* Pods_RunnerTests.framework */,
 				7EFE4C512817448BD4AE3BF5 /* iOS */,
+				607001BB9B38937702460713 /* watchOS */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E748163C135A1A49C8F041E4 /* FmkWatch */ = {
+			isa = PBXGroup;
+			children = (
+				3002BDAF20A8119843AA76B7 /* FmkWatchApp.swift */,
+				B8F9F3FC17AB1DC298555C73 /* FmkWatchSessionBridge.swift */,
+				A666D4BC817A59BBAB464971 /* FmkWatchRootView.swift */,
+				E8A0B9CF13222B651403E6E5 /* FmkWatchTheme.swift */,
+				8F8FE2FC9108C00AFCF5AF90 /* Info.plist */,
+				136738CF10702AF7D94C0247 /* FmkWatch.entitlements */,
+				34DB78EBADC4B1521CDF347D /* Assets.xcassets */,
+			);
+			name = FmkWatch;
+			path = FmkWatch;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -283,6 +408,42 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		3F7AE13AF55DCE6D86D6C024 /* FmkWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F53244A060AB6927221BCAA /* Build configuration list for PBXNativeTarget "FmkWatchWidgets" */;
+			buildPhases = (
+				79232E66353F1A4857D481F6 /* Sources */,
+				8251A851E57D530143B8418F /* Frameworks */,
+				CD87CBCD144845F7E50972D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FmkWatchWidgets;
+			productName = FmkWatchWidgets;
+			productReference = 3921233CD5A4837C1E3FF283 /* FmkWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8652FB6C5A74650B516AFE23 /* FmkWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 671FC864566AFDBAB75E1E5D /* Build configuration list for PBXNativeTarget "FmkWatch" */;
+			buildPhases = (
+				B1FB41EBFD903B04217D83C9 /* Sources */,
+				83F815D4CEC4D838E48F24A1 /* Frameworks */,
+				88EC5895CA5B101D3CAEF4EE /* Resources */,
+				2B7A303288F4697CE737635E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E31B04D4D2F299DB07BD3FAF /* PBXTargetDependency */,
+			);
+			name = FmkWatch;
+			productName = FmkWatch;
+			productReference = 125A6BD6DD855DFA9E01328E /* FmkWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -294,6 +455,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				A381055596760D9F63660236 /* Embed Foundation Extensions */,
+				960EB26092C1927DADAC1802 /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				F16BC46F5BB625DC6EE63520 /* [CP] Embed Pods Frameworks */,
 			);
@@ -301,6 +463,7 @@
 			);
 			dependencies = (
 				9AC0F7D1D2681E3F9263E949 /* PBXTargetDependency */,
+				8F2F58B9B5261C60ADEE2CC2 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -366,6 +529,8 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				A4FA7E73034F38E57E2192BC /* FmkWidgets */,
+				8652FB6C5A74650B516AFE23 /* FmkWatch */,
+				3F7AE13AF55DCE6D86D6C024 /* FmkWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -385,6 +550,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		88EC5895CA5B101D3CAEF4EE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DB26D46ADA205BC46231C228 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EC1CF9000F007C117D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -393,6 +566,13 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD87CBCD144845F7E50972D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,6 +682,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		79232E66353F1A4857D481F6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FA40FADD0E466AEB7A2E39B /* FmkWatchWidgetsBundle.swift in Sources */,
+				2D22831B45787113FB8BD2F8 /* FmkWatchComplications.swift in Sources */,
+				5F40D60B271D2913638F29B2 /* FmkLive.swift in Sources */,
+				D09775727CD219DC5D1B15D6 /* FmkPayloadStore.swift in Sources */,
+				37454F6B6BA2D6308C6DB271 /* FmkWatchTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -511,6 +703,7 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				B5A444B5AB3A33895BEF2815 /* FmkLiveActivityAttributes.swift in Sources */,
 				AE33523B28182940A2C8E80B /* FmkLiveActivityManager.swift in Sources */,
+				024DEE87C4B6598A5D73B77E /* FmkWatchSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -531,6 +724,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B1FB41EBFD903B04217D83C9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2C54B19A73DDB0C4AA72611 /* FmkWatchApp.swift in Sources */,
+				836C3B4E902EDB3F9A402843 /* FmkWatchSessionBridge.swift in Sources */,
+				C362C58FAAF3641DA71F7785 /* FmkWatchRootView.swift in Sources */,
+				8FE2D4593D72D9C15D53CD7D /* FmkWatchTheme.swift in Sources */,
+				56720603504486230129C99D /* FmkLive.swift in Sources */,
+				A4FD47DEFDDE9A412707380A /* FmkPayloadStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -539,11 +745,23 @@
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
 		};
+		8F2F58B9B5261C60ADEE2CC2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FmkWatch;
+			target = 8652FB6C5A74650B516AFE23 /* FmkWatch */;
+			targetProxy = 8A29696FE1F60CEAED9E378B /* PBXContainerItemProxy */;
+		};
 		9AC0F7D1D2681E3F9263E949 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = FmkWidgets;
 			target = A4FA7E73034F38E57E2192BC /* FmkWidgets */;
 			targetProxy = 615A4280AFE8C17301887730 /* PBXContainerItemProxy */;
+		};
+		E31B04D4D2F299DB07BD3FAF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FmkWatchWidgets;
+			target = 3F7AE13AF55DCE6D86D6C024 /* FmkWatchWidgets */;
+			targetProxy = 3BBB8FED268C24C2C2277B6B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -567,6 +785,66 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		0ECBF8AD71D0269C318DFC24 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = FmkWatch/FmkWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp;
+				PRODUCT_NAME = FmkWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		1FE47148DAB9AE4853DAAE81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FmkWatchWidgets/FmkWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp.FmkWatchWidgets;
+				PRODUCT_NAME = FmkWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -692,6 +970,37 @@
 			};
 			name = Profile;
 		};
+		55F828E5B30330D69C31F82C /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FmkWatchWidgets/FmkWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp.FmkWatchWidgets;
+				PRODUCT_NAME = FmkWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
 		6A76613494A25E43084540C7 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
@@ -715,6 +1024,37 @@
 			};
 			name = Profile;
 		};
+		811CD1BBA85E98E52E653D61 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = FmkWatch/FmkWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp;
+				PRODUCT_NAME = FmkWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 		89E86833EEF6C14032EF7069 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
@@ -737,6 +1077,68 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8F173C1524BA6B6DE36439C5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = FmkWatch/FmkWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp;
+				PRODUCT_NAME = FmkWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
+		93609BD1A49768C8AFA04850 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB31CF90195004384FC /* Generated.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FmkWatchWidgets/FmkWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PHM7ANUX4X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FmkWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = kr.formulamagazine.fmk.watchkitapp.FmkWatchWidgets;
+				PRODUCT_NAME = FmkWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -926,6 +1328,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1F53244A060AB6927221BCAA /* Build configuration list for PBXNativeTarget "FmkWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				93609BD1A49768C8AFA04850 /* Release */,
+				1FE47148DAB9AE4853DAAE81 /* Debug */,
+				55F828E5B30330D69C31F82C /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -942,6 +1354,16 @@
 				89E86833EEF6C14032EF7069 /* Release */,
 				CDB76234FAFB07350A3A5A5D /* Debug */,
 				6A76613494A25E43084540C7 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		671FC864566AFDBAB75E1E5D /* Build configuration list for PBXNativeTarget "FmkWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				811CD1BBA85E98E52E653D61 /* Release */,
+				0ECBF8AD71D0269C318DFC24 /* Debug */,
+				8F173C1524BA6B6DE36439C5 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

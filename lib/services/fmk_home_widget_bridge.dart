@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../data/country_flags.dart';
@@ -189,6 +190,21 @@ class FmkHomeWidgetBridge {
     await HomeWidget.setAppGroupId(fmkWidgetAppGroupId);
   }
 
+  /// 애플워치 동기화 채널(iOS 네이티브 FmkWatchSync.swift). App Group 은
+  /// 아이폰↔워치 간 공유되지 않으므로, 저장을 마친 뒤 네이티브가 App Group
+  /// 전체를 WatchConnectivity 로 워치에 밀어준다. 워치 앱/컴플리케이션은
+  /// 같은 키로 워치 쪽 App Group 에 저장해 FmkPayloadStore.swift 를 공유한다.
+  static const MethodChannel _watchChannel = MethodChannel('fmk/watch');
+
+  static Future<void> _syncWatch() async {
+    if (!_isIOS) return;
+    try {
+      await _watchChannel.invokeMethod<void>('sync');
+    } on MissingPluginException {
+      // 네이티브 미설치(테스트 등) — 무시.
+    }
+  }
+
   /// 최근 확정 결과 캐시 — 라이브가 없을 때 위젯 '결과' 화면의 데이터.
   /// 확정 결과는 레이스 후 바뀌지 않으므로 낡아도 틀리지 않는다.
   static LatestRaceResult? _latestResult;
@@ -297,6 +313,7 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
         iOSName: fmkMyTeamWidgetIOSKind,
       );
+      await _syncWatch();
     } catch (error, stackTrace) {
       debugPrint('Failed to update Fmk home widget: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -338,6 +355,7 @@ class FmkHomeWidgetBridge {
         await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
         await HomeWidget.updateWidget(iOSName: fmkLiveResultWidgetIOSKind);
       }
+      await _syncWatch();
     } catch (error, stackTrace) {
       debugPrint('Failed to update widget theme: $error');
       debugPrintStack(stackTrace: stackTrace);

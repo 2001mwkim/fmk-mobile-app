@@ -16,5 +16,9 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FmkLiveActivity") {
       FmkLiveActivityManager.shared.install(messenger: registrar.messenger())
     }
+    // 애플워치 동기화 채널(fmk/watch) — 브리지 저장 후 App Group 을 워치로 전송.
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FmkWatchSync") {
+      FmkWatchSync.shared.install(messenger: registrar.messenger())
+    }
   }
 }

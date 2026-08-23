@@ -41,6 +41,7 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - **MY PICKS(MY DRIVER / MY TEAM)** — 설정 화면의 `widgets/my_picks_card.dart`(타일 + 그리드 선택기)에서 고르고 `services/my_picks_controller.dart`(prefs `my_driver_code`=TLA, `my_team_ko`=teamKo)에 저장. 브리지 `_saveMyPicksPayload` 가 순위 행과 결합해 `myDriver*`/`myTeam*`(+`myTeamD1/D2*`) 키를 저장 — Android `FmkMyPicksWidgetProviders.kt`(`FmkMyDriverWidgetProvider`/`FmkMyTeamWidgetProvider`, 레이아웃 `widget_fmk_my_driver/team.xml`)·iOS `FmkMyPicksWidgets.swift`(kind `FmkMyDriverWidget`/`FmkMyTeamWidget`)와 수동 동기화. 표기는 TLA/영문(`data/drivers.dart` `driverNameEnByCode`, `data/teams.dart` 약어/영문명), 팀 컬러 스트라이프+글로우. 미설정 위젯 탭 → `fmkwidget://mypicks` → 설정 화면(app.dart)
 - **위젯 테마**(설정 › 위젯: 다크/라이트/시스템, 기본 다크) — `services/widget_theme_controller.dart` → 브리지 `updateTheme` 이 `widgetThemeMode` 키 저장. Android `FmkWidgetTheme.kt`(`forFmkWidgetTheme`/`applyFmkWidgetBackground` — 새 Provider 는 모든 정적 @color 텍스트를 이 Context 로 `setTextColor` 해야 함), iOS `FmkTheme.swift` `fmkWidgetScheme()`(각 위젯 뷰 최상위에 1회)
 - `ios/FmkWidgets/` — iOS WidgetKit 익스텐션(iOS 15+, 앱 본체는 14). Android 위젯의 iOS 대응이되 플랫폼 차이가 있다: 토글 없음(일정·라이브 위젯은 라이브/결과/일정 자동 전환, 순위는 드라이버/팀 별도 위젯 종류) — 자동 전환을 원치 않는 사용자용으로 `FmkSplitWidgets.swift` 에 일정 전용(`FmkScheduleWidget`)·라이브/최근 결과 전용(`FmkLiveResultWidget`, 세션 창 밖에선 브리지 result 모드 p1~p3 + `resultSessionLabel` 배지)이 따로 있다(뷰·타임라인은 `FmkHomeWidget.swift` 재사용), 데이터는 App Group `group.kr.formulamagazine.fmk`(UserDefaults) 공유, 세션 창(시작-5분~종료+40분)에서만 위젯이 live.json 직접 fetch(`FmkLive.swift` — 표시 정책 포팅본이므로 라이브 규칙 변경 시 함께 수정). 위젯 kind 문자열·데이터 키는 브리지와 수동 동기화. Xcode 타깃 빌드 설정은 Generated.xcconfig 를 base 로 사용(버전 자동 동기화). 위젯 탭 딥링크는 `fmkwidget://…?homeWidget`(iOS 는 `homeWidget` 쿼리 파라미터 필수)
+- `ios/FmkWatch/`(워치 앱) · `ios/FmkWatchWidgets/`(컴플리케이션) — 애플워치(watchOS 10+, SwiftUI 전용, Flutter 미지원). **데이터 경로**: App Group 은 아이폰↔워치 간 공유되지 않으므로 브리지가 저장을 마친 뒤 `MethodChannel('fmk/watch').sync` → `Runner/FmkWatchSync.swift` 가 App Group 전체를 WatchConnectivity(`updateApplicationContext` + 컴플리케이션 활성 시 `transferCurrentComplicationUserInfo`)로 전송 → 워치 `FmkWatchSessionBridge.swift` 가 같은 키로 워치 App Group 에 저장 후 `reloadAllTimelines`. 덕분에 `FmkWidgets/FmkLive.swift`·`FmkPayloadStore.swift` 를 워치 타깃이 그대로 공유한다(타깃 멤버십만 추가). 팔레트는 `FmkWatchTheme.swift`(다크 고정 — FmkTheme 은 UIKit 동적 색이라 워치 불가). 컴플리케이션 kind: `FmkWatchSchedule`(일정·라이브 자동 전환, 세션 창에서만 live.json fetch) / `FmkWatchDriverStandings` / `FmkWatchMyDriver`, 패밀리 inline·circular·rectangular·corner. 번들 ID `kr.formulamagazine.fmk.watchkitapp(.FmkWatchWidgets)`. 빌드: 워치 타깃이 Runner 에 임베드되어 **iOS 빌드에도 watchOS 시뮬레이터 플랫폼 설치가 필요**(`xcodebuild -downloadPlatform watchOS`), `flutter build ios --simulator` 는 `-d <시뮬레이터 UDID>` 필수
 - `test/` — 주제별 분리(app_navigation / live_widgets / home_hero / live_session_model / live_session_controller / notification / bridge)
 
 ## 컨벤션
@@ -54,6 +55,7 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 ## 미해결 사항
 
 - iOS는 프로젝트 준비만 된 상태(위젯/알림 iOS 검증 안 됨)
+- 애플워치: 2026-08-23 타깃·코드 추가, 시뮬레이터 검증 전(watchOS 플랫폼 설치 필요). Wear OS 미착수
 
 ## 릴리스 서명
 

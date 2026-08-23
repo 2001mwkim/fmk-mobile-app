@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 워치 앱 ↔ 워치 컴플리케이션 데이터 공유(워치 내부). 아이폰과는 공유되지
+	     않으며, 아이폰 데이터는 WatchConnectivity 로 받아 이 그룹에 저장한다. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.kr.formulamagazine.fmk</string>
+	</array>
+</dict>
+</plist>
