@@ -186,8 +186,11 @@ struct FmkLockWidgetView: View {
           Text("\(live.lapCurrent)")
             .font(.system(size: 16, weight: .heavy)).fmkMonoDigits()
         } else {
-          Text(daysLeft.map { $0 == 0 ? "오늘" : "D-\($0)" } ?? "—")
+          // 당일은 "오늘" 대신 "D-DAY" — D-3 → D-1 → D-DAY 로 표기가 이어지게.
+          // 원형 안에서 5글자가 잘리지 않도록 축소 허용.
+          Text(daysLeft.map { $0 == 0 ? "D-DAY" : "D-\($0)" } ?? "—")
             .font(.system(size: 15, weight: .heavy)).fmkMonoDigits()
+            .lineLimit(1).minimumScaleFactor(0.7)
           Text(nextRow?.name ?? "")
             .font(.system(size: 9, weight: .semibold))
             .lineLimit(1).minimumScaleFactor(0.7)

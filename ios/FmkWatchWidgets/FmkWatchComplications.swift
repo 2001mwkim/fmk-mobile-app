@@ -92,7 +92,8 @@ struct FmkWatchScheduleView: View {
 
   private var nextRow: FmkSessionRow? { fmkNextSessionRow(payload: entry.payload, at: entry.date) }
   private var daysLeft: Int? { fmkDaysLeft(to: nextRow?.start, from: entry.date) }
-  private var dday: String { daysLeft.map { $0 == 0 ? "오늘" : "D-\($0)" } ?? "—" }
+  /// 당일은 "D-DAY"(iOS 원형 잠금화면 위젯과 동일 표기).
+  private var dday: String { daysLeft.map { $0 == 0 ? "D-DAY" : "D-\($0)" } ?? "—" }
 
   var body: some View {
     switch family {
