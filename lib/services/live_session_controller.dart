@@ -33,6 +33,7 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
     this._service, {
     this.gracePeriod = liveGracePeriod,
     this.staleMaxAge = liveStaleMaxAge,
+    this.fastPollDuringRace = kLiveFastPollDuringRace,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -41,7 +42,23 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 폴링 주기(15~30초 권장).
   static const Duration pollInterval = Duration(seconds: 20);
+
+  /// 레이스/스프린트 진행 중 주기. 순위가 가장 빠르게 바뀌는 구간이라 짧을수록
+  /// 체감 품질이 좋다. [fastPollDuringRace] 가 true 일 때만 쓴다.
+  static const Duration racePollInterval = Duration(seconds: 10);
+
+  /// 세션이 없을 때 주기. 앱이 포그라운드여도 이 간격으로만 네트워크를 쓴다.
   static const Duration idlePollInterval = Duration(minutes: 5);
+
+  /// 레이스/스프린트 중 [racePollInterval] 로 당길지 여부. 기본값은 빌드 플래그
+  /// [kLiveFastPollDuringRace] — 요청 수가 곧 비용이라 앞단 캐시를 갖추기 전엔
+  /// 켜지 않는다. 테스트는 생성자로 직접 주입한다.
+  final bool fastPollDuringRace;
+
+  /// 타이머 tick 간격 — 실제 네트워크 호출은 [_pollDelay] 가 다시 걸러낸다.
+  /// 가장 짧은 주기에 맞춰야 그 주기가 실현된다.
+  Duration get _tickInterval =>
+      fastPollDuringRace ? racePollInterval : pollInterval;
 
   /// 정상 수신 후 stale 로 표시하기 시작하는 기준.
   final Duration gracePeriod;
@@ -133,7 +150,7 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     unawaited(_poll());
-    _timer = Timer.periodic(pollInterval, (_) => unawaited(_poll()));
+    _timer = Timer.periodic(_tickInterval, (_) => unawaited(_poll()));
   }
 
   void _stop() {
@@ -146,6 +163,8 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_isForeground) return;
     final nextPollAt = _nextNetworkPollAt;
     if (nextPollAt != null && fetchedAt.isBefore(nextPollAt)) return;
+    // 요청 중복을 막으려 먼저 잠가 두고, 수신 후 새 스냅샷 기준으로 다시 잡는다
+    // (레이스 시작 직후 한 주기 늦게 빨라지는 것을 막는다).
     _nextNetworkPollAt = fetchedAt.add(_pollDelay(fetchedAt));
     _lastFetchedAt = fetchedAt;
     final result = await _service.fetchResult();
@@ -212,6 +231,10 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
       _lastGoodSnapshot = null;
       _lastGoodAt = null;
     }
+
+    // 방금 받은 스냅샷 기준으로 다음 호출 시각을 다시 잡는다. 레이스가 시작되면
+    // 한 주기 기다리지 않고 곧바로 빠른 주기로 넘어간다.
+    _nextNetworkPollAt = fetchedAt.add(_pollDelayFor(next, fetchedAt));
 
     if (next == _snapshot &&
         nextIsStale == _isStale &&
@@ -343,16 +366,25 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  /// 다음 네트워크 호출 예정 시각. 폴링 주기가 세션 종류에 맞게 잡히는지
+  /// 검증하는 용도(타이머를 돌리지 않고도 확인할 수 있다).
+  @visibleForTesting
+  DateTime? get nextNetworkPollAt => _nextNetworkPollAt;
+
   /// 외부에서 즉시 1회 갱신이 필요할 때.
   Future<void> refresh() {
     _nextNetworkPollAt = null;
     return _poll();
   }
 
-  Duration _pollDelay(DateTime now) {
-    final current = _snapshot;
+  Duration _pollDelay(DateTime now) => _pollDelayFor(_snapshot, now);
+
+  Duration _pollDelayFor(LiveSessionSnapshot? current, DateTime now) {
     if (current != null && isLiveSnapshotSessionActive(current, now)) {
-      return pollInterval;
+      // 레이스/스프린트만 당긴다. 연습/퀄리는 랩타임 갱신이 드물어 20초로 충분.
+      return fastPollDuringRace && current.isRaceOrSprint
+          ? racePollInterval
+          : pollInterval;
     }
     for (final race in races) {
       if (race.isCancelled) continue;

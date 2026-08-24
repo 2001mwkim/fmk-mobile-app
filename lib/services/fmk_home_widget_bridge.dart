@@ -10,7 +10,6 @@ import '../data/races.dart';
 import '../data/standings.dart' as static_standings;
 import '../data/team_colors.dart';
 import '../data/teams.dart';
-import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../models/standing.dart';
@@ -50,8 +49,8 @@ const String fmkMyDriverWidgetIOSKind = 'FmkMyDriverWidget';
 const String fmkMyTeamWidgetIOSKind = 'FmkMyTeamWidget';
 
 /// iOS 전용 분리형 위젯 2종(자동 전환 위젯의 "선택권" 보완 — Android 토글
-/// 대응). 일정 전용 / 라이브·최근 결과 전용. 데이터는 FmkHomeWidget 과 같은
-/// 키를 읽으므로 저장은 공유하고 갱신 호출만 추가한다.
+/// 대응). 라이브 제거 후 FmkHomeWidget 과 동일해져 위젯 번들에서 등록을 해제했다
+/// (ios/FmkWidgets/FmkSplitWidgets.swift 주석 참고). 되살릴 때 kind 를 다시 쓴다.
 const String fmkScheduleWidgetIOSKind = 'FmkScheduleWidget';
 
 /// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
@@ -74,7 +73,6 @@ bool fmkWidgetOpensMyPicks(Uri? uri) =>
     uri != null && uri.scheme == 'fmkwidget' && uri.host == 'mypicks';
 
 const String _modeDefault = 'default';
-const String _modeLive = 'live';
 
 /// 라이브가 없을 때 우측 화면에 최근 확정 결과를 보여주는 모드.
 const String _modeResult = 'result';
@@ -132,7 +130,6 @@ class FmkHomeWidgetPayload {
   /// 위젯이 배지에 "FP2 결과"처럼 표기한다(Android 미사용, 다른 모드는 '').
   final String resultSessionLabel;
 
-  bool get isLive => mode == _modeLive;
   bool get isResult => mode == _modeResult;
 }
 
@@ -244,19 +241,15 @@ class FmkHomeWidgetBridge {
     }
   }
 
-  static Future<void> update({
-    LiveSessionSnapshot? snapshot,
-    DateTime? now,
-  }) async {
+  /// 위젯 데이터 저장. 홈 위젯은 일정만 그리므로 라이브 스냅샷을 받지 않는다 —
+  /// Android 위젯 Provider 는 네트워크를 못 써서 라이브를 보여주려면 앱이 주기
+  /// 폴링을 대신 돌려야 하는데, 그 폴링이 Vercel 무료 한도를 잡아먹었다.
+  static Future<void> update({DateTime? now}) async {
     if (!_supported) return;
 
     await _ensureStandings();
     if (_isIOS) await _ensureLatestResult();
-    final payload = buildFmkHomeWidgetPayload(
-      snapshot: null,
-      latestResult: null,
-      now: now,
-    );
+    final payload = buildFmkHomeWidgetPayload(now: now);
 
     try {
       await _ensureAppGroup();
@@ -282,7 +275,6 @@ class FmkHomeWidgetBridge {
         iOSName: fmkTeamStandingsWidgetIOSKind,
       );
       if (_isIOS) {
-        await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
       }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
@@ -329,7 +321,6 @@ class FmkHomeWidgetBridge {
         iOSName: fmkMyTeamWidgetIOSKind,
       );
       if (_isIOS) {
-        await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
       }
       await _syncWatch();
     } catch (error, stackTrace) {
@@ -982,18 +973,14 @@ String _formatWidgetPoints(num points) {
   return points.toString();
 }
 
+/// 홈 위젯 페이로드. 2026-08 부터 라이브/결과 화면 없이 **일정만** 그린다
+/// (라이브 유지 비용은 [FmkHomeWidgetBridge.update] 주석 참고).
+/// [latestResult] 는 애플워치 최근 결과 화면(`lr*` 키) 전용 경로로만 쓰인다.
 FmkHomeWidgetPayload buildFmkHomeWidgetPayload({
-  LiveSessionSnapshot? snapshot,
   LatestRaceResult? latestResult,
   DateTime? now,
 }) {
   final currentTime = now ?? DateTime.now();
-  final displayable =
-      snapshot != null && isLiveSnapshotDisplayable(snapshot, currentTime);
-  if (displayable) {
-    return _buildLivePayload(snapshot, currentTime);
-  }
-  // 라이브가 없으면 최근 확정 결과를 우측 화면으로 제공(토글 상시 노출).
   if (latestResult != null && latestResult.data.entries.isNotEmpty) {
     return _buildResultPayload(latestResult, currentTime);
   }
@@ -1081,7 +1068,7 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     scheduleRaceId: schedule.race.id,
     sessions: schedule.rows,
     sessionHighlightIndex: schedule.highlightIndex,
-    liveBadge: 'LIVE',
+    liveBadge: '',
     lapCurrent: 0,
     lapTotal: 0,
     topThree: const [],
@@ -1089,63 +1076,6 @@ FmkHomeWidgetPayload _buildDefaultPayload(DateTime now) {
     topThreeNames: const [],
     topThreeTimes: const [],
     topThreeColors: const [],
-  );
-}
-
-FmkHomeWidgetPayload _buildLivePayload(
-  LiveSessionSnapshot snapshot,
-  DateTime now,
-) {
-  final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
-  final topDrivers = snapshot.topThree
-      .take(3)
-      .where((driver) => driver.code.trim().isNotEmpty)
-      .toList();
-  final topThree = topDrivers
-      .map((driver) => driver.code.trim().toUpperCase())
-      .toList();
-  final topThreePositions = topDrivers
-      .map((driver) => driver.position)
-      .toList();
-  final topThreeNames = topDrivers.map(_driverDisplayNameKo).toList();
-  final raceLike = snapshot.isRaceOrSprint;
-  final topThreeTimes = topDrivers
-      .map((driver) => _driverTime(driver, raceLike: raceLike))
-      .toList();
-  final topThreeColors = topDrivers
-      .map(
-        (driver) => _androidColorInt(liveDriverAccent(driver.code).toARGB32()),
-      )
-      .toList();
-  final lapTotal = snapshot.totalLaps ?? 0;
-  final lapCurrent = snapshot.currentLap ?? 0;
-  // live 모드에서도 일정 데이터를 함께 저장해, 위젯 토글 버튼이 앱 실행 없이
-  // 일정 화면을 그릴 수 있게 한다.
-  final schedule = _nextRaceSchedule(now);
-
-  return FmkHomeWidgetPayload(
-    mode: _modeLive,
-    gpFlag: _firstNonEmpty([
-      snapshot.countryFlag,
-      liveCountryFlag(snapshot.raceId),
-      if (race != null) _flagForRace(race),
-    ]),
-    gpName: _firstNonEmpty([race?.nameKo, snapshot.raceName, '비아 포뮬러 라이브']),
-    scheduleGpFlag: _flagForRace(schedule.race),
-    scheduleGpName: schedule.race.nameKo,
-    scheduleRaceId: schedule.race.id,
-    sessions: schedule.rows,
-    sessionHighlightIndex: schedule.highlightIndex,
-    liveBadge: snapshot.isEnded && !isLiveSnapshotSessionActive(snapshot, now)
-        ? 'RESULT'
-        : 'LIVE',
-    lapCurrent: lapCurrent < 0 ? 0 : lapCurrent,
-    lapTotal: lapTotal < 0 ? 0 : lapTotal,
-    topThree: topThree,
-    topThreePositions: topThreePositions,
-    topThreeNames: topThreeNames,
-    topThreeTimes: topThreeTimes,
-    topThreeColors: topThreeColors,
   );
 }
 
@@ -1179,21 +1109,4 @@ String _two(int value) => value.toString().padLeft(2, '0');
 String _weekdayKo(int weekday) {
   const labels = ['월', '화', '수', '목', '금', '토', '일'];
   return labels[weekday - 1];
-}
-
-String _firstNonEmpty(List<String?> values) {
-  for (final value in values) {
-    final trimmed = value?.trim();
-    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
-  }
-  return '';
-}
-
-String _driverDisplayNameKo(LiveDriverPosition driver) {
-  return driverNameKo(driver.code, driver.displayName.trim());
-}
-
-String _driverTime(LiveDriverPosition driver, {required bool raceLike}) {
-  final value = driver.time(raceLike: raceLike).trim();
-  return value.isEmpty ? '—' : value;
 }

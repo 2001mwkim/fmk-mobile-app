@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/models/live_session.dart';
-import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
 import 'package:fmk_app/services/live_session_controller.dart';
 import 'package:fmk_app/services/live_session_service.dart';
 
@@ -333,7 +332,7 @@ void main() {
     expect(controller.latestSessionSnapshot?.classification.single.code, 'NOR');
   });
 
-  test('widget bridge keeps live payload through a transient null', () async {
+  test('일시적 null 수신에도 마지막 라이브 스냅샷을 유지한다', () async {
     var now = DateTime(2026, 6, 30, 12);
     final live = _liveSnapshot();
     final controller = LiveSessionController(
@@ -348,12 +347,9 @@ void main() {
     now = now.add(const Duration(minutes: 1));
     await controller.refresh();
 
-    // 컨트롤러가 마지막 스냅샷을 유지하므로 위젯도 default 로 돌아가지 않는다.
-    final payload = buildFmkHomeWidgetPayload(
-      snapshot: controller.snapshot,
-      now: now,
-    );
-    expect(payload.mode, 'live');
+    // 한 번 null 이 와도 유지 정책상 직전 스냅샷을 계속 들고 있어야 한다.
+    expect(controller.snapshot, isNotNull);
+    expect(controller.snapshot?.sessionName, live.sessionName);
   });
 
   test(
@@ -402,6 +398,56 @@ void main() {
       expect(controller.isStale, isFalse);
     },
   );
+  test('레이스 중에는 fastPoll 이 켜져 있을 때만 10초로 당긴다', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final race = _liveSnapshot(); // sessionType: 'Race'
+
+    final fast = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(race)]),
+      fastPollDuringRace: true,
+      now: () => now,
+    );
+    await fast.refresh();
+    expect(
+      fast.nextNetworkPollAt,
+      now.add(LiveSessionController.racePollInterval),
+    );
+
+    // 기본값(꺼짐)에서는 같은 레이스라도 20초를 유지한다 — Vercel 무료 한도
+    // 때문에 앞단 캐시를 갖추기 전까진 켜지 않는다.
+    final slow = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(race)]),
+      now: () => now,
+    );
+    await slow.refresh();
+    expect(slow.nextNetworkPollAt, now.add(LiveSessionController.pollInterval));
+  });
+
+  test('연습/퀄리는 fastPoll 이 켜져 있어도 20초를 유지한다', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    const practice = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-06-30T04:34:00.000Z',
+      raceId: 'spain',
+      raceName: '스페인 그랑프리',
+      sessionType: 'Practice',
+      sessionName: 'Practice 1',
+      classification: [
+        LiveDriverPosition(position: 1, code: 'NOR', displayName: '랜도 노리스'),
+      ],
+    );
+
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([LiveSessionFetchResult.success(practice)]),
+      fastPollDuringRace: true,
+      now: () => now,
+    );
+    await controller.refresh();
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.pollInterval),
+    );
+  });
 }
 
 LiveSessionSnapshot _liveSnapshot() {

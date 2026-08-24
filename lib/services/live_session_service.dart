@@ -33,6 +33,19 @@ const String kLiveJsonUrl = String.fromEnvironment(
       : 'http://localhost:8787/live.json',
 );
 
+/// 레이스/스프린트 중 폴링을 10초로 당길지 여부(기본 false).
+///
+/// 주기를 절반으로 줄이면 요청 수가 두 배가 된다. 릴리스 기본 URL 인 Vercel
+/// `/api/live` 는 무료 플랜에서 **캐시 HIT 도 엣지 요청으로 계산**하므로 비용이
+/// 그대로 두 배로 뛴다. 그래서 기본은 꺼 둔다.
+///
+/// 라이브를 Cloudflare(무료·요청 무제한) + Railway 로 옮긴 뒤 켠다:
+///   flutter build apk --release \
+///     --dart-define=LIVE_JSON_URL=https://live.formulamagazine.kr/live.json \
+///     --dart-define=LIVE_FAST_POLL=true
+/// 배경은 CLAUDE.md 의 '외부 비용 제약' 참고.
+const bool kLiveFastPollDuringRace = bool.fromEnvironment('LIVE_FAST_POLL');
+
 /// Live Activity 푸시 토큰 등록 endpoint — 폴링 URL 과 달리 collector
 /// (Railway) 직결이어야 한다(Vercel 은 이 경로를 중계하지 않음).
 const String kLiveActivityRegisterUrl = String.fromEnvironment(

@@ -16,15 +16,13 @@ import es.antonborri.home_widget.HomeWidgetProvider
 // RemoteViews.applyFmkWidgetBackground)는 FmkWidgetTheme.kt 참조.
 
 /**
- * 일정 위젯(기본) — 다가오는/진행 중 그랑프리의 세션 일정을 보여준다. 예전엔
- * 우상단 토글로 일정↔라이브/결과를 오갔지만, 위젯을 종류별로 분리(iOS 와 동일)
- * 하면서 토글을 제거했다. 라이브·결과 화면은 [FmkLiveResultWidgetProvider]
- * 서브클래스가 [liveResult] 만 true 로 바꿔 렌더링을 재사용한다.
+ * 일정 위젯 — 다가오는/진행 중 그랑프리의 세션 일정을 보여준다. 예전엔 우상단
+ * 토글로 일정↔라이브/결과를 오갔고 라이브 전용 서브클래스(FmkLiveResultWidget-
+ * Provider)도 있었지만 2026-08 에 걷어냈다. 위젯 Provider 는 네트워크를 쓰지
+ * 못해서 라이브를 유지하려면 앱이 주기 폴링을 대신 돌려야 하는데, 그 폴링이
+ * Vercel 무료 한도(엣지 요청 100만)를 잡아먹었기 때문이다.
  */
-open class FmkHomeWidgetProvider : HomeWidgetProvider() {
-  /** false = 일정(buildDefault), true = 라이브·결과(buildLive). */
-  protected open val liveResult: Boolean = false
-
+class FmkHomeWidgetProvider : HomeWidgetProvider() {
   override fun onUpdate(
       context: Context,
       appWidgetManager: AppWidgetManager,
@@ -85,33 +83,15 @@ open class FmkHomeWidgetProvider : HomeWidgetProvider() {
       widgetId: Int,
       compact: Boolean = false,
   ): RemoteViews {
-    val mode = try {
-      data.getString("mode", "default")
-    } catch (error: Throwable) {
-      Log.e(TAG, "Failed to read mode for id=$widgetId", error)
-      "default"
-    }
-
     // 앱 설정(dark/light/system)을 반영한 색 해석용 Context. 텍스트 색·배경을
     // 이 Context 로 통일해 런처 모드와 무관하게 일치시킨다(FmkWidgetTheme.kt).
     val renderContext = context.forFmkWidgetTheme(data)
 
     if (compact) {
       try {
-        return buildCompact(renderContext, data, mode)
+        return buildCompact(renderContext, data)
       } catch (error: Throwable) {
         Log.e(TAG, "buildCompact failed for id=$widgetId, falling back to full", error)
-      }
-    }
-
-    // 위젯 종류에 따라 고정: 라이브·결과 위젯이면 라이브 레이아웃, 일정 위젯이면
-    // 일정 레이아웃(토글 없음).
-    if (liveResult) {
-      return try {
-        buildLive(renderContext, data)
-      } catch (error: Throwable) {
-        Log.e(TAG, "buildLive failed for id=$widgetId, using minimal fallback", error)
-        buildMinimal(renderContext, data)
       }
     }
 
@@ -139,7 +119,6 @@ open class FmkHomeWidgetProvider : HomeWidgetProvider() {
     return RemoteViews(context.packageName, R.layout.widget_fmk_default).apply {
       applyFmkWidgetBackground(context, data, R.id.widget_root_default)
       // 토글 없는 일정 전용 위젯: 토글 그룹은 항상 숨긴다.
-      setViewVisibility(R.id.toggle_group_default, View.GONE)
       // 일정 화면 탭 → 홈 탭(딥링크 매핑: 앱 fmk_home_widget_bridge.dart).
       setOnClickPendingIntent(
           R.id.widget_root_default,
@@ -216,71 +195,12 @@ open class FmkHomeWidgetProvider : HomeWidgetProvider() {
     }
   }
 
-  private fun buildLive(context: Context, data: SharedPreferences): RemoteViews {
-    val lapTotal = data.getInt("lapTotal", 0).coerceAtLeast(0)
-    val lapCurrent = data.getInt("lapCurrent", 0).coerceIn(0, lapTotal.takeIf { it > 0 } ?: 0)
-    val flag = data.getString("gpFlag", "").orEmpty()
-    val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
-
-    return RemoteViews(context.packageName, R.layout.widget_fmk_live).apply {
-      applyFmkWidgetBackground(context, data, R.id.widget_root_live)
-      // 정적 @color 텍스트를 renderContext 로 강제(테마 일치). 액센트 바 색은
-      // 팀 컬러라 별도(setColorFilter)로 유지된다.
-      setTextColor(R.id.tv_live_badge, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_gp_name_live, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_lap_cur, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_lap_total, context.fmkColor(R.color.fmk_faint))
-      setTextColor(R.id.tv_p1_pos, context.fmkColor(R.color.fmk_red))
-      setTextColor(R.id.tv_p2_pos, context.fmkColor(R.color.fmk_dim))
-      setTextColor(R.id.tv_p3_pos, context.fmkColor(R.color.fmk_dim))
-      setTextColor(R.id.tv_p1_name, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_p2_name, context.fmkColor(R.color.fmk_text))
-      setTextColor(R.id.tv_p3_name, context.fmkColor(R.color.fmk_text))
-      setTextColor(R.id.tv_p1_time, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_p2_time, context.fmkColor(R.color.fmk_white))
-      setTextColor(R.id.tv_p3_time, context.fmkColor(R.color.fmk_white))
-      // 라이브/결과 화면 탭 → 라이브 센터 탭.
-      setOnClickPendingIntent(
-          R.id.widget_root_live,
-          HomeWidgetLaunchIntent.getActivity(
-              context, MainActivity::class.java, Uri.parse("fmkwidget://live")),
-      )
-
-      // 토글 없는 라이브·결과 전용 위젯: 토글 그룹은 항상 숨긴다.
-      setViewVisibility(R.id.toggle_group_live, View.GONE)
-
-      setTextViewText(R.id.tv_live_badge, data.getString("liveBadge", "LIVE"))
-      setTextViewText(R.id.tv_gp_name_live, listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "))
-
-      // 랩 데이터가 있을 때(레이스/스프린트)만 "12 / 53 LAP" 노출.
-      // 프랙티스/퀄리파잉(totalLaps 없음/0)에서는 영역 전체를 숨긴다.
-      val hasLap = lapTotal > 0
-      setViewVisibility(R.id.lap_group, if (hasLap) View.VISIBLE else View.GONE)
-      if (hasLap) {
-        setTextViewText(R.id.tv_lap_cur, lapCurrent.toString())
-        setTextViewText(R.id.tv_lap_total, "/ $lapTotal")
-      }
-
-      bindDriverRow(data, 1, R.id.row_p1, R.id.tv_p1_pos, R.id.tv_p1_name, R.id.tv_p1_time)
-      bindDriverRow(data, 2, R.id.row_p2, R.id.tv_p2_pos, R.id.tv_p2_name, R.id.tv_p2_time)
-      bindDriverRow(data, 3, R.id.row_p3, R.id.tv_p3_pos, R.id.tv_p3_name, R.id.tv_p3_time)
-      // 배경색 대입 대신 흰색 라운드 바(src)에 컬러필터 — 라운딩 유지.
-      setInt(R.id.view_p1_accent, "setColorFilter", accentColor(data, "p1Color"))
-      setInt(R.id.view_p2_accent, "setColorFilter", accentColor(data, "p2Color"))
-      setInt(R.id.view_p3_accent, "setColorFilter", accentColor(data, "p3Color"))
-    }
-  }
-
   /**
-   * 2x2 콤팩트 화면. 토글 없이 모드별 핵심 한 가지만 크게 보여준다.
-   * · live: LIVE 뱃지 + P1 드라이버 (+ 랩 or 기록)
-   * · result: 결과 뱃지 + 우승 드라이버 + 기록
-   * · default: 브랜드 킥커 + 다음 세션명 + 시작 시간(KST)
+   * 2x2 콤팩트 화면. 브랜드 킥커 + 다음 세션명 + 시작 시간(KST)만 크게 보여준다.
    */
   private fun buildCompact(
       context: Context,
       data: SharedPreferences,
-      mode: String?,
   ): RemoteViews {
     return RemoteViews(context.packageName, R.layout.widget_fmk_compact).apply {
       applyFmkWidgetBackground(context, data, R.id.widget_root_compact)
@@ -290,82 +210,31 @@ open class FmkHomeWidgetProvider : HomeWidgetProvider() {
       setTextColor(R.id.tv_c_label, context.fmkColor(R.color.fmk_red))
       setTextColor(R.id.tv_c_big, context.fmkColor(R.color.fmk_white))
       setTextColor(R.id.tv_c_sub, context.fmkColor(R.color.fmk_dim))
-      // 위젯 종류에 맞춰 딥링크: 라이브·결과 → 라이브 탭, 일정 → 홈 탭.
-      val target = if (liveResult) "live" else "home"
       setOnClickPendingIntent(
           R.id.widget_root_compact,
           HomeWidgetLaunchIntent.getActivity(
-              context, MainActivity::class.java, Uri.parse("fmkwidget://$target")),
+              context, MainActivity::class.java, Uri.parse("fmkwidget://home")),
       )
 
-      if (liveResult) {
-        val flag = data.getString("gpFlag", "").orEmpty()
-        val gpName = data.getString("gpName", "비아 포뮬러").orEmpty()
-        setTextViewText(
-            R.id.tv_c_gp,
-            listOf(flag, gpName).filter { it.isNotBlank() }.joinToString(" "),
-        )
-        setViewVisibility(R.id.tv_c_kicker, View.GONE)
-        setViewVisibility(R.id.tv_c_badge, View.VISIBLE)
+      val flag = data.getString("scheduleGpFlag", null) ?: data.getString("gpFlag", "")
+      val gpName =
+          data.getString("scheduleGpName", null) ?: data.getString("gpName", "비아 포뮬러")
+      setTextViewText(
+          R.id.tv_c_gp,
+          listOf(flag.orEmpty(), gpName.orEmpty()).filter { it.isNotBlank() }.joinToString(" "),
+      )
+      setViewVisibility(R.id.tv_c_kicker, View.VISIBLE)
+      setViewVisibility(R.id.tv_c_badge, View.GONE)
 
-        val isResult = mode == "result" || data.getString("liveBadge", "LIVE") == "RESULT"
-        setTextViewText(R.id.tv_c_badge, if (isResult) "결과" else "LIVE")
-        setTextViewText(R.id.tv_c_label, if (isResult) "우승" else "P1")
-        setTextViewText(R.id.tv_c_big, data.getString("p1Name", "").dashIfBlank())
-
-        val lapTotal = data.getInt("lapTotal", 0)
-        val lapCurrent = data.getInt("lapCurrent", 0)
-        val sub =
-            if (!isResult && lapTotal > 0) "LAP $lapCurrent / $lapTotal"
-            else data.getString("p1Time", "").dashIfBlank()
-        setTextViewText(R.id.tv_c_sub, sub)
-      } else {
-        val flag = data.getString("scheduleGpFlag", null) ?: data.getString("gpFlag", "")
-        val gpName =
-            data.getString("scheduleGpName", null) ?: data.getString("gpName", "비아 포뮬러")
-        setTextViewText(
-            R.id.tv_c_gp,
-            listOf(flag.orEmpty(), gpName.orEmpty()).filter { it.isNotBlank() }.joinToString(" "),
-        )
-        setViewVisibility(R.id.tv_c_kicker, View.VISIBLE)
-        setViewVisibility(R.id.tv_c_badge, View.GONE)
-
-        // 다음 세션(하이라이트) 우선, 정보가 없으면 첫 행으로 폴백.
-        val stored = data.getInt("sessionHighlightIndex", 0)
-        val index =
-            if (stored in 1..5 && data.getInt("session${stored}Visible", 0) == 1) stored else 1
-        setTextViewText(R.id.tv_c_label, data.getString("session${index}Name", "").dashIfBlank())
-        setTextViewText(R.id.tv_c_big, data.getString("session${index}Time", "").dashIfBlank())
-        val date = data.getString("session${index}Date", "").orEmpty().trim()
-        setTextViewText(R.id.tv_c_sub, if (date.isEmpty()) "KST" else "$date · KST")
-      }
+      // 다음 세션(하이라이트) 우선, 정보가 없으면 첫 행으로 폴백.
+      val stored = data.getInt("sessionHighlightIndex", 0)
+      val index =
+          if (stored in 1..5 && data.getInt("session${stored}Visible", 0) == 1) stored else 1
+      setTextViewText(R.id.tv_c_label, data.getString("session${index}Name", "").dashIfBlank())
+      setTextViewText(R.id.tv_c_big, data.getString("session${index}Time", "").dashIfBlank())
+      val date = data.getString("session${index}Date", "").orEmpty().trim()
+      setTextViewText(R.id.tv_c_sub, if (date.isEmpty()) "KST" else "$date · KST")
     }
-  }
-
-  private fun RemoteViews.bindDriverRow(
-      data: SharedPreferences,
-      index: Int,
-      rowId: Int,
-      positionId: Int,
-      nameId: Int,
-      timeId: Int,
-  ) {
-    val name = data.getString("p${index}Name", "").orEmpty().trim()
-    setViewVisibility(rowId, if (name.isEmpty()) View.GONE else View.VISIBLE)
-    setTextViewText(positionId, data.getInt("p${index}Position", index).toString())
-    setTextViewText(nameId, name.dashIfBlank())
-    setTextViewText(timeId, data.getString("p${index}Time", "").dashIfBlank())
-  }
-
-  /** Reads a stored accent color, falling back to red when missing/invalid (0 == transparent). */
-  private fun accentColor(data: SharedPreferences, key: String): Int {
-    val stored = try {
-      data.getInt(key, FMK_RED)
-    } catch (error: Throwable) {
-      Log.e(TAG, "Failed to read accent color for key=$key", error)
-      FMK_RED
-    }
-    return if (stored == 0) FMK_RED else stored
   }
 
   private fun String?.dashIfBlank(): String {
@@ -375,18 +244,8 @@ open class FmkHomeWidgetProvider : HomeWidgetProvider() {
 
   companion object {
     private const val TAG = "FmkHomeWidget"
-    private const val FMK_RED = -1095588 // 0xFFEF4444
 
     /** 이 폭(dp) 미만이면 2셀로 보고 콤팩트 레이아웃을 쓴다(2셀 ≈ 110~150dp). */
     private const val COMPACT_MAX_WIDTH_DP = 180
   }
-}
-
-/**
- * 라이브·결과 위젯 — 라이브 세션이 있으면 라이브 순위, 평소엔 최근 확정 세션
- * 결과 Top3 를 보여준다. 일정 위젯([FmkHomeWidgetProvider])과 렌더링을 공유하되
- * [liveResult] 만 true 로 바꿔 라이브 레이아웃을 고정한다.
- */
-class FmkLiveResultWidgetProvider : FmkHomeWidgetProvider() {
-  override val liveResult: Boolean = true
 }

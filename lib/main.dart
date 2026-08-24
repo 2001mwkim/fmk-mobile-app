@@ -136,7 +136,7 @@ void _bootstrap() {
   // 라이브 세션 중 Android Now Bar(Live Update) 서비스를 켜고 끈다(Android 전용).
   LiveActivityBridge.bindTo(liveSessionController);
   unawaited(
-    FmkHomeWidgetBridge.update(snapshot: liveSessionController.snapshot),
+    FmkHomeWidgetBridge.update(),
   );
   unawaited(
     FmkLiveActivityBridge.sync(snapshot: liveSessionController.snapshot),

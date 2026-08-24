@@ -76,8 +76,8 @@ struct FmkHomeWidget: Widget {
     StaticConfiguration(kind: "FmkHomeWidget", provider: FmkHomeProvider()) { entry in
       FmkHomeWidgetView(entry: entry)
     }
-    .configurationDisplayName("일정 · 라이브")
-    .description("다음 그랑프리 세션 일정과 라이브 순위를 보여줍니다.")
+    .configurationDisplayName("일정")
+    .description("다음 그랑프리 세션 일정을 보여줍니다.")
     .supportedFamilies(families)
     .contentMarginsDisabled()
   }

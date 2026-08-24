@@ -7,7 +7,6 @@ import WidgetKit
 struct FmkWidgetsBundle: WidgetBundle {
   var body: some Widget {
     FmkHomeWidget()
-    FmkScheduleWidget()
     FmkDriverStandingsWidget()
     FmkTeamStandingsWidget()
     FmkMyDriverWidget()

@@ -1,15 +1,19 @@
 import SwiftUI
 import WidgetKit
 
-// 분리형 위젯 2종 — FmkHomeWidget(자동 전환)의 보완.
-// iOS 엔 Android 의 일정↔라이브 토글이 없어 자동 전환으로 대신했는데,
-// "평소엔 일정만 / 라이브·결과만 보고 싶다"는 요청이 있어 종류를 나눈다
-// (순위 위젯을 드라이버/팀으로 나눈 것과 같은 iOS 관례).
-//   FmkScheduleWidget   — 항상 일정 화면(라이브 중에도 전환하지 않음, 네트워크 없음)
-//   FmkLiveResultWidget — 라이브 중 라이브 순위, 아니면 가장 최근에 끝난
-//                         세션의 확정 결과(브리지 result 모드 p1~p3)
-// 뷰·데이터는 FmkHomeWidget.swift / FmkPayloadStore.swift 를 그대로 재사용하고,
-// kind 문자열은 브리지(fmk_home_widget_bridge.dart)와 수동 동기화.
+// 분리형 위젯 2종 — **현재 둘 다 FmkWidgetsBundle 에 등록돼 있지 않다.**
+// 원래는 FmkHomeWidget(라이브/결과/일정 자동 전환)의 보완이었지만, 2026-08 에
+// 홈 위젯에서 라이브를 걷어내면서 존재 이유가 사라졌다.
+//   FmkScheduleWidget   — 일정 전용. 이제 FmkHomeWidget 과 완전히 동일해져
+//                         갤러리에 "일정"이 두 개 뜨는 문제가 있어 등록 해제.
+//   FmkLiveResultWidget — 라이브·결과 전용. 라이브 제거와 함께 등록 해제.
+//                         세션 창 밖 폴백이 브리지 result 모드(mode == "result")
+//                         를 보는데 브리지가 더는 그 모드를 저장하지 않으므로,
+//                         되살리려면 FmkPayload.latestResultState() 로 바꿔야 한다.
+// 코드를 지우지 않고 남겨 둔 이유: iOS 위젯의 라이브 fetch 는 WidgetKit 갱신
+// 예산(하루 수십 회)에 묶여 Vercel 부담이 사실상 없다. 한도에 여유가 생기면
+// FmkHomeWidget.swift 의 세션 창 fetch 블록과 함께 되살릴 수 있다.
+// (파일 삭제는 Xcode 타깃 멤버십/pbxproj 수정이 필요해 보류.)
 
 // ── 일정 전용 ──
 

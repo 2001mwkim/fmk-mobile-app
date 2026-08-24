@@ -76,19 +76,6 @@
         </receiver>
 
         <receiver
-            android:name=".FmkLiveResultWidgetProvider"
-            android:enabled="false"
-            android:exported="true"
-            android:label="비아 포뮬러 라이브·결과">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/fmk_live_widget_info" />
-        </receiver>
-
-        <receiver
             android:name=".FmkStandingsWidgetProvider"
             android:exported="true"
             android:label="비아 포뮬러 드라이버 순위">

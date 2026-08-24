@@ -16,11 +16,6 @@
     <color name="fmk_bg_top">#FFFFFF</color>
     <color name="fmk_bg_bottom">#EEF0F6</color>
     <color name="fmk_stroke">#12000000</color>
-    <color name="fmk_track">#14000000</color>
-    <color name="fmk_card">#0A000000</color>
-    <color name="fmk_p1">#C1121F</color>
-    <color name="fmk_p2">#6B7287</color>
-    <color name="fmk_p3">#8A90A3</color>
 	<color name="ic_launcher_background">#000000</color>
 
     <!-- 위젯 피커 미리보기 전용 팀 컬러(lib/data/team_colors.dart 와 동일 값).
@@ -28,8 +23,6 @@
     <color name="fmk_preview_mercedes">#00D2BE</color>
     <color name="fmk_preview_ferrari">#E80020</color>
     <color name="fmk_preview_mclaren">#FF8700</color>
-    <color name="fmk_preview_redbull">#1E41FF</color>
-    <color name="fmk_preview_williams">#00A3FF</color>
     <color name="fmk_preview_up">#4ADE80</color>
     <color name="fmk_preview_down">#F87171</color>
 </resources>

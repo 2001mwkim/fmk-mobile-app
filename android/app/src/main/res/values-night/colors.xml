@@ -13,9 +13,4 @@
     <color name="fmk_bg_top">#171B2C</color>
     <color name="fmk_bg_bottom">#0B0D16</color>
     <color name="fmk_stroke">#12FFFFFF</color>
-    <color name="fmk_track">#14FFFFFF</color>
-    <color name="fmk_card">#0AFFFFFF</color>
-    <color name="fmk_p1">#EF4444</color>
-    <color name="fmk_p2">#A1A1AA</color>
-    <color name="fmk_p3">#71717A</color>
 </resources>

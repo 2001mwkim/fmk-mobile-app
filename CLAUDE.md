@@ -27,6 +27,10 @@ flutter analyze
 flutter test
 # 실기기용 빌드는 프로덕션 collector URL을 주입한다
 flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c03d.up.railway.app/live.json
+# 라이브 이전(Cloudflare) 완료 후의 릴리스 빌드 — 레이스 중 10초 폴링까지 켠다
+flutter build appbundle --release `
+  --dart-define=LIVE_JSON_URL=https://live.formulamagazine.kr/live.json `
+  --dart-define=LIVE_FAST_POLL=true
 # 로컬 collector 사용 시(dart-define 생략): 기본값 http://localhost:8787/live.json
 ```
 
@@ -36,11 +40,11 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - `lib/models/live_session.dart` — 라이브 스냅샷 모델 + 표시 규칙(노출 기한, 세션 활성 판정 등 정책 함수 다수)
 - `lib/services/` — `live_session_service`(live.json fetch/파싱), `live_session_controller`(폴링·유지 정책), `notification_*`(로컬 알림), `fmk_home_widget_bridge`(Android 홈 위젯 데이터 저장)
 - `lib/screens/`, `lib/widgets/` — 화면/위젯. 순위 패널 공용 UI는 `widgets/classification_panel_parts.dart`, 트랙맵 SVG 렌더러는 `widgets/circuit_map.dart`
-- `android/.../FmkHomeWidgetProvider.kt` — 홈 위젯. 일정↔결과 토글은 상시(우측 화면 = 라이브 중 라이브 순위, 평상시 최근 확정 결과 Top3 — mode `live`/`result`). 위젯 데이터 키는 브리지와 Kotlin 양쪽에 문자열로 존재하므로 함께 수정. 백그라운드 자체 갱신은 WorkManager 30분 주기(`main.dart` 의 `fmkWidgetBackgroundDispatcher` → `FmkHomeWidgetBridge.refreshFromNetwork`). 두 위젯 모두 2셀 폭(<180dp)이면 콤팩트 레이아웃으로 자동 전환(`onAppWidgetOptionsChanged`)
-- `android/.../FmkStandingsWidgetProvider.kt` — 챔피언십 순위 위젯(두 번째 위젯 종류). 드라이버↔팀 토글, Top 5(콤팩트는 Top 3) + ▲▼ 변동. 데이터 키 `stDriver*`/`stTeam*` 은 브리지 `_saveStandingsPayload` 와 수동 동기화, 순위 fetch 는 6시간 캐시(서버 갱신 주기와 동일, 실패 시 번들 정적 순위)
+- `android/.../FmkHomeWidgetProvider.kt` — **일정 위젯**(일정만 그린다). 라이브/결과 화면과 토글은 2026-08 에 제거했다 — 위젯 Provider 는 네트워크를 쓰지 못해서 라이브를 보여주려면 앱이 주기 폴링을 대신 돌려야 하는데, 그 폴링이 Vercel 무료 한도를 잡아먹었다(아래 '외부 비용 제약'). 위젯 데이터 키는 브리지와 Kotlin 양쪽에 문자열로 존재하므로 함께 수정. 백그라운드 갱신은 WorkManager **6시간** 주기이고 순위 계열 위젯이 실제로 설치돼 있을 때만 돈다(`main.dart` 의 `fmkWidgetBackgroundDispatcher` → `FmkHomeWidgetBridge.refreshStandingsFromNetwork`). 2셀 폭(<180dp)이면 콤팩트 레이아웃으로 자동 전환(`onAppWidgetOptionsChanged`)
+- `android/.../FmkStandingsWidgetProvider.kt` — 챔피언십 순위 위젯. 토글이 아니라 드라이버/팀 **별도 위젯 종류**로 나뉘고(레이아웃의 `toggle_group_standings` 는 항상 GONE), Top 5(콤팩트는 Top 3) + ▲▼ 변동. 데이터 키 `stDriver*`/`stTeam*` 은 브리지 `_saveStandingsPayload` 와 수동 동기화, 순위 fetch 는 6시간 캐시(서버 갱신 주기와 동일, 실패 시 번들 정적 순위)
 - **MY PICKS(MY DRIVER / MY TEAM)** — 설정 화면의 `widgets/my_picks_card.dart`(타일 + 그리드 선택기)에서 고르고 `services/my_picks_controller.dart`(prefs `my_driver_code`=TLA, `my_team_ko`=teamKo)에 저장. 브리지 `_saveMyPicksPayload` 가 순위 행과 결합해 `myDriver*`/`myTeam*`(+`myTeamD1/D2*`) 키를 저장 — Android `FmkMyPicksWidgetProviders.kt`(`FmkMyDriverWidgetProvider`/`FmkMyTeamWidgetProvider`, 레이아웃 `widget_fmk_my_driver/team.xml`)·iOS `FmkMyPicksWidgets.swift`(kind `FmkMyDriverWidget`/`FmkMyTeamWidget`)와 수동 동기화. 표기는 TLA/영문(`data/drivers.dart` `driverNameEnByCode`, `data/teams.dart` 약어/영문명), 팀 컬러 스트라이프+글로우. 미설정 위젯 탭 → `fmkwidget://mypicks` → 설정 화면(app.dart)
 - **위젯 테마**(설정 › 위젯: 다크/라이트/시스템, 기본 다크) — `services/widget_theme_controller.dart` → 브리지 `updateTheme` 이 `widgetThemeMode` 키 저장. Android `FmkWidgetTheme.kt`(`forFmkWidgetTheme`/`applyFmkWidgetBackground` — 새 Provider 는 모든 정적 @color 텍스트를 이 Context 로 `setTextColor` 해야 함), iOS `FmkTheme.swift` `fmkWidgetScheme()`(각 위젯 뷰 최상위에 1회)
-- `ios/FmkWidgets/` — iOS WidgetKit 익스텐션(iOS 15+, 앱 본체는 14). Android 위젯의 iOS 대응이되 플랫폼 차이가 있다: 토글 없음(일정·라이브 위젯은 라이브/결과/일정 자동 전환, 순위는 드라이버/팀 별도 위젯 종류) — 자동 전환을 원치 않는 사용자용으로 `FmkSplitWidgets.swift` 에 일정 전용(`FmkScheduleWidget`)·라이브/최근 결과 전용(`FmkLiveResultWidget`, 세션 창 밖에선 브리지 result 모드 p1~p3 + `resultSessionLabel` 배지)이 따로 있다(뷰·타임라인은 `FmkHomeWidget.swift` 재사용), 데이터는 App Group `group.kr.formulamagazine.fmk`(UserDefaults) 공유, 세션 창(시작-5분~종료+40분)에서만 위젯이 live.json 직접 fetch(`FmkLive.swift` — 표시 정책 포팅본이므로 라이브 규칙 변경 시 함께 수정). 위젯 kind 문자열·데이터 키는 브리지와 수동 동기화. Xcode 타깃 빌드 설정은 Generated.xcconfig 를 base 로 사용(버전 자동 동기화). 위젯 탭 딥링크는 `fmkwidget://…?homeWidget`(iOS 는 `homeWidget` 쿼리 파라미터 필수)
+- `ios/FmkWidgets/` — iOS WidgetKit 익스텐션(iOS 15+, 앱 본체는 14). 현재 번들에 등록된 건 `FmkHomeWidget`(일정 전용, 네트워크 없음) + 순위 2종 + MY PICKS 2종 + Live Activity. `FmkSplitWidgets.swift` 의 `FmkScheduleWidget`·`FmkLiveResultWidget` 은 라이브 제거와 함께 **등록 해제**했고 코드만 남겨 뒀다(되살리는 법은 그 파일 머리 주석). 데이터는 App Group `group.kr.formulamagazine.fmk`(UserDefaults) 공유. 라이브 fetch(`FmkLive.swift` — 표시 정책 포팅본이므로 라이브 규칙 변경 시 함께 수정)는 이제 **애플워치에서만** 쓴다. 위젯 kind 문자열·데이터 키는 브리지와 수동 동기화. Xcode 타깃 빌드 설정은 Generated.xcconfig 를 base 로 사용(버전 자동 동기화). 위젯 탭 딥링크는 `fmkwidget://…?homeWidget`(iOS 는 `homeWidget` 쿼리 파라미터 필수)
 - `ios/FmkWatch/`(워치 앱) · `ios/FmkWatchWidgets/`(컴플리케이션) — 애플워치(watchOS 10+, SwiftUI 전용, Flutter 미지원). **데이터 경로**: App Group 은 아이폰↔워치 간 공유되지 않으므로 브리지가 저장을 마친 뒤 `MethodChannel('fmk/watch').sync` → `Runner/FmkWatchSync.swift` 가 App Group 전체를 WatchConnectivity(`updateApplicationContext` + 컴플리케이션 활성 시 `transferCurrentComplicationUserInfo`)로 전송 → 워치 `FmkWatchSessionBridge.swift` 가 같은 키로 워치 App Group 에 저장 후 `reloadAllTimelines`. 덕분에 `FmkWidgets/FmkLive.swift`·`FmkPayloadStore.swift` 를 워치 타깃이 그대로 공유한다(타깃 멤버십만 추가). 팔레트는 `FmkWatchTheme.swift`(다크 고정 — FmkTheme 은 UIKit 동적 색이라 워치 불가). 컴플리케이션 kind: `FmkWatchSchedule`(일정·라이브 자동 전환, 세션 창에서만 live.json fetch) / `FmkWatchDriverStandings` / `FmkWatchMyDriver`, 패밀리 inline·circular·rectangular·corner. 번들 ID `kr.formulamagazine.fmk.watchkitapp(.FmkWatchWidgets)`. 빌드: 워치 타깃이 Runner 에 임베드되어 **iOS 빌드에도 watchOS 시뮬레이터 플랫폼 설치가 필요**(`xcodebuild -downloadPlatform watchOS`), `flutter build ios --simulator` 는 `-d <시뮬레이터 UDID>` 필수
 - `test/` — 주제별 분리(app_navigation / live_widgets / home_hero / live_session_model / live_session_controller / notification / bridge)
 
@@ -51,6 +55,16 @@ flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c0
 - 주석은 한국어로, "왜"(규칙의 근거, 웹 원본 출처)를 남긴다
 - 라이브 표시 정책(중요 규칙): Practice/Qualifying은 랩타임만 표시(없으면 '—', gap 폴백 금지, 컬럼 라벨 'BEST'), Race/Sprint는 interval만(없으면 '—' — gapToLeader 폴백 금지, 컬럼 라벨 'INTERVAL'). 세션 종료 노출 기한은 "다음 세션 30분 전까지(마지막 세션은 +1시간)". 퀄리파잉만 세그먼트(Q1/Q2) 사이 ended를 LIVE로 보정
 - 검증: 변경 후 `flutter analyze` + `flutter test`, 위젯/알림 등 네이티브 변경은 `flutter build apk --debug`까지
+
+## 외부 비용 제약 (중요)
+
+- Vercel 팀 `formula-magazine-korea` 는 **무료 플랜(엣지 요청 월 100만)** 이고, 초과하면 프로젝트가 자동 일시정지된다. 2026-08-24 기준 75% 소진.
+- 릴리스 빌드의 라이브 URL 기본값은 Railway 직결이 아니라 **Vercel `/api/live`** 다(`lib/services/live_session_service.dart` 의 `kLiveJsonUrl` — 한국 지연 500ms→65ms 목적). 즉 **라이브 폴링 = Vercel 비용**. `/api/standings`·`/api/race-results`·`/api/news` 도 전부 Vercel.
+- 엣지 캐시 히트도 엣지 요청으로 계산되므로 `s-maxage` 를 늘려도 요청 수는 안 줄어든다. **클라이언트 호출 자체를 줄이는 것만 효과가 있다.**
+- 그래서 폴링/백그라운드 동작을 건드리는 변경은 반드시 "디바이스당 하루 몇 건" 으로 환산해서 판단할 것. 2026-08 이전엔 앱이 백그라운드에서도 20초마다 폴링해 디바이스당 하루 약 4,320건을 썼다(현재는 포그라운드 한정 + 세션 창 밖 5분).
+- **이전 계획(진행 중, 절차는 `docs/live_cdn_migration.md`)**: 라이브만 `live.formulamagazine.kr`(Cloudflare 무료 → Railway)로 옮긴다. Cloudflare 무료는 요청 수를 세지 않고 서울 PoP 가 있어 지연도 유지된다. 앞단 5초 캐시를 두면 **원본 부하가 사용자 수와 무관하게 분당 12회로 고정**된다. 순위·결과·소식은 이미 클라이언트 캐시(6시간/30분)가 있어 Vercel 무료로 충분하니 옮기지 않는다.
+- 측정값(2026-08-24): 페이로드 29.5 KB(gzip 4.4 KB). Vercel 0.06초·gzip 적용, **Railway 직결 0.55초·gzip 미적용**. 그래서 Railway 앞에 캐시/압축 계층 없이 직결하면 대역폭이 6.7배로 뛴다 — collector 에 gzip 과 `Cache-Control: public, s-maxage=3, stale-while-revalidate=30` 을 먼저 넣을 것.
+- 레이스 중 10초 폴링은 `LiveSessionController.fastPollDuringRace`(빌드 플래그 `LIVE_FAST_POLL`)로 켠다. **기본 꺼짐** — 주기를 절반으로 줄이면 요청이 두 배가 되므로 위 이전이 끝난 뒤에만 켠다. 연습/퀄리는 켜도 20초를 유지한다.
 
 ## 미해결 사항
 
