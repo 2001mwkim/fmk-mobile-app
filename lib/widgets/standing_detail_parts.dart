@@ -4,6 +4,18 @@ import '../models/standing_insight.dart';
 import '../theme/app_colors.dart';
 import 'app_card.dart';
 
+/// 정수 축에서 시작과 끝을 포함해 최대 4개의 겹치지 않는 눈금을 고른다.
+/// 눈금 좌표도 반환한 실제 정숫값으로 계산해야 라벨과 데이터 선이 일치한다.
+List<int> standingTrendAxisTicks(int start, int end) {
+  if (end <= start) return [start];
+  final valueCount = end - start + 1;
+  final tickCount = valueCount < 4 ? valueCount : 4;
+  return [
+    for (var i = 0; i < tickCount; i++)
+      start + ((end - start) * i / (tickCount - 1)).round(),
+  ];
+}
+
 class DetailBackButton extends StatelessWidget {
   const DetailBackButton({super.key});
 
@@ -305,7 +317,7 @@ class _TrendPainter extends CustomPainter {
     const top = 12.0;
     const bottom = 25.0;
     const left = 30.0;
-    const right = 10.0;
+    const right = 14.0;
     final chart = Rect.fromLTRB(
       left,
       top,
@@ -315,18 +327,17 @@ class _TrendPainter extends CustomPainter {
     final observedMax = points
         .map((point) => point.position)
         .reduce((a, b) => a > b ? a : b);
-    final maxPosition = observedMax < 3 ? 3 : observedMax;
+    final maxPosition = observedMax < 2 ? 2 : observedMax;
     final span = maxPosition - 1;
     final firstRound = points.first.round;
     final lastRound = points.last.round;
-    final roundSpan = (lastRound - firstRound).clamp(1, 30);
+    final roundSpan = lastRound == firstRound ? 1 : lastRound - firstRound;
     final gridPaint = Paint()
       ..color = AppColors.faintBorder
       ..strokeWidth = 1;
-    for (var i = 0; i <= 3; i++) {
-      final y = chart.top + chart.height * i / 3;
+    for (final rank in standingTrendAxisTicks(1, maxPosition)) {
+      final y = chart.top + chart.height * (rank - 1) / span;
       canvas.drawLine(Offset(chart.left, y), Offset(chart.right, y), gridPaint);
-      final rank = 1 + (span * i / 3).round();
       _label(canvas, 'P$rank', Offset(0, y - 6));
     }
 
@@ -380,19 +391,9 @@ class _TrendPainter extends CustomPainter {
       canvas.drawCircle(dots[i], radius, Paint()..color = color);
     }
 
-    final labelIndexes = <int>{0, points.length - 1};
-    if (points.length >= 6) {
-      labelIndexes
-        ..add((points.length - 1) ~/ 3)
-        ..add((points.length - 1) * 2 ~/ 3);
-    }
-    for (final index in labelIndexes) {
-      _centeredLabel(
-        canvas,
-        'R${points[index].round}',
-        dots[index].dx,
-        chart.bottom + 8,
-      );
+    for (final round in standingTrendAxisTicks(firstRound, lastRound)) {
+      final x = chart.left + chart.width * (round - firstRound) / roundSpan;
+      _centeredLabel(canvas, 'R$round', x, chart.bottom + 8);
     }
   }
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/driver_team_assignments.dart';
 import '../models/race_result.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
@@ -306,7 +307,7 @@ SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
     for (final rawRace in decoded['races'] as List) {
       if (rawRace is! Map || rawRace['raceId'] is! String) continue;
       final raceId = rawRace['raceId'] as String;
-      final raceData = _raceDataFromSeasonRow(rawRace);
+      final raceData = _raceDataFromSeasonRow(rawRace, raceId: raceId);
       if (raceData == null) continue;
       raceResults[raceId] = raceData.entries;
 
@@ -318,7 +319,7 @@ SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
           if (rawSession is! Map || rawSession['sessionType'] != 'SPRINT') {
             continue;
           }
-          final sprint = _parseResultData(rawSession);
+          final sprint = _parseResultData(rawSession, raceId: raceId);
           if (sprint == null) continue;
           for (final entry in sprint.entries) {
             pointsByDriver.update(
@@ -354,13 +355,13 @@ SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
   }
 }
 
-RaceResultData? _raceDataFromSeasonRow(Map rawRace) {
-  final root = _parseResultData(rawRace);
+RaceResultData? _raceDataFromSeasonRow(Map rawRace, {required String raceId}) {
+  final root = _parseResultData(rawRace, raceId: raceId);
   if (root != null) return root;
   if (rawRace['sessions'] is! List) return null;
   for (final rawSession in rawRace['sessions'] as List) {
     if (rawSession is Map && rawSession['sessionType'] == 'RACE') {
-      return _parseResultData(rawSession);
+      return _parseResultData(rawSession, raceId: raceId);
     }
   }
   return null;
@@ -382,7 +383,7 @@ LatestRaceResult? parseLatestRaceResultJson(String body) {
           if (rawSession is! Map || rawSession['sessionType'] is! String) {
             continue;
           }
-          final data = _parseResultData(rawSession);
+          final data = _parseResultData(rawSession, raceId: raceId);
           if (data != null) {
             latest = LatestRaceResult(
               raceId: raceId,
@@ -402,13 +403,33 @@ LatestRaceResult? parseLatestRaceResultJson(String body) {
   }
 }
 
-RaceResultData? _parseResultData(Map rawResult) {
+RaceResultData? _parseResultData(Map rawResult, {required String raceId}) {
   final entries = <RaceResultEntry>[];
   if (rawResult['results'] is List) {
     for (final rawRow in rawResult['results'] as List) {
       if (rawRow is! Map) continue;
       final row = RaceResultEntry.fromJson(rawRow.cast<String, dynamic>());
-      if (row != null) entries.add(row);
+      if (row == null) continue;
+      final fixedTeam = fixedDriverTeamAssignment(
+        driverKo: row.driverKo,
+        driverEn: row.driverEn,
+        raceId: raceId,
+      );
+      entries.add(
+        fixedTeam == null
+            ? row
+            : RaceResultEntry(
+                position: row.position,
+                positionLabel: row.positionLabel,
+                driverKo: row.driverKo,
+                driverEn: row.driverEn,
+                teamKo: fixedTeam.teamKo,
+                teamEn: fixedTeam.teamEn,
+                points: row.points,
+                time: row.time,
+                gap: row.gap,
+              ),
+      );
     }
   }
   if (entries.length < 10) return null;
@@ -439,7 +460,7 @@ List<SessionResultData>? parseRaceSessionResultsJson(
           if (rawSession is! Map || rawSession['sessionType'] is! String) {
             continue;
           }
-          final data = _parseResultData(rawSession);
+          final data = _parseResultData(rawSession, raceId: raceId);
           if (data == null) continue;
           sessions.add(
             SessionResultData(
@@ -450,7 +471,7 @@ List<SessionResultData>? parseRaceSessionResultsJson(
         }
       }
       if (sessions.isEmpty) {
-        final data = _parseResultData(rawRace);
+        final data = _parseResultData(rawRace, raceId: raceId);
         if (data != null) {
           sessions.add(SessionResultData(sessionType: 'RACE', data: data));
         }
@@ -473,7 +494,7 @@ RaceResultData? parseRaceResultJson(String body, {required String raceId}) {
     for (final rawRace in decoded['races'] as List) {
       if (rawRace is! Map || rawRace['raceId'] != raceId) continue;
 
-      return _parseResultData(rawRace);
+      return _parseResultData(rawRace, raceId: raceId);
     }
     return null; // 해당 raceId 결과 없음(아직 미개최 등)
   } catch (_) {

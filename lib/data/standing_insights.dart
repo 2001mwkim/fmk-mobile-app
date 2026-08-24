@@ -95,7 +95,7 @@ List<StandingTrendPoint> _standingTrend({
   Map<String, List<RaceResultEntry>>? resultsByRaceId,
 }) {
   final source = resultsByRaceId ?? raceResultsByRaceId;
-  final points = <String, num>{};
+  final records = <String, _ChampionshipRecord>{};
   final trend = <StandingTrendPoint>[];
   final completedRaces =
       races.where((race) => source.containsKey(race.id)).toList()
@@ -104,13 +104,18 @@ List<StandingTrendPoint> _standingTrend({
   for (final race in completedRaces) {
     for (final result in source[race.id]!) {
       final key = keyFor(result);
-      points[key] = (points[key] ?? 0) + result.points;
+      final record = records.putIfAbsent(key, _ChampionshipRecord.new);
+      record
+        ..points += result.points
+        ..addFinish(result.position);
     }
-    if (!points.containsKey(target)) continue;
-    final order = points.entries.toList()
+    if (!records.containsKey(target)) continue;
+    final order = records.entries.toList()
       ..sort((a, b) {
-        final score = b.value.compareTo(a.value);
-        return score != 0 ? score : a.key.compareTo(b.key);
+        final championshipOrder = a.value.compareForStandings(b.value);
+        return championshipOrder != 0
+            ? championshipOrder
+            : a.key.compareTo(b.key);
       });
     trend.add(
       StandingTrendPoint(
@@ -122,6 +127,35 @@ List<StandingTrendPoint> _standingTrend({
   return trend;
 }
 
+/// 누적 포인트가 같으면 F1 챔피언십 방식대로 우승 횟수, 2위 횟수,
+/// 3위 횟수 … 순으로 비교한다. 모든 성적까지 같을 때만 안정적인 표시를
+/// 위해 호출부가 이름순 fallback을 사용한다.
+class _ChampionshipRecord {
+  num points = 0;
+  final Map<int, int> _finishes = {};
+
+  void addFinish(int position) {
+    if (position < 1) return;
+    _finishes.update(position, (count) => count + 1, ifAbsent: () => 1);
+  }
+
+  int compareForStandings(_ChampionshipRecord other) {
+    final pointsOrder = other.points.compareTo(points);
+    if (pointsOrder != 0) return pointsOrder;
+
+    final thisWorst = _finishes.keys.fold(0, _max);
+    final otherWorst = other._finishes.keys.fold(0, _max);
+    final lastPosition = _max(thisWorst, otherWorst);
+    for (var position = 1; position <= lastPosition; position++) {
+      final finishOrder = (other._finishes[position] ?? 0).compareTo(
+        _finishes[position] ?? 0,
+      );
+      if (finishOrder != 0) return finishOrder;
+    }
+    return 0;
+  }
+}
+
 Iterable<RaceResultEntry> _allResults(
   Map<String, List<RaceResultEntry>>? resultsByRaceId,
 ) sync* {
@@ -131,3 +165,4 @@ Iterable<RaceResultEntry> _allResults(
 }
 
 int _min(int a, int b) => a < b ? a : b;
+int _max(int a, int b) => a > b ? a : b;

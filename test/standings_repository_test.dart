@@ -96,6 +96,24 @@ void main() {
     expect(parseStandingsJson(jsonEncode(empty)), isNull);
   });
 
+  test('리암 로슨의 현재 소속은 서버 값과 무관하게 레이싱 불스로 보정한다', () {
+    final body = validBody();
+    final lawson = (body['driverStandings'] as List)[5] as Map<String, dynamic>;
+    lawson
+      ..['driverKo'] = '리암 로슨'
+      ..['driverEn'] = 'Liam Lawson'
+      ..['teamKo'] = '레드불 레이싱'
+      ..['teamEn'] = 'Red Bull Racing';
+
+    final snapshot = parseStandingsJson(jsonEncode(body));
+    final parsed = snapshot!.driverStandings.singleWhere(
+      (row) => row.driverKo == '리암 로슨',
+    );
+
+    expect(parsed.teamKo, '레이싱 불스');
+    expect(parsed.teamEn, 'Racing Bulls');
+  });
+
   test('네트워크 실패/HTTP 오류/비정상 JSON 이면 null 을 돌려준다', () async {
     Future<StandingsSnapshot?> fetchWith(MockClient client) =>
         HttpStandingsRepository(

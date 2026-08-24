@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/driver_team_assignments.dart';
 import '../models/standing.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
@@ -146,7 +147,25 @@ StandingsSnapshot? parseStandingsJson(String body) {
       for (final raw in decoded['driverStandings'] as List) {
         if (raw is! Map) continue;
         final row = DriverStanding.fromJson(raw.cast<String, dynamic>());
-        if (row != null) drivers.add(row);
+        if (row == null) continue;
+        final fixedTeam = fixedDriverTeamAssignment(
+          driverKo: row.driverKo,
+          driverEn: row.driverEn,
+        );
+        drivers.add(
+          fixedTeam == null
+              ? row
+              : DriverStanding(
+                  position: row.position,
+                  driverKo: row.driverKo,
+                  driverEn: row.driverEn,
+                  teamKo: fixedTeam.teamKo,
+                  teamEn: fixedTeam.teamEn,
+                  points: row.points,
+                  positionChange: row.positionChange,
+                  note: row.note,
+                ),
+        );
       }
     }
     final constructors = <ConstructorStanding>[];

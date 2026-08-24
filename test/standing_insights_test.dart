@@ -37,4 +37,23 @@ void main() {
     expect(trend.last.round, 8);
     expect(trend.last.position, 1);
   });
+
+  test('누적 포인트 동률은 이름순이 아니라 최고 성적 카운트백으로 정렬한다', () {
+    final results = <String, List<RaceResultEntry>>{
+      'australia-2026': [
+        result(position: 1, driver: '제트', team: '제트 팀', points: 10),
+        result(position: 2, driver: '알파', team: '알파 팀', points: 15),
+      ],
+      'china-2026': [
+        result(position: 5, driver: '제트', team: '제트 팀', points: 10),
+        result(position: 3, driver: '알파', team: '알파 팀', points: 5),
+      ],
+    };
+
+    final winner = driverStandingTrend('제트', resultsByRaceId: results);
+    final runnerUp = driverStandingTrend('알파', resultsByRaceId: results);
+
+    expect(winner.last.position, 1); // 20점 동률, 제트가 우승 1회
+    expect(runnerUp.last.position, 2);
+  });
 }

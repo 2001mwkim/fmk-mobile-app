@@ -142,6 +142,48 @@ void main() {
     expect(latest.sessionType, 'QUALIFYING');
   });
 
+  test('로슨은 네덜란드 GP만 레드불, 그 외 결과는 레이싱 불스로 보정한다', () {
+    Map<String, dynamic> lawsonBody(String raceId) {
+      final body = validBody(raceId);
+      final row =
+          ((body['races'] as List).first['results'] as List)[5]
+              as Map<String, dynamic>;
+      row
+        ..['driverKo'] = '리암 로슨'
+        ..['driverEn'] = 'Liam Lawson'
+        ..['teamKo'] = '레드불 레이싱'
+        ..['teamEn'] = 'Red Bull Racing';
+      return body;
+    }
+
+    final otherRace = parseRaceResultJson(
+      jsonEncode(lawsonBody('italy-2026')),
+      raceId: 'italy-2026',
+    )!;
+    final otherLawson = otherRace.entries.singleWhere(
+      (row) => row.driverKo == '리암 로슨',
+    );
+    expect(otherLawson.teamKo, '레이싱 불스');
+    expect(otherLawson.teamEn, 'Racing Bulls');
+
+    final dutchBody = lawsonBody('netherlands-2026');
+    final dutchRow =
+        ((dutchBody['races'] as List).first['results'] as List)[5]
+            as Map<String, dynamic>;
+    dutchRow
+      ..['teamKo'] = '레이싱 불스'
+      ..['teamEn'] = 'Racing Bulls';
+    final dutchRace = parseRaceResultJson(
+      jsonEncode(dutchBody),
+      raceId: 'netherlands-2026',
+    )!;
+    final dutchLawson = dutchRace.entries.singleWhere(
+      (row) => row.driverKo == '리암 로슨',
+    );
+    expect(dutchLawson.teamKo, '레드불 레이싱');
+    expect(dutchLawson.teamEn, 'Red Bull Racing');
+  });
+
   test('시즌 전체 결과를 파싱하고 스프린트 포인트를 순위 흐름에 합산한다', () {
     final body = validBody('china-2026');
     final race = (body['races'] as List).first as Map<String, dynamic>;

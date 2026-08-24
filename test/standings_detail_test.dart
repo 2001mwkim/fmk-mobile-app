@@ -10,8 +10,15 @@ import 'package:fmk_app/services/race_results_repository.dart';
 import 'package:fmk_app/services/standings_repository.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/licensed_image_view.dart';
+import 'package:fmk_app/widgets/standing_detail_parts.dart';
 
 void main() {
+  test('순위 흐름 축 눈금은 중복 없이 실제 정수 좌표를 사용한다', () {
+    expect(standingTrendAxisTicks(1, 3), [1, 2, 3]);
+    expect(standingTrendAxisTicks(1, 5), [1, 2, 4, 5]);
+    expect(standingTrendAxisTicks(1, 12), [1, 5, 8, 12]);
+  });
+
   test('licensed image catalog stays on Commons and tracks file edits', () {
     final images = [
       ...driverProfilesByCode.values.map((profile) => profile.image),
