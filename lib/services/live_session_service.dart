@@ -25,11 +25,13 @@ const bool _kIsReleaseBuild = bool.fromEnvironment('dart.vm.product');
 
 const String kLiveJsonUrl = String.fromEnvironment(
   'LIVE_JSON_URL',
-  // 릴리스는 Vercel 엣지 캐시(/api/live, s-maxage 5초)를 기본으로 —
-  // 한국 기준 지연 ~500ms(Railway 직결) → ~65ms, 동시 사용자 폴링이
-  // origin(collector)에 몰리지 않는다. 페이로드는 live.json 과 동일.
+  // 릴리스는 Cloudflare(live.formulamagazine.kr, 서울/도쿄 PoP + 5초 엣지 캐시)를
+  // 기본으로 — 라이브 폴링을 Vercel 엣지 요청(무료 100만/월 한도)에서 뺀다.
+  // Cloudflare 무료는 요청 수를 안 세고 origin(Railway collector) 부하도
+  // 사용자 수와 무관하게 분당 12회로 고정된다. 기본값을 Vercel 로 두면 dart-define
+  // 없이 빌드했을 때 조용히 Vercel 로 돌아가 한도를 터뜨리므로 기본값 자체를 옮겼다.
   defaultValue: _kIsReleaseBuild
-      ? 'https://www.formulamagazine.kr/api/live'
+      ? 'https://live.formulamagazine.kr/live.json'
       : 'http://localhost:8787/live.json',
 );
 
