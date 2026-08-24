@@ -5,6 +5,7 @@ import '../data/standing_profiles.dart';
 import '../data/team_colors.dart';
 import '../models/standing.dart';
 import '../models/standing_insight.dart';
+import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -12,27 +13,64 @@ import '../widgets/licensed_image_view.dart';
 import '../widgets/standing_detail_parts.dart';
 import 'race_detail_screen.dart';
 
-class TeamDetailScreen extends StatelessWidget {
+class TeamDetailScreen extends StatefulWidget {
   const TeamDetailScreen({
     super.key,
     required this.standing,
     required this.allDrivers,
     this.onOpenDriver,
+    this.resultsRepository = const HttpRaceResultsRepository(),
   });
 
   final ConstructorStanding standing;
   final List<DriverStanding> allDrivers;
   final ValueChanged<DriverStanding>? onOpenDriver;
+  final RaceResultsRepository resultsRepository;
+
+  @override
+  State<TeamDetailScreen> createState() => _TeamDetailScreenState();
+}
+
+class _TeamDetailScreenState extends State<TeamDetailScreen> {
+  SeasonRaceResults? _seasonResults;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeasonResults();
+  }
+
+  Future<void> _loadSeasonResults() async {
+    final results = await widget.resultsRepository.fetchSeasonResults();
+    if (!mounted || results == null) return;
+    setState(() => _seasonResults = results);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final standing = widget.standing;
+    final onOpenDriver = widget.onOpenDriver;
     final profile = teamProfilesByKo[standing.teamKo];
     final color = getTeamColor(standing.teamKo);
-    final drivers = allDrivers
+    final drivers = widget.allDrivers
         .where((driver) => driver.teamKo == standing.teamKo)
+        .where(
+          (driver) =>
+              standing.teamKo != '레드불 레이싱' ||
+              driver.driverKo == '막스 베르스타펜' ||
+              driver.driverKo == '아이작 하자르',
+        )
         .toList(growable: false);
-    final summary = teamSeasonSummary(standing.teamKo);
-    final recent = recentTeamResults(standing.teamKo);
+    final raceResults = _seasonResults?.raceResultsByRaceId;
+    final championshipResults = _seasonResults?.championshipResultsByRaceId;
+    final summary = teamSeasonSummary(
+      standing.teamKo,
+      resultsByRaceId: raceResults,
+    );
+    final recent = recentTeamResults(
+      standing.teamKo,
+      resultsByRaceId: raceResults,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -66,7 +104,9 @@ class TeamDetailScreen extends StatelessWidget {
               color: color,
             ),
             const SizedBox(height: 12),
-            AppCard(child: SummaryMetrics(summary: summary)),
+            AppCard(
+              child: SummaryMetrics(summary: summary, accent: color),
+            ),
             const SizedBox(height: 12),
             _DriverContributionCard(
               drivers: drivers,
@@ -76,7 +116,10 @@ class TeamDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             StandingTrendCard(
-              points: teamStandingTrend(standing.teamKo),
+              points: teamStandingTrend(
+                standing.teamKo,
+                resultsByRaceId: championshipResults,
+              ),
               color: color,
             ),
             const SizedBox(height: 12),

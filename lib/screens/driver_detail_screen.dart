@@ -7,6 +7,7 @@ import '../data/team_colors.dart';
 import '../models/standing.dart';
 import '../models/licensed_image.dart';
 import '../models/standing_insight.dart';
+import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -14,27 +15,60 @@ import '../widgets/licensed_image_view.dart';
 import '../widgets/standing_detail_parts.dart';
 import 'race_detail_screen.dart';
 
-class DriverDetailScreen extends StatelessWidget {
+class DriverDetailScreen extends StatefulWidget {
   const DriverDetailScreen({
     super.key,
     required this.standing,
     required this.allDrivers,
     this.onOpenTeam,
     this.onOpenDriver,
+    this.resultsRepository = const HttpRaceResultsRepository(),
   });
 
   final DriverStanding standing;
   final List<DriverStanding> allDrivers;
   final VoidCallback? onOpenTeam;
   final ValueChanged<DriverStanding>? onOpenDriver;
+  final RaceResultsRepository resultsRepository;
+
+  @override
+  State<DriverDetailScreen> createState() => _DriverDetailScreenState();
+}
+
+class _DriverDetailScreenState extends State<DriverDetailScreen> {
+  SeasonRaceResults? _seasonResults;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeasonResults();
+  }
+
+  Future<void> _loadSeasonResults() async {
+    final results = await widget.resultsRepository.fetchSeasonResults();
+    if (!mounted || results == null) return;
+    setState(() => _seasonResults = results);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final standing = widget.standing;
+    final allDrivers = widget.allDrivers;
+    final onOpenTeam = widget.onOpenTeam;
+    final onOpenDriver = widget.onOpenDriver;
+    final raceResults = _seasonResults?.raceResultsByRaceId;
+    final championshipResults = _seasonResults?.championshipResultsByRaceId;
     final code = driverCodeByNameKo[standing.driverKo] ?? 'DRV';
     final profile = driverProfilesByCode[code];
     final accent = liveDriverAccent(code);
-    final summary = driverSeasonSummary(standing.driverKo);
-    final recent = recentDriverResults(standing.driverKo);
+    final summary = driverSeasonSummary(
+      standing.driverKo,
+      resultsByRaceId: raceResults,
+    );
+    final recent = recentDriverResults(
+      standing.driverKo,
+      resultsByRaceId: raceResults,
+    );
     final teammate = _teammate();
     final leader = allDrivers.isEmpty ? standing : allDrivers.first;
     final gap = leader.points - standing.points;
@@ -66,10 +100,15 @@ class DriverDetailScreen extends StatelessWidget {
               onOpenTeam: onOpenTeam,
             ),
             const SizedBox(height: 12),
-            AppCard(child: SummaryMetrics(summary: summary)),
+            AppCard(
+              child: SummaryMetrics(summary: summary, accent: accent),
+            ),
             const SizedBox(height: 12),
             StandingTrendCard(
-              points: driverStandingTrend(standing.driverKo),
+              points: driverStandingTrend(
+                standing.driverKo,
+                resultsByRaceId: championshipResults,
+              ),
               color: accent,
             ),
             if (teammate != null) ...[
@@ -80,7 +119,7 @@ class DriverDetailScreen extends StatelessWidget {
                 accent: accent,
                 onTap: onOpenDriver == null
                     ? null
-                    : () => onOpenDriver!(teammate),
+                    : () => onOpenDriver(teammate),
               ),
             ],
             const SizedBox(height: 12),
@@ -92,10 +131,10 @@ class DriverDetailScreen extends StatelessWidget {
   }
 
   DriverStanding? _teammate() {
-    final candidates = allDrivers.where(
+    final candidates = widget.allDrivers.where(
       (driver) =>
-          driver.teamKo == standing.teamKo &&
-          driver.driverKo != standing.driverKo,
+          driver.teamKo == widget.standing.teamKo &&
+          driver.driverKo != widget.standing.driverKo,
     );
     return candidates.isEmpty ? null : candidates.first;
   }

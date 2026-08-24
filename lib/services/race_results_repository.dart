@@ -54,6 +54,20 @@ class LatestRaceResult {
   final String sessionType;
 }
 
+/// 상세 화면에서 공용으로 쓰는 시즌 전체 결과.
+///
+/// [raceResultsByRaceId]는 최근 경기/시즌 요약에 표시할 레이스 결과이고,
+/// [championshipResultsByRaceId]는 스프린트 포인트까지 합친 순위 흐름 계산용이다.
+class SeasonRaceResults {
+  const SeasonRaceResults({
+    required this.raceResultsByRaceId,
+    required this.championshipResultsByRaceId,
+  });
+
+  final Map<String, List<RaceResultEntry>> raceResultsByRaceId;
+  final Map<String, List<RaceResultEntry>> championshipResultsByRaceId;
+}
+
 /// 레이스 결과 공급 계층.
 ///
 /// 서버(F1DB 주기 갱신 → Railway `/race-results.json` → Vercel
@@ -76,6 +90,9 @@ abstract class RaceResultsRepository {
 
   /// 가장 최근 결과가 있는 레이스 1개(홈 카드용). 없거나 실패하면 null.
   Future<LatestRaceResult?> fetchLatest({int season});
+
+  /// 완료된 모든 라운드의 결과. 상세 페이지의 최근 결과와 순위 흐름용.
+  Future<SeasonRaceResults?> fetchSeasonResults({int season});
 }
 
 /// 실서버 구현(앱 기본값). origin 은 뉴스/순위와 같은 Vercel 도메인
@@ -187,6 +204,30 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
     }
   }
 
+  @override
+  Future<SeasonRaceResults?> fetchSeasonResults({int season = 2026}) async {
+    if (client == null && baseUrl == kNewsApiBaseUrl) {
+      final body = await _loadSharedBody(season);
+      return body == null ? null : parseSeasonRaceResultsJson(body);
+    }
+    final httpClient = client ?? http.Client();
+    try {
+      final uri = Uri.parse(baseUrl).replace(
+        path: '/api/race-results',
+        queryParameters: {'season': '$season'},
+      );
+      final response = await httpClient
+          .get(uri)
+          .timeout(kRaceResultsFetchTimeout);
+      if (response.statusCode != 200) return null;
+      return parseSeasonRaceResultsJson(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      return null;
+    } finally {
+      if (client == null) httpClient.close();
+    }
+  }
+
   Future<String?> _loadSharedBody(int season) async {
     final now = DateTime.now();
     final memoryBody = _memoryBody;
@@ -253,6 +294,76 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
       httpClient.close();
     }
   }
+}
+
+SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map || decoded['races'] is! List) return null;
+
+    final raceResults = <String, List<RaceResultEntry>>{};
+    final championshipResults = <String, List<RaceResultEntry>>{};
+    for (final rawRace in decoded['races'] as List) {
+      if (rawRace is! Map || rawRace['raceId'] is! String) continue;
+      final raceId = rawRace['raceId'] as String;
+      final raceData = _raceDataFromSeasonRow(rawRace);
+      if (raceData == null) continue;
+      raceResults[raceId] = raceData.entries;
+
+      final pointsByDriver = <String, num>{
+        for (final entry in raceData.entries) entry.driverKo: entry.points,
+      };
+      if (rawRace['sessions'] is List) {
+        for (final rawSession in rawRace['sessions'] as List) {
+          if (rawSession is! Map || rawSession['sessionType'] != 'SPRINT') {
+            continue;
+          }
+          final sprint = _parseResultData(rawSession);
+          if (sprint == null) continue;
+          for (final entry in sprint.entries) {
+            pointsByDriver.update(
+              entry.driverKo,
+              (points) => points + entry.points,
+              ifAbsent: () => entry.points,
+            );
+          }
+        }
+      }
+      championshipResults[raceId] = [
+        for (final entry in raceData.entries)
+          RaceResultEntry(
+            position: entry.position,
+            positionLabel: entry.positionLabel,
+            driverKo: entry.driverKo,
+            driverEn: entry.driverEn,
+            teamKo: entry.teamKo,
+            teamEn: entry.teamEn,
+            points: pointsByDriver[entry.driverKo] ?? entry.points,
+            time: entry.time,
+            gap: entry.gap,
+          ),
+      ];
+    }
+    if (raceResults.isEmpty) return null;
+    return SeasonRaceResults(
+      raceResultsByRaceId: Map.unmodifiable(raceResults),
+      championshipResultsByRaceId: Map.unmodifiable(championshipResults),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+RaceResultData? _raceDataFromSeasonRow(Map rawRace) {
+  final root = _parseResultData(rawRace);
+  if (root != null) return root;
+  if (rawRace['sessions'] is! List) return null;
+  for (final rawSession in rawRace['sessions'] as List) {
+    if (rawSession is Map && rawSession['sessionType'] == 'RACE') {
+      return _parseResultData(rawSession);
+    }
+  }
+  return null;
 }
 
 /// 응답에서 가장 최근(서버가 라운드 오름차순 정렬 → 마지막 항목) 유효 결과를

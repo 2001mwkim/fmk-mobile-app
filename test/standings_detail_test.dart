@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/data/standing_profiles.dart';
 import 'package:fmk_app/models/licensed_image.dart';
+import 'package:fmk_app/models/standing.dart';
 import 'package:fmk_app/screens/driver_detail_screen.dart';
 import 'package:fmk_app/screens/standings_screen.dart';
 import 'package:fmk_app/screens/team_detail_screen.dart';
+import 'package:fmk_app/services/race_results_repository.dart';
 import 'package:fmk_app/services/standings_repository.dart';
 import 'package:fmk_app/theme/app_theme.dart';
 import 'package:fmk_app/widgets/licensed_image_view.dart';
@@ -39,7 +41,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(),
-        home: StandingsScreen(repository: _OfflineStandingsRepository()),
+        home: StandingsScreen(
+          repository: _OfflineStandingsRepository(),
+          resultsRepository: _OfflineRaceResultsRepository(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -55,6 +60,9 @@ void main() {
 
     expect(find.byType(DriverDetailScreen), findsOneWidget);
     expect(find.text('드라이버 상세 · 2026 SEASON'), findsOneWidget);
+    expect(find.text('시즌 성과'), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.workspace_premium_outlined), findsOneWidget);
     expect(find.text('시즌 순위 흐름'), findsOneWidget);
     expect(find.text('팀메이트 비교'), findsOneWidget);
 
@@ -102,9 +110,87 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DriverDetailScreen), findsOneWidget);
   });
+
+  testWidgets('레드불 기여도에는 베르스타펜과 하자르만 표시한다', (tester) async {
+    const team = ConstructorStanding(
+      position: 4,
+      teamKo: '레드불 레이싱',
+      teamEn: 'Red Bull',
+      points: 180,
+    );
+    const drivers = [
+      DriverStanding(
+        position: 6,
+        driverKo: '막스 베르스타펜',
+        driverEn: 'Max Verstappen',
+        teamKo: '레드불 레이싱',
+        teamEn: 'Red Bull',
+        points: 112,
+      ),
+      DriverStanding(
+        position: 8,
+        driverKo: '아이작 하자르',
+        driverEn: 'Isack Hadjar',
+        teamKo: '레드불 레이싱',
+        teamEn: 'Red Bull',
+        points: 68,
+      ),
+      DriverStanding(
+        position: 9,
+        driverKo: '리암 로슨',
+        driverEn: 'Liam Lawson',
+        teamKo: '레드불 레이싱',
+        teamEn: 'Red Bull',
+        points: 49,
+      ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const TeamDetailScreen(
+          standing: team,
+          allDrivers: drivers,
+          resultsRepository: _OfflineRaceResultsRepository(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('team-driver-막스 베르스타펜')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('막스 베르스타펜'), findsOneWidget);
+    expect(find.text('아이작 하자르'), findsOneWidget);
+    expect(find.text('리암 로슨'), findsNothing);
+  });
 }
 
 class _OfflineStandingsRepository implements StandingsRepository {
   @override
   Future<StandingsSnapshot?> fetchLatest() async => null;
+}
+
+class _OfflineRaceResultsRepository implements RaceResultsRepository {
+  const _OfflineRaceResultsRepository();
+
+  @override
+  Future<RaceResultData?> fetchResult({
+    required String raceId,
+    int season = 2026,
+  }) async => null;
+
+  @override
+  Future<List<SessionResultData>?> fetchSessionResults({
+    required String raceId,
+    int season = 2026,
+  }) async => null;
+
+  @override
+  Future<LatestRaceResult?> fetchLatest({int season = 2026}) async => null;
+
+  @override
+  Future<SeasonRaceResults?> fetchSeasonResults({int season = 2026}) async =>
+      null;
 }

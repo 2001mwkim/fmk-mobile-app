@@ -51,49 +51,166 @@ class DetailBackButton extends StatelessWidget {
 }
 
 class SummaryMetrics extends StatelessWidget {
-  const SummaryMetrics({super.key, required this.summary});
+  const SummaryMetrics({
+    super.key,
+    required this.summary,
+    required this.accent,
+  });
 
   final SeasonSummary summary;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _metric('우승', '${summary.wins}'),
-        _metric('포디움', '${summary.podiums}'),
-        _metric(
-          '최고 순위',
-          summary.bestFinish == null ? '—' : 'P${summary.bestFinish}',
+        const Row(
+          children: [
+            Expanded(
+              child: Text(
+                '시즌 성과',
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Text(
+              '2026',
+              style: TextStyle(
+                color: AppColors.textEnded,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
         ),
-        _metric('DNF', '${summary.dnfs}'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: '우승',
+                value: '${summary.wins}',
+                icon: Icons.emoji_events_outlined,
+                color: AppColors.warningAmber,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MetricTile(
+                label: '포디움',
+                value: '${summary.podiums}',
+                icon: Icons.workspace_premium_outlined,
+                color: accent,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: '최고 순위',
+                value: summary.bestFinish == null
+                    ? '—'
+                    : 'P${summary.bestFinish}',
+                icon: Icons.trending_up_rounded,
+                color: AppColors.blueSoft,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MetricTile(
+                label: 'DNF',
+                value: '${summary.dnfs}',
+                icon: Icons.flag_outlined,
+                color: AppColors.redSoft,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
+}
 
-  Widget _metric(String label, String value) => Expanded(
-    child: Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label $value',
+      child: Container(
+        height: 76,
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: AppColors.tileSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.16)),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textEnded,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-          ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 20,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class StandingTrendCard extends StatelessWidget {
@@ -112,17 +229,43 @@ class StandingTrendCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '시즌 순위 흐름',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '시즌 순위 흐름',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (points.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: color.withValues(alpha: 0.28)),
+                  ),
+                  child: Text(
+                    '현재 P${points.last.position}',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           const Text(
-            '각 라운드 종료 후 챔피언십 순위',
+            '각 라운드 종료 기준 · 위쪽일수록 높은 순위',
             style: TextStyle(color: AppColors.textEnded, fontSize: 10),
           ),
           const SizedBox(height: 16),
@@ -139,7 +282,7 @@ class StandingTrendCard extends StatelessWidget {
           else
             SizedBox(
               key: const ValueKey('standing-trend-chart'),
-              height: 126,
+              height: 154,
               width: double.infinity,
               child: CustomPaint(
                 painter: _TrendPainter(points: points, color: color),
@@ -159,77 +302,119 @@ class _TrendPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const top = 16.0;
-    const bottom = 24.0;
-    const left = 26.0;
-    const right = 12.0;
+    const top = 12.0;
+    const bottom = 25.0;
+    const left = 30.0;
+    const right = 10.0;
     final chart = Rect.fromLTRB(
       left,
       top,
       size.width - right,
       size.height - bottom,
     );
-    final maxPosition = points
+    final observedMax = points
         .map((point) => point.position)
         .reduce((a, b) => a > b ? a : b);
-    final minPosition = points
-        .map((point) => point.position)
-        .reduce((a, b) => a < b ? a : b);
-    final span = (maxPosition - minPosition).clamp(1, 30);
-    final gridPaint = Paint()..color = AppColors.rowBorder;
+    final maxPosition = observedMax < 3 ? 3 : observedMax;
+    final span = maxPosition - 1;
+    final firstRound = points.first.round;
+    final lastRound = points.last.round;
+    final roundSpan = (lastRound - firstRound).clamp(1, 30);
+    final gridPaint = Paint()
+      ..color = AppColors.faintBorder
+      ..strokeWidth = 1;
     for (var i = 0; i <= 3; i++) {
       final y = chart.top + chart.height * i / 3;
       canvas.drawLine(Offset(chart.left, y), Offset(chart.right, y), gridPaint);
+      final rank = 1 + (span * i / 3).round();
+      _label(canvas, 'P$rank', Offset(0, y - 6));
     }
 
     final path = Path();
     final dots = <Offset>[];
     for (var i = 0; i < points.length; i++) {
-      final x = chart.left + chart.width * i / (points.length - 1);
-      final y =
-          chart.top + chart.height * (points[i].position - minPosition) / span;
+      final x =
+          chart.left + chart.width * (points[i].round - firstRound) / roundSpan;
+      final y = chart.top + chart.height * (points[i].position - 1) / span;
       final offset = Offset(x, y);
       dots.add(offset);
       i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
     }
+    final fillPath = Path.from(path)
+      ..lineTo(dots.last.dx, chart.bottom)
+      ..lineTo(dots.first.dx, chart.bottom)
+      ..close();
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.22),
+            color.withValues(alpha: 0.01),
+          ],
+        ).createShader(chart),
+    );
     canvas.drawPath(
       path,
       Paint()
-        ..color = color
-        ..strokeWidth = 2.5
+        ..color = color.withValues(alpha: 0.22)
+        ..strokeWidth = 7
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
-    for (final dot in dots) {
-      canvas.drawCircle(dot, 3.5, Paint()..color = color);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+    for (var i = 0; i < dots.length; i++) {
+      final radius = i == dots.length - 1 ? 5.0 : 3.5;
+      canvas.drawCircle(dots[i], radius + 2, Paint()..color = AppColors.card);
+      canvas.drawCircle(dots[i], radius, Paint()..color = color);
     }
 
-    _label(canvas, 'P$minPosition', Offset(0, chart.top - 6));
-    _label(
-      canvas,
-      'R${points.first.round}',
-      Offset(chart.left - 5, chart.bottom + 7),
-    );
-    _label(
-      canvas,
-      'R${points.last.round}',
-      Offset(chart.right - 18, chart.bottom + 7),
-    );
+    final labelIndexes = <int>{0, points.length - 1};
+    if (points.length >= 6) {
+      labelIndexes
+        ..add((points.length - 1) ~/ 3)
+        ..add((points.length - 1) * 2 ~/ 3);
+    }
+    for (final index in labelIndexes) {
+      _centeredLabel(
+        canvas,
+        'R${points[index].round}',
+        dots[index].dx,
+        chart.bottom + 8,
+      );
+    }
   }
 
-  void _label(Canvas canvas, String text, Offset offset) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(
-          color: AppColors.textEnded,
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-        ),
+  void _centeredLabel(Canvas canvas, String text, double centerX, double y) {
+    final painter = _textPainter(text)..layout();
+    painter.paint(canvas, Offset(centerX - painter.width / 2, y));
+  }
+
+  TextPainter _textPainter(String text) => TextPainter(
+    text: TextSpan(
+      text: text,
+      style: const TextStyle(
+        color: AppColors.textEnded,
+        fontSize: 9,
+        fontWeight: FontWeight.w700,
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
+    ),
+    textDirection: TextDirection.ltr,
+  );
+
+  void _label(Canvas canvas, String text, Offset offset) {
+    final painter = _textPainter(text)..layout();
     painter.paint(canvas, offset);
   }
 

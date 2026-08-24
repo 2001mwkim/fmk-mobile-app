@@ -142,6 +142,28 @@ void main() {
     expect(latest.sessionType, 'QUALIFYING');
   });
 
+  test('시즌 전체 결과를 파싱하고 스프린트 포인트를 순위 흐름에 합산한다', () {
+    final body = validBody('china-2026');
+    final race = (body['races'] as List).first as Map<String, dynamic>;
+    race['sessions'] = [
+      {
+        'sessionType': 'SPRINT',
+        'status': 'official',
+        'results': [
+          resultRow(1, '샤를 르클레르', 8),
+          for (var i = 2; i <= 12; i++) resultRow(i, '드라이버$i', 0),
+        ],
+      },
+      {'sessionType': 'RACE', 'status': 'official', 'results': race['results']},
+    ];
+
+    final season = parseSeasonRaceResultsJson(jsonEncode(body));
+
+    expect(season, isNotNull);
+    expect(season!.raceResultsByRaceId['china-2026']!.first.points, 25);
+    expect(season.championshipResultsByRaceId['china-2026']!.first.points, 33);
+  });
+
   // ---- 상세 화면 위젯 테스트 ----
 
   // 종료됐지만 번들 정적 결과가 없는 레이스(현재 "준비 중"으로 보이는 케이스).
@@ -302,6 +324,10 @@ class _FakeRaceResultsRepository implements RaceResultsRepository {
 
   @override
   Future<LatestRaceResult?> fetchLatest({int season = 2026}) async => null;
+
+  @override
+  Future<SeasonRaceResults?> fetchSeasonResults({int season = 2026}) async =>
+      null;
 }
 
 class _ThrowingRaceResultsRepository implements RaceResultsRepository {
@@ -319,5 +345,9 @@ class _ThrowingRaceResultsRepository implements RaceResultsRepository {
 
   @override
   Future<LatestRaceResult?> fetchLatest({int season = 2026}) async =>
+      throw Exception('boom');
+
+  @override
+  Future<SeasonRaceResults?> fetchSeasonResults({int season = 2026}) async =>
       throw Exception('boom');
 }

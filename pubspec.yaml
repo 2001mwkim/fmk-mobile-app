@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Play ?대? ?뚯뒪??珥덇린 踰꾩쟾. ?낅줈?쒕쭏??+N(versionCode)??1???щ┛??
 # 0.1.2: 바레인→세팡 이전 반영, 라이브 센터 개편, 첫 실행 알림 안내.
 # App Store 는 업데이트마다 버전 문자열 증가 필수(0.1.1 은 출시됨).
-version: 0.1.5+40
+version: 0.1.5+41
 
 environment:
   sdk: ^3.12.0

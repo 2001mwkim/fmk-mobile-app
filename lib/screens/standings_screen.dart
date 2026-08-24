@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/standings.dart' as static_standings;
 import '../data/team_colors.dart';
 import '../models/standing.dart';
+import '../services/race_results_repository.dart';
 import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
@@ -18,10 +19,15 @@ const Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
 enum _StandingsTab { drivers, constructors }
 
 class StandingsScreen extends StatefulWidget {
-  const StandingsScreen({super.key, this.repository});
+  const StandingsScreen({
+    super.key,
+    this.repository,
+    this.resultsRepository = const HttpRaceResultsRepository(),
+  });
 
   /// 테스트/개발용 주입 지점. 기본값은 실서버(/api/standings).
   final StandingsRepository? repository;
+  final RaceResultsRepository resultsRepository;
 
   @override
   State<StandingsScreen> createState() => _StandingsScreenState();
@@ -127,6 +133,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
             if (teams.isNotEmpty) _openTeam(teams.first);
           },
           onOpenDriver: _openDriver,
+          resultsRepository: widget.resultsRepository,
         ),
       ),
     );
@@ -139,6 +146,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           standing: standing,
           allDrivers: _drivers,
           onOpenDriver: _openDriver,
+          resultsRepository: widget.resultsRepository,
         ),
       ),
     );
