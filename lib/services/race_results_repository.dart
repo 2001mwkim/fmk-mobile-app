@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/race_result.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
 /// 결과 요청 타임아웃(순위/뉴스와 동일 — 화면 응답성 우선).
 const Duration kRaceResultsFetchTimeout = Duration(seconds: 8);
+const Duration kRaceResultsCacheTtl = Duration(minutes: 30);
 
 /// 서버에서 받은 한 그랑프리의 레이스 결과.
 class RaceResultData {
@@ -89,11 +91,22 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
   /// 테스트 주입용 클라이언트(없으면 매 요청마다 생성/정리).
   final http.Client? client;
 
+  static const _cacheBodyKey = 'race_results_api_cache_body_v1';
+  static const _cacheTimeKey = 'race_results_api_cache_time_v1';
+  static String? _memoryBody;
+  static DateTime? _memoryFetchedAt;
+  static int? _memorySeason;
+  static final Map<int, Future<String?>> _sharedLoads = {};
+
   @override
   Future<RaceResultData?> fetchResult({
     required String raceId,
     int season = 2026,
   }) async {
+    if (client == null && baseUrl == kNewsApiBaseUrl) {
+      final body = await _loadSharedBody(season);
+      return body == null ? null : parseRaceResultJson(body, raceId: raceId);
+    }
     final httpClient = client ?? http.Client();
     try {
       final uri = Uri.parse(baseUrl).replace(
@@ -122,6 +135,12 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
     required String raceId,
     int season = 2026,
   }) async {
+    if (client == null && baseUrl == kNewsApiBaseUrl) {
+      final body = await _loadSharedBody(season);
+      return body == null
+          ? null
+          : parseRaceSessionResultsJson(body, raceId: raceId);
+    }
     final httpClient = client ?? http.Client();
     try {
       final uri = Uri.parse(baseUrl).replace(
@@ -145,6 +164,10 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
 
   @override
   Future<LatestRaceResult?> fetchLatest({int season = 2026}) async {
+    if (client == null && baseUrl == kNewsApiBaseUrl) {
+      final body = await _loadSharedBody(season);
+      return body == null ? null : parseLatestRaceResultJson(body);
+    }
     final httpClient = client ?? http.Client();
     try {
       // raceId 필터 없이 시즌 전체를 받아 마지막(최신) 라운드를 고른다.
@@ -161,6 +184,73 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
       return null; // 홈 카드는 실패 시 그냥 표시하지 않는다.
     } finally {
       if (client == null) httpClient.close();
+    }
+  }
+
+  Future<String?> _loadSharedBody(int season) async {
+    final now = DateTime.now();
+    final memoryBody = _memoryBody;
+    final memoryAt = _memoryFetchedAt;
+    if (memoryBody != null &&
+        memoryAt != null &&
+        _memorySeason == season &&
+        now.difference(memoryAt) < kRaceResultsCacheTtl) {
+      return memoryBody;
+    }
+
+    final pending = _sharedLoads[season];
+    if (pending != null) return pending;
+    final load = _readOrFetchSharedBody(season, now);
+    _sharedLoads[season] = load;
+    try {
+      return await load;
+    } finally {
+      if (identical(_sharedLoads[season], load)) _sharedLoads.remove(season);
+    }
+  }
+
+  Future<String?> _readOrFetchSharedBody(int season, DateTime now) async {
+    final preferences = await SharedPreferences.getInstance();
+    final bodyKey = '${_cacheBodyKey}_$season';
+    final timeKey = '${_cacheTimeKey}_$season';
+    final diskBody = preferences.getString(bodyKey);
+    final diskTimeMillis = preferences.getInt(timeKey);
+    final diskAt = diskTimeMillis == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(diskTimeMillis);
+    if (diskBody != null &&
+        diskAt != null &&
+        now.difference(diskAt) < kRaceResultsCacheTtl) {
+      _memoryBody = diskBody;
+      _memoryFetchedAt = diskAt;
+      _memorySeason = season;
+      return diskBody;
+    }
+
+    final httpClient = http.Client();
+    try {
+      final uri = Uri.parse(baseUrl).replace(
+        path: '/api/race-results',
+        queryParameters: {'season': '$season'},
+      );
+      final response = await httpClient
+          .get(uri)
+          .timeout(kRaceResultsFetchTimeout);
+      if (response.statusCode != 200) return diskBody;
+      final body = utf8.decode(response.bodyBytes);
+      jsonDecode(body);
+      _memoryBody = body;
+      _memoryFetchedAt = now;
+      _memorySeason = season;
+      await Future.wait([
+        preferences.setString(bodyKey, body),
+        preferences.setInt(timeKey, now.millisecondsSinceEpoch),
+      ]);
+      return body;
+    } catch (_) {
+      return diskBody;
+    } finally {
+      httpClient.close();
     }
   }
 }

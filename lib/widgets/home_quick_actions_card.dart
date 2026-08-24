@@ -180,15 +180,6 @@ class _WidgetPickerSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _WidgetOptionTile(
-              icon: Icons.sensors,
-              title: '라이브 · 결과 위젯',
-              subtitle: '라이브 중인 세션, 평소엔 최근 결과',
-              onTap: () => Navigator.of(
-                context,
-              ).pop(fmkLiveResultWidgetProviderQualifiedName),
-            ),
-            const SizedBox(height: 8),
-            _WidgetOptionTile(
               icon: Icons.bar_chart,
               title: '드라이버 순위 위젯',
               subtitle: '드라이버 챔피언십 Top 5와 순위 변동',

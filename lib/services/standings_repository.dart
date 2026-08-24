@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/standing.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
 /// 순위 요청 타임아웃(뉴스와 동일 — 화면 응답성 우선).
 const Duration kStandingsFetchTimeout = Duration(seconds: 8);
+const Duration kStandingsCacheTtl = Duration(hours: 6);
 
 /// 서버에서 받은 챔피언십 순위 스냅샷.
 class StandingsSnapshot {
@@ -40,8 +42,79 @@ class HttpStandingsRepository implements StandingsRepository {
   /// 테스트 주입용 클라이언트(없으면 매 요청마다 생성/정리).
   final http.Client? client;
 
+  static const _cacheBodyKey = 'standings_api_cache_body_v1';
+  static const _cacheTimeKey = 'standings_api_cache_time_v1';
+  static String? _memoryBody;
+  static DateTime? _memoryFetchedAt;
+  static Future<StandingsSnapshot?>? _sharedLoad;
+
   @override
   Future<StandingsSnapshot?> fetchLatest() async {
+    // Injected clients are used by tests and callers that explicitly want an
+    // isolated request. Production callers share one persistent six-hour
+    // cache, including concurrent requests made while the app is starting.
+    if (client != null || baseUrl != kNewsApiBaseUrl) {
+      final body = await _fetchBody();
+      return body == null ? null : parseStandingsJson(body);
+    }
+
+    final pending = _sharedLoad;
+    if (pending != null) return pending;
+    final load = _loadShared();
+    _sharedLoad = load;
+    try {
+      return await load;
+    } finally {
+      if (identical(_sharedLoad, load)) _sharedLoad = null;
+    }
+  }
+
+  Future<StandingsSnapshot?> _loadShared() async {
+    final now = DateTime.now();
+    final memoryBody = _memoryBody;
+    final memoryAt = _memoryFetchedAt;
+    if (memoryBody != null &&
+        memoryAt != null &&
+        now.difference(memoryAt) < kStandingsCacheTtl) {
+      final cached = parseStandingsJson(memoryBody);
+      if (cached != null) return cached;
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    final diskBody = preferences.getString(_cacheBodyKey);
+    final diskTimeMillis = preferences.getInt(_cacheTimeKey);
+    final diskAt = diskTimeMillis == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(diskTimeMillis);
+    if (diskBody != null &&
+        diskAt != null &&
+        now.difference(diskAt) < kStandingsCacheTtl) {
+      final cached = parseStandingsJson(diskBody);
+      if (cached != null) {
+        _memoryBody = diskBody;
+        _memoryFetchedAt = diskAt;
+        return cached;
+      }
+    }
+
+    final freshBody = await _fetchBody();
+    final fresh = freshBody == null ? null : parseStandingsJson(freshBody);
+    if (fresh != null) {
+      _memoryBody = freshBody;
+      _memoryFetchedAt = now;
+      await Future.wait([
+        preferences.setString(_cacheBodyKey, freshBody!),
+        preferences.setInt(_cacheTimeKey, now.millisecondsSinceEpoch),
+      ]);
+      return fresh;
+    }
+
+    // A stale disk value is still preferable to an empty screen when the
+    // network is temporarily unavailable.
+    return diskBody == null ? null : parseStandingsJson(diskBody);
+  }
+
+  Future<String?> _fetchBody() async {
     final httpClient = client ?? http.Client();
     try {
       final uri = Uri.parse(baseUrl).replace(path: '/api/standings');
@@ -50,7 +123,7 @@ class HttpStandingsRepository implements StandingsRepository {
           .timeout(kStandingsFetchTimeout);
       if (response.statusCode != 200) return null;
       // JSON 은 UTF-8 (RFC 8259) — 한글 이름 깨짐 방지(뉴스와 동일 규칙).
-      return parseStandingsJson(utf8.decode(response.bodyBytes));
+      return utf8.decode(response.bodyBytes);
     } catch (_) {
       // 네트워크/타임아웃/파싱 오류 → null(정적 데이터 유지).
       return null;

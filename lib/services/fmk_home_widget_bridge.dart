@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -15,8 +14,7 @@ import '../models/live_session.dart';
 import '../models/race.dart';
 import '../models/race_session.dart';
 import '../models/standing.dart';
-import 'live_session_controller.dart';
-import 'live_session_service.dart';
+import 'live_session_service.dart' show kLiveJsonUrl;
 import 'my_picks_controller.dart';
 import 'race_results_repository.dart';
 import 'standings_repository.dart';
@@ -24,10 +22,6 @@ import 'standings_repository.dart';
 /// 일정 위젯 Provider(과거 토글형 홈 위젯 → 일정 전용으로 분리, 클래스명은 유지).
 const String fmkHomeWidgetProviderQualifiedName =
     'kr.formulamagazine.fmk.FmkHomeWidgetProvider';
-
-/// 라이브·결과 위젯 Provider(라이브 중이면 라이브, 평소엔 최근 세션 결과).
-const String fmkLiveResultWidgetProviderQualifiedName =
-    'kr.formulamagazine.fmk.FmkLiveResultWidgetProvider';
 
 /// 드라이버 챔피언십 순위 위젯 Provider.
 const String fmkStandingsWidgetProviderQualifiedName =
@@ -59,7 +53,6 @@ const String fmkMyTeamWidgetIOSKind = 'FmkMyTeamWidget';
 /// 대응). 일정 전용 / 라이브·최근 결과 전용. 데이터는 FmkHomeWidget 과 같은
 /// 키를 읽으므로 저장은 공유하고 갱신 호출만 추가한다.
 const String fmkScheduleWidgetIOSKind = 'FmkScheduleWidget';
-const String fmkLiveResultWidgetIOSKind = 'FmkLiveResultWidget';
 
 /// 위젯 탭 딥링크 URI(fmkwidget://…) → 하단 탭 인덱스.
 /// 인덱스는 app.dart 의 MainShell._screens / BottomNav._items 순서와 1:1
@@ -169,8 +162,6 @@ class FmkHomeWidgetSessionRow {
 class FmkHomeWidgetBridge {
   const FmkHomeWidgetBridge._();
 
-  static bool _bound = false;
-
   /// 홈 위젯 지원 플랫폼(Android 위젯 + iOS WidgetKit).
   static bool get _supported =>
       !kIsWeb &&
@@ -205,48 +196,23 @@ class FmkHomeWidgetBridge {
     }
   }
 
-  /// 최근 확정 결과 캐시 — 라이브가 없을 때 위젯 '결과' 화면의 데이터.
-  /// 확정 결과는 레이스 후 바뀌지 않으므로 낡아도 틀리지 않는다.
-  static LatestRaceResult? _latestResult;
-  static DateTime? _latestResultFetchedAt;
-
-  /// 테스트 주입 지점(기본은 실서버 /api/race-results).
-  @visibleForTesting
-  static RaceResultsRepository resultsRepository =
-      const HttpRaceResultsRepository();
-
   /// 챔피언십 순위 캐시 — 순위 위젯 데이터. 서버 실패 시 번들 정적 순위 사용.
   static StandingsSnapshot? _standings;
   static DateTime? _standingsFetchedAt;
+
+  /// Apple Watch 최근 결과 화면용 마지막 정상 데이터. iOS에서만 갱신하며,
+  /// 홈 화면 라이브·결과 위젯에는 사용하지 않는다.
+  static LatestRaceResult? _latestResult;
+  static DateTime? _latestResultFetchedAt;
+
+  @visibleForTesting
+  static RaceResultsRepository resultsRepository =
+      const HttpRaceResultsRepository();
 
   /// 테스트 주입 지점(기본은 실서버 /api/standings).
   @visibleForTesting
   static StandingsRepository standingsRepository =
       const HttpStandingsRepository();
-
-  static void bindTo(LiveSessionController controller) {
-    if (_bound) return;
-    _bound = true;
-    controller.addListener(() {
-      unawaited(update(snapshot: controller.snapshot));
-    });
-  }
-
-  /// 확정 결과를 (최대 30분에 한 번) 갱신한다. 실패는 무시 — 기존 캐시 유지.
-  static Future<void> _ensureLatestResult({bool force = false}) async {
-    final now = DateTime.now();
-    if (!force &&
-        _latestResultFetchedAt != null &&
-        now.difference(_latestResultFetchedAt!) < const Duration(minutes: 30)) {
-      return;
-    }
-    _latestResultFetchedAt = now;
-    try {
-      _latestResult = await resultsRepository.fetchLatest() ?? _latestResult;
-    } catch (_) {
-      // 네트워크 실패 → 기존 캐시 유지(없으면 일정 전용 모드로 렌더).
-    }
-  }
 
   /// 챔피언십 순위 갱신(최대 6시간에 한 번 — 서버 갱신 주기와 동일).
   /// 실패는 무시: 기존 캐시, 그것도 없으면 번들 정적 순위로 그린다.
@@ -264,17 +230,31 @@ class FmkHomeWidgetBridge {
     }
   }
 
+  static Future<void> _ensureLatestResult() async {
+    final now = DateTime.now();
+    if (_latestResultFetchedAt != null &&
+        now.difference(_latestResultFetchedAt!) < kRaceResultsCacheTtl) {
+      return;
+    }
+    _latestResultFetchedAt = now;
+    try {
+      _latestResult = await resultsRepository.fetchLatest() ?? _latestResult;
+    } catch (_) {
+      // 네트워크 실패 시 워치에는 마지막 정상 결과를 유지한다.
+    }
+  }
+
   static Future<void> update({
     LiveSessionSnapshot? snapshot,
     DateTime? now,
   }) async {
     if (!_supported) return;
 
-    await _ensureLatestResult();
     await _ensureStandings();
+    if (_isIOS) await _ensureLatestResult();
     final payload = buildFmkHomeWidgetPayload(
-      snapshot: snapshot,
-      latestResult: _latestResult,
+      snapshot: null,
+      latestResult: null,
       now: now,
     );
 
@@ -292,22 +272,17 @@ class FmkHomeWidgetBridge {
       // 라이브·결과 위젯(Android 전용 — iOS 는 홈 위젯이 겸한다).
       // iOS 에서 iOSName 없이 호출하면 PlatformException 으로 이후 갱신이
       // 전부 끊기므로 반드시 Android 에서만 호출한다.
-      if (!_isIOS) {
-        await HomeWidget.updateWidget(
-          qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
-        );
-      }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
-        qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
+        qualifiedAndroidName:
+            fmkConstructorStandingsWidgetProviderQualifiedName,
         iOSName: fmkTeamStandingsWidgetIOSKind,
       );
       if (_isIOS) {
         await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
-        await HomeWidget.updateWidget(iOSName: fmkLiveResultWidgetIOSKind);
       }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
@@ -336,17 +311,13 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkHomeWidgetProviderQualifiedName,
         iOSName: fmkHomeWidgetIOSKind,
       );
-      if (!_isIOS) {
-        await HomeWidget.updateWidget(
-          qualifiedAndroidName: fmkLiveResultWidgetProviderQualifiedName,
-        );
-      }
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
         iOSName: fmkDriverStandingsWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
-        qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
+        qualifiedAndroidName:
+            fmkConstructorStandingsWidgetProviderQualifiedName,
         iOSName: fmkTeamStandingsWidgetIOSKind,
       );
       await HomeWidget.updateWidget(
@@ -359,7 +330,6 @@ class FmkHomeWidgetBridge {
       );
       if (_isIOS) {
         await HomeWidget.updateWidget(iOSName: fmkScheduleWidgetIOSKind);
-        await HomeWidget.updateWidget(iOSName: fmkLiveResultWidgetIOSKind);
       }
       await _syncWatch();
     } catch (error, stackTrace) {
@@ -469,17 +439,24 @@ class FmkHomeWidgetBridge {
 
   /// 백그라운드(WorkManager)에서 호출 — 앱이 실행 중이 아니어도 라이브
   /// 스냅샷과 확정 결과를 직접 받아 위젯 데이터를 갱신한다.
-  static Future<void> refreshFromNetwork() async {
+  static Future<void> refreshStandingsFromNetwork() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
-
-    LiveSessionSnapshot? snapshot;
-    try {
-      snapshot = await LiveSessionService().fetch();
-    } catch (_) {
-      snapshot = null; // 라이브 실패 → 일정/결과 화면만 갱신.
-    }
-    await _ensureLatestResult(force: true);
-    await update(snapshot: snapshot);
+    await _ensureStandings();
+    await _ensureAppGroup();
+    await _saveStandingsPayload(_standings);
+    await _saveMyPicksPayload(_standings);
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: fmkStandingsWidgetProviderQualifiedName,
+    );
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: fmkConstructorStandingsWidgetProviderQualifiedName,
+    );
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
+    );
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
+    );
   }
 
   static Future<void> _savePayload(FmkHomeWidgetPayload payload) async {
@@ -656,10 +633,7 @@ class FmkHomeWidgetBridge {
       HomeWidget.saveWidgetData<int>('myDriverPos', d?.position ?? 0),
       HomeWidget.saveWidgetData<String>('myDriverPts', d?.points ?? ''),
       HomeWidget.saveWidgetData<String>('myDriverGap', d?.gapToLeader ?? ''),
-      HomeWidget.saveWidgetData<String>(
-        'myDriverChange',
-        d?.changeLabel ?? '',
-      ),
+      HomeWidget.saveWidgetData<String>('myDriverChange', d?.changeLabel ?? ''),
       HomeWidget.saveWidgetData<int>(
         'myDriverChangeColor',
         _androidColorInt(d?.changeColor ?? 0xFF7880A0),

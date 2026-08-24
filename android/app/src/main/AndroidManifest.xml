@@ -77,6 +77,7 @@
 
         <receiver
             android:name=".FmkLiveResultWidgetProvider"
+            android:enabled="false"
             android:exported="true"
             android:label="비아 포뮬러 라이브·결과">
             <intent-filter>

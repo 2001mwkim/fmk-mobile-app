@@ -51,19 +51,20 @@ class _MainShellState extends State<MainShell> {
   // 하단 탭과 1:1 인덱스 매핑(BottomNav._items 순서와 함께 수정할 것).
   // 소식/직관 화면 파일은 유지하되, 하단 탭은 라이브 센터를 사용한다.
   // 홈의 TOP 3 카드가 순위 탭(인덱스 2)으로 점프할 수 있게 콜백을 연결한다.
-  late final List<Widget> _screens = <Widget>[
-    HomeScreen(
-      onOpenStandings: () => _onTabSelected(2),
-      onOpenLiveCenter: () => _onTabSelected(3),
-    ),
-    const CalendarScreen(),
-    const StandingsScreen(),
-    const LiveCenterScreen(),
-  ];
+  late final List<Widget?> _screens;
 
   @override
   void initState() {
     super.initState();
+    _screens = <Widget?>[
+      HomeScreen(
+        onOpenStandings: () => _onTabSelected(2),
+        onOpenLiveCenter: () => _onTabSelected(3),
+      ),
+      null,
+      null,
+      null,
+    ];
     _bindWidgetLaunch();
     if (widget.runStartupPrompts) {
       WidgetsBinding.instance.addPostFrameCallback(
@@ -154,11 +155,17 @@ class _MainShellState extends State<MainShell> {
     }
     final index = fmkWidgetTabIndexForUri(uri);
     if (index == null) return;
-    setState(() => _currentIndex = index);
+    _onTabSelected(index);
   }
 
   void _onTabSelected(int index) {
     setState(() {
+      _screens[index] ??= switch (index) {
+        1 => const CalendarScreen(),
+        2 => const StandingsScreen(),
+        3 => const LiveCenterScreen(),
+        _ => _screens.first!,
+      };
       _currentIndex = index;
     });
   }
@@ -166,7 +173,12 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          for (final screen in _screens) screen ?? const SizedBox.shrink(),
+        ],
+      ),
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabSelected,

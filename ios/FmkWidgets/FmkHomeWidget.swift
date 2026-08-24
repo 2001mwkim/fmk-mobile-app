@@ -28,19 +28,6 @@ struct FmkHomeProvider: TimelineProvider {
 
     // 세션 창(시작 5분 전 ~ 종료 40분 후)에서만 live.json 을 직접 fetch.
     // WidgetKit 갱신 예산이 하루 수십 회라 평상시에는 네트워크를 아낀다.
-    if Self.inLiveWindow(payload: payload, now: now) {
-      Task {
-        var live: FmkLiveState? = nil
-        if let snapshot = await FmkLive.fetch(payload: payload) {
-          live = FmkLive.displayState(snapshot: snapshot, payload: payload, now: now)
-        }
-        let entry = FmkHomeEntry(date: now, payload: payload, live: live)
-        completion(
-          Timeline(entries: [entry], policy: .after(now.addingTimeInterval(8 * 60))))
-      }
-      return
-    }
-
     // 평상시: 저장 데이터로 렌더. 세션 시작마다 하이라이트가 스스로 넘어가도록
     // 미래 세션 경계에 엔트리를 미리 깔아 둔다(네트워크 불필요).
     var entries: [FmkHomeEntry] = [FmkHomeEntry(date: now, payload: payload, live: nil)]

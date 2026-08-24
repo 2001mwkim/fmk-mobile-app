@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
+import '../data/races.dart';
 import '../models/live_session.dart';
 import 'live_session_service.dart';
 
@@ -27,7 +28,7 @@ const int endedConfirmationCount = 2;
 /// - 라이브 센터용 [latestSessionSnapshot] 은 위 노출 기한과 별개로 마지막 세션을
 ///   계속 보존한다. 새 세션 스냅샷이 수신되면 그때 교체한다.
 /// - [enabled] 가 false 면 폴링하지 않는다(위젯 테스트에서 네트워크 차단용).
-class LiveSessionController extends ChangeNotifier {
+class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   LiveSessionController(
     this._service, {
     this.gracePeriod = liveGracePeriod,
@@ -40,6 +41,7 @@ class LiveSessionController extends ChangeNotifier {
 
   /// 폴링 주기(15~30초 권장).
   static const Duration pollInterval = Duration(seconds: 20);
+  static const Duration idlePollInterval = Duration(minutes: 5);
 
   /// 정상 수신 후 stale 로 표시하기 시작하는 기준.
   final Duration gracePeriod;
@@ -87,6 +89,30 @@ class LiveSessionController extends ChangeNotifier {
 
   Timer? _timer;
   int _listeners = 0;
+  DateTime? _nextNetworkPollAt;
+  bool _isForeground = true;
+  bool _lifecycleAttached = false;
+
+  void attachLifecycle() {
+    if (_lifecycleAttached) return;
+    _lifecycleAttached = true;
+    WidgetsBinding.instance.addObserver(this);
+    final state = WidgetsBinding.instance.lifecycleState;
+    _isForeground = state == null || state == AppLifecycleState.resumed;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (foreground == _isForeground) return;
+    _isForeground = foreground;
+    if (foreground) {
+      _nextNetworkPollAt = null;
+      _start();
+    } else {
+      _stop();
+    }
+  }
 
   @override
   void addListener(VoidCallback listener) {
@@ -103,7 +129,9 @@ class LiveSessionController extends ChangeNotifier {
   }
 
   void _start() {
-    if (!enabled || _timer != null) return;
+    if (!enabled || !_isForeground || _listeners <= 0 || _timer != null) {
+      return;
+    }
     unawaited(_poll());
     _timer = Timer.periodic(pollInterval, (_) => unawaited(_poll()));
   }
@@ -115,6 +143,10 @@ class LiveSessionController extends ChangeNotifier {
 
   Future<void> _poll() async {
     final fetchedAt = _now();
+    if (!_isForeground) return;
+    final nextPollAt = _nextNetworkPollAt;
+    if (nextPollAt != null && fetchedAt.isBefore(nextPollAt)) return;
+    _nextNetworkPollAt = fetchedAt.add(_pollDelay(fetchedAt));
     _lastFetchedAt = fetchedAt;
     final result = await _service.fetchResult();
     final received = result.succeeded ? result.snapshot : null;
@@ -312,7 +344,39 @@ class LiveSessionController extends ChangeNotifier {
   }
 
   /// 외부에서 즉시 1회 갱신이 필요할 때.
-  Future<void> refresh() => _poll();
+  Future<void> refresh() {
+    _nextNetworkPollAt = null;
+    return _poll();
+  }
+
+  Duration _pollDelay(DateTime now) {
+    final current = _snapshot;
+    if (current != null && isLiveSnapshotSessionActive(current, now)) {
+      return pollInterval;
+    }
+    for (final race in races) {
+      if (race.isCancelled) continue;
+      for (final session in race.sessions) {
+        final start = getSessionDate(
+          race,
+          session,
+        ).subtract(const Duration(minutes: 30));
+        final end = getSessionEndDate(
+          race,
+          session,
+        ).add(const Duration(minutes: 90));
+        if (!now.isBefore(start) && !now.isAfter(end)) return pollInterval;
+      }
+    }
+    return idlePollInterval;
+  }
+
+  @override
+  void dispose() {
+    if (_lifecycleAttached) WidgetsBinding.instance.removeObserver(this);
+    _stop();
+    super.dispose();
+  }
 }
 
 /// 앱 전역 컨트롤러(단일 타이머). main() 에서 enabled = true 로 켠다.

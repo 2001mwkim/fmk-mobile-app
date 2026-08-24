@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
+import 'package:home_widget/home_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -57,7 +58,17 @@ void fmkWidgetBackgroundDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
     try {
-      await FmkHomeWidgetBridge.refreshFromNetwork();
+      final installed = await HomeWidget.getInstalledWidgets();
+      final needsStandings = installed.any((widget) {
+        final name = widget.androidClassName ?? '';
+        return name.endsWith('FmkStandingsWidgetProvider') ||
+            name.endsWith('FmkConstructorStandingsWidgetProvider') ||
+            name.endsWith('FmkMyDriverWidgetProvider') ||
+            name.endsWith('FmkMyTeamWidgetProvider');
+      });
+      if (needsStandings) {
+        await FmkHomeWidgetBridge.refreshStandingsFromNetwork();
+      }
       return true;
     } catch (_) {
       // 실패해도 재시도 폭주를 피하기 위해 성공 처리(다음 주기에 다시 시도).
@@ -75,9 +86,9 @@ Future<void> _registerWidgetBackgroundRefresh() async {
     await Workmanager().registerPeriodicTask(
       _kWidgetRefreshUniqueName,
       _kWidgetRefreshTaskName,
-      frequency: const Duration(minutes: 30),
-      // 이미 등록돼 있으면 유지(앱 실행마다 재등록으로 주기 리셋 방지).
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+      frequency: const Duration(hours: 6),
+      // 기존 30분 작업도 새 6시간 정책으로 교체한다.
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
       constraints: Constraints(networkType: NetworkType.connected),
     );
   } catch (error) {
@@ -95,25 +106,22 @@ void main() {
   // Sentry 가 FlutterError.onError 후킹과 가드 존 설정을 담당하고, appRunner
   // 안에서 앱을 실행해 초기화 이후의 미처리 예외까지 수집한다.
   unawaited(
-    SentryFlutter.init(
-      (options) {
-        options.dsn = _sentryDsn;
-        // release/dist 는 sentry_flutter 가 패키지 정보(버전·빌드번호)에서 자동
-        // 감지하게 둔다(하드코딩 시 실제 버전과 어긋나 크래시가 오분류됨).
-        // 크래시(에러) 수집이 목적이라 성능 트레이싱은 끈다(쿼터/오버헤드 절약).
-        options.tracesSampleRate = 0.0;
-        // 무해한 프레임워크 노이즈 필터링(실제 크래시 아님). home_widget 등
-        // EventChannel 스트림 해제 시 나는 "No active stream to cancel" 은
-        // 프레임워크가 내부에서 잡아 FlutterError.reportError 로 재보고하므로
-        // 앱 코드의 try/catch·cancel().catchError 로는 막을 수 없다. 여기서만
-        // 확실히 제외해 fatal 오집계를 막는다.
-        options.beforeSend = (event, hint) {
-          if (_isBenignStreamCancel(event)) return null;
-          return event;
-        };
-      },
-      appRunner: _bootstrap,
-    ),
+    SentryFlutter.init((options) {
+      options.dsn = _sentryDsn;
+      // release/dist 는 sentry_flutter 가 패키지 정보(버전·빌드번호)에서 자동
+      // 감지하게 둔다(하드코딩 시 실제 버전과 어긋나 크래시가 오분류됨).
+      // 크래시(에러) 수집이 목적이라 성능 트레이싱은 끈다(쿼터/오버헤드 절약).
+      options.tracesSampleRate = 0.0;
+      // 무해한 프레임워크 노이즈 필터링(실제 크래시 아님). home_widget 등
+      // EventChannel 스트림 해제 시 나는 "No active stream to cancel" 은
+      // 프레임워크가 내부에서 잡아 FlutterError.reportError 로 재보고하므로
+      // 앱 코드의 try/catch·cancel().catchError 로는 막을 수 없다. 여기서만
+      // 확실히 제외해 fatal 오집계를 막는다.
+      options.beforeSend = (event, hint) {
+        if (_isBenignStreamCancel(event)) return null;
+        return event;
+      };
+    }, appRunner: _bootstrap),
   );
 }
 
@@ -121,8 +129,8 @@ void main() {
 /// 여부와 무관하게 동일한 시작 절차를 공유한다.
 void _bootstrap() {
   WidgetsFlutterBinding.ensureInitialized();
+  liveSessionController.attachLifecycle();
   liveSessionController.enabled = true;
-  FmkHomeWidgetBridge.bindTo(liveSessionController);
   // iOS Live Activity(잠금화면·다이나믹 아일랜드) — 라이브 폴링과 동기화.
   FmkLiveActivityBridge.bindTo(liveSessionController);
   // 라이브 세션 중 Android Now Bar(Live Update) 서비스를 켜고 끈다(Android 전용).
@@ -130,7 +138,9 @@ void _bootstrap() {
   unawaited(
     FmkHomeWidgetBridge.update(snapshot: liveSessionController.snapshot),
   );
-  unawaited(FmkLiveActivityBridge.sync(snapshot: liveSessionController.snapshot));
+  unawaited(
+    FmkLiveActivityBridge.sync(snapshot: liveSessionController.snapshot),
+  );
   unawaited(_registerWidgetBackgroundRefresh());
   unawaited(notificationSettingsController.refreshScheduledNotifications());
   runApp(const FmkApp());

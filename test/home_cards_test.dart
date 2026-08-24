@@ -134,7 +134,7 @@ void main() {
 
       expect(find.text('추가할 위젯 선택'), findsOneWidget);
       expect(find.text('일정 위젯'), findsOneWidget);
-      expect(find.text('라이브 · 결과 위젯'), findsOneWidget);
+      expect(find.text('라이브 · 결과 위젯'), findsNothing);
       expect(find.text('드라이버 순위 위젯'), findsOneWidget);
       expect(find.text('컨스트럭터 순위 위젯'), findsOneWidget);
 

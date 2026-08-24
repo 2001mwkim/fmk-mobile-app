@@ -8,7 +8,6 @@ struct FmkWidgetsBundle: WidgetBundle {
   var body: some Widget {
     FmkHomeWidget()
     FmkScheduleWidget()
-    FmkLiveResultWidget()
     FmkDriverStandingsWidget()
     FmkTeamStandingsWidget()
     FmkMyDriverWidget()
