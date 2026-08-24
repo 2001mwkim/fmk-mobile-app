@@ -27,10 +27,9 @@ flutter analyze
 flutter test
 # 실기기용 빌드는 프로덕션 collector URL을 주입한다
 flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c03d.up.railway.app/live.json
-# 라이브 이전(Cloudflare) 완료 후의 릴리스 빌드 — 레이스 중 10초 폴링까지 켠다
-flutter build appbundle --release `
-  --dart-define=LIVE_JSON_URL=https://live.formulamagazine.kr/live.json `
-  --dart-define=LIVE_FAST_POLL=true
+# 릴리스 빌드 — 라이브 URL 은 기본값이 이미 Cloudflare 라 dart-define 불필요.
+# 레이스 중 10초 폴링만 플래그로 켠다.
+flutter build appbundle --release --dart-define=LIVE_FAST_POLL=true
 # 로컬 collector 사용 시(dart-define 생략): 기본값 http://localhost:8787/live.json
 ```
 
@@ -62,9 +61,9 @@ flutter build appbundle --release `
 - 릴리스 빌드의 라이브 URL 기본값은 Railway 직결이 아니라 **Vercel `/api/live`** 다(`lib/services/live_session_service.dart` 의 `kLiveJsonUrl` — 한국 지연 500ms→65ms 목적). 즉 **라이브 폴링 = Vercel 비용**. `/api/standings`·`/api/race-results`·`/api/news` 도 전부 Vercel.
 - 엣지 캐시 히트도 엣지 요청으로 계산되므로 `s-maxage` 를 늘려도 요청 수는 안 줄어든다. **클라이언트 호출 자체를 줄이는 것만 효과가 있다.**
 - 그래서 폴링/백그라운드 동작을 건드리는 변경은 반드시 "디바이스당 하루 몇 건" 으로 환산해서 판단할 것. 2026-08 이전엔 앱이 백그라운드에서도 20초마다 폴링해 디바이스당 하루 약 4,320건을 썼다(현재는 포그라운드 한정 + 세션 창 밖 5분).
-- **이전 계획(진행 중, 절차는 `docs/live_cdn_migration.md`)**: 라이브만 `live.formulamagazine.kr`(Cloudflare 무료 → Railway)로 옮긴다. Cloudflare 무료는 요청 수를 세지 않고 서울 PoP 가 있어 지연도 유지된다. 앞단 5초 캐시를 두면 **원본 부하가 사용자 수와 무관하게 분당 12회로 고정**된다. 순위·결과·소식은 이미 클라이언트 캐시(6시간/30분)가 있어 Vercel 무료로 충분하니 옮기지 않는다.
-- 측정값(2026-08-24): 페이로드 29.5 KB(gzip 4.4 KB). Vercel 0.06초·gzip 적용, **Railway 직결 0.55초·gzip 미적용**. 그래서 Railway 앞에 캐시/압축 계층 없이 직결하면 대역폭이 6.7배로 뛴다 — collector 에 gzip 과 `Cache-Control: public, s-maxage=3, stale-while-revalidate=30` 을 먼저 넣을 것.
-- 레이스 중 10초 폴링은 `LiveSessionController.fastPollDuringRace`(빌드 플래그 `LIVE_FAST_POLL`)로 켠다. **기본 꺼짐** — 주기를 절반으로 줄이면 요청이 두 배가 되므로 위 이전이 끝난 뒤에만 켠다. 연습/퀄리는 켜도 20초를 유지한다.
+- **라이브는 2026-08-24 이전 완료** — `live.formulamagazine.kr`(Cloudflare 무료, 주황 구름 → Railway collector). 구성·점검법·주의사항은 `docs/live_cdn_migration.md`. **`formulamagazine.kr` 네임서버가 Cloudflare 로 옮겨졌고 이 도메인에 다음(Daum) 메일이 붙어 있으니**, DNS 를 손볼 일이 생기면 그 문서의 레코드 표를 먼저 볼 것. 순위·결과·소식은 클라이언트 캐시(6시간/30분)가 있어 Vercel 무료로 충분하니 옮기지 않았다.
+- 측정값(2026-08-24): 이전 후 **0.15초 / 4.1 KB / cf-cache-status HIT**(직결은 0.55초·29.5 KB). Cloudflare 가 응답을 자동 압축하므로 collector gzip 은 선택 사항이다. collector 는 `Cache-Control: ... s-maxage=5 ...` 를 이미 보내고 있고, **HEAD 요청에는 404 를 준다** — 점검은 `curl -s -D - -o NUL` 로 할 것.
+- 레이스 중 10초 폴링은 `LiveSessionController.fastPollDuringRace`(빌드 플래그 `LIVE_FAST_POLL`)로 켠다. 코드 기본값은 꺼짐이라 **릴리스 빌드에서 플래그를 넘겨야** 적용된다. 원래 끈 이유는 Vercel 요청 비용이었고 이전으로 사라졌으니, Railway 부하를 한두 번 확인한 뒤 기본값을 true 로 바꿔도 된다. 연습/퀄리는 켜도 20초를 유지한다.
 
 ## 미해결 사항
 

@@ -1,96 +1,110 @@
-# 라이브 엔드포인트 이전 — Vercel → Cloudflare(무료) + Railway
+# 라이브 엔드포인트 — Cloudflare + Railway
 
-## 왜
+**상태: 이전 완료 (2026-08-24).** 앱 릴리스 빌드만 남았다(아래 "남은 일").
 
-릴리스 빌드의 라이브 URL 기본값은 Railway 직결이 아니라 **Vercel `/api/live`** 다
-(`lib/services/live_session_service.dart` 의 `kLiveJsonUrl`). Vercel 무료 플랜은
-엣지 요청 월 100만 건이 상한이고 **캐시 HIT 도 1건으로 계산**한다. 원본은 5초에 한 번만
-일하는데 요금만 사용자 수에 비례해 오르는 구조다.
+```
+앱 → live.formulamagazine.kr → Cloudflare(엣지 캐시 5초) → Railway collector
+```
 
-Cloudflare 무료는 요청 수를 세지 않고 서울 PoP 가 있어 지연도 지금 수준으로 유지된다.
-앞단에 짧은 캐시를 두면 **Railway 가 실제로 처리하는 요청은 사용자 수와 무관하게
-분당 12회로 고정**된다.
+## 왜 옮겼나
 
-측정값(2026-08-24, 서울에서):
+릴리스 빌드의 라이브 URL 기본값은 Railway 직결이 아니라 **Vercel `/api/live`** 였다
+(`lib/services/live_session_service.dart` 의 `kLiveJsonUrl`). Vercel 무료 플랜은 엣지
+요청 월 100만 건이 상한이고 **캐시 HIT 도 1건으로 계산**한다. 원본은 5초에 한 번만
+일하는데 요금만 사용자 수에 비례해 올랐다. 설치 5,000 규모에서 레이스 주말 하나가
+약 42만 건이라 월 100만을 넘길 상황이었다.
+
+Cloudflare 무료는 요청 수를 세지 않고 서울 PoP 가 있어 지연도 유지된다. 앞단 5초
+캐시 덕에 **Railway 가 실제로 처리하는 요청은 사용자 수와 무관하게 고정**된다.
+
+이전 전후 실측:
 
 | | 응답 | 크기 | 캐시 |
 |---|---|---|---|
-| Vercel `/api/live` | 0.06초 | 4.4 KB (gzip) | HIT/STALE 동작 |
-| Railway `live.json` 직결 | 0.55초 | 29.5 KB (압축 없음) | 없음 |
+| Vercel `/api/live` | 0.06초 | 4.4 KB | HIT |
+| Railway 직결 | 0.55초 | 29.5 KB | 없음 |
+| **Cloudflare + Railway (현재)** | **0.15초** | **4.1 KB** | **HIT** |
 
-**Railway 앞에 캐시/압축 없이 직결하면 대역폭이 6.7배로 뛴다.** 아래 1번을 반드시 먼저.
+## 확정된 구성 — 건드리면 안 되는 것
 
-## 1. collector: 압축 + 캐시 헤더 (자매 저장소 `fmk-f1-calendar`)
+`formulamagazine.kr` 네임서버는 비아웹 → **Cloudflare**(`sofia`/`kevin`.ns.cloudflare.com).
+이 도메인에는 **다음(Daum) 메일이 붙어 있다.** DNS 를 손볼 일이 생기면 아래를 보존할 것.
 
-`scripts/signalr-live-collector.ts` 의 HTTP 서빙부. Express 라면:
+| 종류 | 이름 | 값 | 프록시 |
+|---|---|---|---|
+| A | @ | 216.198.79.1 (Vercel) | **회색 · DNS only** |
+| CNAME | www | 3be179c6efad8c83.vercel-dns-017.com | **회색 · DNS only** |
+| MX | @ | 10 aspmx.daum.net | (해당 없음) |
+| MX | @ | 20 alt.aspmx.daum.net | (해당 없음) |
+| CNAME | live | d9yojixx.up.railway.app | **주황 · Proxied** |
 
-```ts
-import compression from 'compression'
-app.use(compression())
+**주황 구름은 `live` 하나뿐이다.** 웹사이트 레코드를 프록시로 켜면 Vercel 과 충돌하고,
+MX 를 빠뜨리면 메일이 끊긴다.
 
-app.get('/live.json', (req, res) => {
-  // 앞단(Cloudflare)이 3초간 캐시하고, 만료 후 30초까지는 낡은 값을 주면서
-  // 뒤에서 갱신한다 → 원본은 사용자 수와 무관하게 분당 12회만 일한다.
-  res.set('Cache-Control', 'public, s-maxage=3, stale-while-revalidate=30')
-  res.json(latestSnapshot)
-})
-```
+SSL/TLS 모드는 **Full (strict)**. Flexible 로 두면 무한 리다이렉트가 난다.
 
-`http.createServer` 를 직접 쓰고 있다면 `zlib.gzipSync` + 같은 헤더로 대체.
+### Cache Rule
 
-확인:
+Caching → Cache Rules, hostname = `live.formulamagazine.kr`
 
-```bash
-curl -sI -H "Accept-Encoding: gzip" https://live-production-c03d.up.railway.app/live.json | grep -i "content-encoding\|cache-control"
-```
+- Cache eligibility: **Eligible for cache**
+- Edge TTL: **Use cache-control header if present, bypass cache if not**
+  - "bypass if not" 이어야 한다. 헤더가 사라졌을 때 Cloudflare 기본 TTL 로 캐시하면
+    라이브 순위가 몇 시간 굳는다. 느려지는 편이 틀린 데이터보다 낫다.
+- Browser TTL: **Respect origin TTL**
+  - 기본값이 4시간이라 그대로 두면 `max-age=0` 을 `max-age=14400` 으로 덮어쓴다.
+    iOS 위젯·워치는 `URLSession` 이 이 헤더를 존중하므로 4시간 지난 라이브를 그린다.
 
-`content-encoding: gzip` 과 `cache-control: public, s-maxage=3, ...` 이 나와야 한다.
+collector 는 `Cache-Control: public, max-age=0, s-maxage=5, stale-while-revalidate=20`
+을 **이미 보내고 있다.** 손댈 것 없다.
 
-## 2. Cloudflare
-
-1. Cloudflare 계정 생성 → `formulamagazine.kr` 추가 → 안내대로 **네임서버를 Cloudflare 로 변경**
-   (도메인 등록기관에서 설정. 반영까지 최대 24시간)
-2. DNS 에 `live` 레코드 추가 — CNAME → `live-production-c03d.up.railway.app`,
-   **프록시 켬(주황색 구름)**. 꺼져 있으면 캐시도 압축도 안 걸린다.
-3. Rules → **Cache Rules** 새 규칙:
-   - 조건: `Hostname equals live.formulamagazine.kr`
-   - 동작: **Eligible for cache**
-   - Edge TTL: **Use cache-control header from origin**
-   - Browser TTL: Respect origin
-   - JSON 응답은 기본적으로 캐시되지 않으므로 **이 규칙이 없으면 전부 Railway 로 통과한다.**
-
-확인:
-
-```bash
-curl -sI https://live.formulamagazine.kr/live.json | grep -i "cf-cache-status\|content-encoding"
-```
-
-두 번째 호출부터 `cf-cache-status: HIT` 이 나와야 성공. `DYNAMIC` 이면 3번 규칙이 안 걸린 것.
-
-## 3. 앱
-
-코드 변경은 이미 끝나 있다. 빌드 플래그만 바꾸면 된다.
+## 점검 방법
 
 ```powershell
-flutter build appbundle --release `
-  --dart-define=LIVE_JSON_URL=https://live.formulamagazine.kr/live.json `
-  --dart-define=LIVE_FAST_POLL=true
+# collector 가 HEAD 에 404 를 주므로 curl -I 는 쓰지 말 것
+curl.exe -s -D - -o NUL https://live.formulamagazine.kr/live.json
 ```
 
-- `LIVE_JSON_URL` — 라이브 폴링 대상. Vercel 을 더 이상 타지 않는다.
-- `LIVE_FAST_POLL` — 레이스/스프린트 중 폴링을 20초 → **10초**로 당긴다
-  (`LiveSessionController.fastPollDuringRace`). 연습/퀄리는 켜도 20초 유지.
-  **1·2번이 끝나기 전에는 켜지 말 것** — 요청이 두 배가 된다.
+정상이면 `cf-cache-status: HIT`(두 번째 호출부터), `content-encoding: gzip`,
+`cache-control: ... max-age=0 ...`. `DYNAMIC` 이면 Cache Rule 이 안 걸린 것,
+`max-age=14400` 이면 Browser TTL 이 원본을 덮어쓰는 것.
 
-Android Now Bar 서비스(`LiveActivityService.kt`)는 브리지가 저장한 `liveJsonUrl`
-키를 그대로 쓰므로 자동으로 새 주소를 따라간다.
+## 남은 일
+
+앱은 아직 릴리스를 안 올려서 **기존 사용자는 Vercel 을 계속 쓴다.** 스토어에 새 버전이
+올라가고 사용자들이 업데이트를 받아야 실제로 빠진다(며칠~2주). 전원 업데이트되면 앱이
+쓰는 Vercel 요청이 월 89만 → 3~5만 건으로 떨어진다.
+
+`kLiveJsonUrl` 기본값이 d799cae 에서 Cloudflare 로 바뀌었으므로 **URL 은 dart-define 이
+필요 없다.** 남은 선택은 10초 폴링 하나뿐이다.
+
+```powershell
+flutter build appbundle --release --dart-define=LIVE_FAST_POLL=true
+```
+
+- `LIVE_FAST_POLL` — 레이스/스프린트 중 폴링 20초 → **10초**
+  (`LiveSessionController.fastPollDuringRace`). 연습·퀄리는 20초 유지.
+  코드 기본값은 아직 꺼짐이다. 원래 끈 이유가 Vercel 요청 비용이었는데 이전으로
+  사라졌으니, 한두 번 레이스에서 Railway 부하를 확인한 뒤 기본값을 true 로 바꿔도 된다.
+
+Android Now Bar(`LiveActivityService.kt`)는 브리지가 저장한 `liveJsonUrl` 키를 쓰므로
+자동으로 새 주소를 따라간다.
+
+## 선택 사항
+
+**collector gzip** — Cloudflare 가 사용자에게 보낼 때 자동 압축하므로 급하지 않다.
+넣으면 Cloudflare↔Railway 구간(월 15~45GB → 2~7GB)만 줄어 **월 2천원 수준** 차이다.
+같은 김에 HEAD 404 도 고치면 점검이 편해진다.
 
 ## 되돌리기
 
-`--dart-define` 을 빼면 릴리스 기본값(Vercel)으로 돌아간다. 코드 수정 불필요.
+앱은 `--dart-define` 을 빼면 릴리스 기본값(Vercel)으로 돌아간다. 코드 수정 불필요.
+DNS 전체를 되돌리려면 비아웹에서 네임서버를 `dns3/dns4.viaweb.co.kr` 로 되돌린다.
 
-## 이전 후 확인할 것
+## 지켜볼 것
 
-- Vercel 대시보드 엣지 요청 증가 속도가 꺾이는지 (라이브가 빠지면 대부분 사라진다)
-- Railway 사용량 — 캐시가 걸렸다면 사용자 수와 무관하게 거의 평평해야 한다.
-  계속 오르면 `cf-cache-status` 가 HIT 이 아닌 것이니 2-3 번을 다시 볼 것
+- **Vercel** — 릴리스 확산에 따라 엣지 요청이 줄어야 한다
+- **Railway** — 캐시가 걸렸다면 사용자 수와 무관하게 거의 평평해야 한다. 계속 오르면
+  `cf-cache-status` 를 다시 확인할 것
+- **90일쯤 뒤** — Railway 인증서 갱신이 실패하면 `live` 를 잠깐 회색으로 바꿨다가
+  갱신 후 다시 주황으로 켠다
