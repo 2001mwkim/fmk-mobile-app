@@ -75,17 +75,19 @@ curl.exe -s -D - -o NUL https://live.formulamagazine.kr/live.json
 올라가고 사용자들이 업데이트를 받아야 실제로 빠진다(며칠~2주). 전원 업데이트되면 앱이
 쓰는 Vercel 요청이 월 89만 → 3~5만 건으로 떨어진다.
 
-`kLiveJsonUrl` 기본값이 d799cae 에서 Cloudflare 로 바뀌었으므로 **URL 은 dart-define 이
-필요 없다.** 남은 선택은 10초 폴링 하나뿐이다.
+URL(`kLiveJsonUrl`)과 10초 폴링(`kLiveFastPollDuringRace`) **둘 다 기본값이라 플래그가
+필요 없다.** 그냥 빌드하면 된다.
 
 ```powershell
-flutter build appbundle --release --dart-define=LIVE_FAST_POLL=true
+flutter build appbundle --release
 ```
 
-- `LIVE_FAST_POLL` — 레이스/스프린트 중 폴링 20초 → **10초**
-  (`LiveSessionController.fastPollDuringRace`). 연습·퀄리는 20초 유지.
-  코드 기본값은 아직 꺼짐이다. 원래 끈 이유가 Vercel 요청 비용이었는데 이전으로
-  사라졌으니, 한두 번 레이스에서 Railway 부하를 확인한 뒤 기본값을 true 로 바꿔도 된다.
+- 라이브 URL — `live.formulamagazine.kr` (d799cae 에서 기본값 전환)
+- 레이스/스프린트 중 폴링 **10초**, 연습·퀄리는 20초 유지
+- 되돌릴 때만 명시적으로: `--dart-define=LIVE_FAST_POLL=false`
+
+두 값 모두 기본값을 옮긴 이유는 같다 — dart-define 을 깜빡한 빌드가 조용히 예전
+동작으로 돌아가면 한도를 터뜨리거나 기능이 빠진 채 배포된다.
 
 Android Now Bar(`LiveActivityService.kt`)는 브리지가 저장한 `liveJsonUrl` 키를 쓰므로
 자동으로 새 주소를 따라간다.

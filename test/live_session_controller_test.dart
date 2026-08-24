@@ -398,7 +398,7 @@ void main() {
       expect(controller.isStale, isFalse);
     },
   );
-  test('레이스 중에는 fastPoll 이 켜져 있을 때만 10초로 당긴다', () async {
+  test('레이스 중에는 10초로 당기고, 끄면 20초를 유지한다', () async {
     final now = DateTime(2026, 6, 30, 12);
     final race = _liveSnapshot(); // sessionType: 'Race'
 
@@ -413,14 +413,29 @@ void main() {
       now.add(LiveSessionController.racePollInterval),
     );
 
-    // 기본값(꺼짐)에서는 같은 레이스라도 20초를 유지한다 — Vercel 무료 한도
-    // 때문에 앞단 캐시를 갖추기 전까진 켜지 않는다.
+    // 명시적으로 끄면 같은 레이스라도 20초를 유지한다(되돌릴 때 쓰는 경로).
     final slow = LiveSessionController(
       _FakeLiveSessionService([LiveSessionFetchResult.success(race)]),
+      fastPollDuringRace: false,
       now: () => now,
     );
     await slow.refresh();
     expect(slow.nextNetworkPollAt, now.add(LiveSessionController.pollInterval));
+  });
+
+  test('기본값이 켜짐이라 dart-define 없이도 레이스는 10초다', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(_liveSnapshot()),
+      ]),
+      now: () => now,
+    );
+    await controller.refresh();
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.racePollInterval),
+    );
   });
 
   test('연습/퀄리는 fastPoll 이 켜져 있어도 20초를 유지한다', () async {

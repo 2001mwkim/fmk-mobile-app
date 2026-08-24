@@ -27,9 +27,8 @@ flutter analyze
 flutter test
 # 실기기용 빌드는 프로덕션 collector URL을 주입한다
 flutter build apk --debug --dart-define=LIVE_JSON_URL=https://live-production-c03d.up.railway.app/live.json
-# 릴리스 빌드 — 라이브 URL 은 기본값이 이미 Cloudflare 라 dart-define 불필요.
-# 레이스 중 10초 폴링만 플래그로 켠다.
-flutter build appbundle --release --dart-define=LIVE_FAST_POLL=true
+# 릴리스 빌드 — 라이브 URL(Cloudflare)도 레이스 중 10초 폴링도 기본값이라 플래그 불필요
+flutter build appbundle --release
 # 로컬 collector 사용 시(dart-define 생략): 기본값 http://localhost:8787/live.json
 ```
 
@@ -63,7 +62,7 @@ flutter build appbundle --release --dart-define=LIVE_FAST_POLL=true
 - 그래서 폴링/백그라운드 동작을 건드리는 변경은 반드시 "디바이스당 하루 몇 건" 으로 환산해서 판단할 것. 2026-08 이전엔 앱이 백그라운드에서도 20초마다 폴링해 디바이스당 하루 약 4,320건을 썼다(현재는 포그라운드 한정 + 세션 창 밖 5분).
 - **라이브는 2026-08-24 이전 완료** — `live.formulamagazine.kr`(Cloudflare 무료, 주황 구름 → Railway collector). 구성·점검법·주의사항은 `docs/live_cdn_migration.md`. **`formulamagazine.kr` 네임서버가 Cloudflare 로 옮겨졌고 이 도메인에 다음(Daum) 메일이 붙어 있으니**, DNS 를 손볼 일이 생기면 그 문서의 레코드 표를 먼저 볼 것. 순위·결과·소식은 클라이언트 캐시(6시간/30분)가 있어 Vercel 무료로 충분하니 옮기지 않았다.
 - 측정값(2026-08-24): 이전 후 **0.15초 / 4.1 KB / cf-cache-status HIT**(직결은 0.55초·29.5 KB). Cloudflare 가 응답을 자동 압축하므로 collector gzip 은 선택 사항이다. collector 는 `Cache-Control: ... s-maxage=5 ...` 를 이미 보내고 있고, **HEAD 요청에는 404 를 준다** — 점검은 `curl -s -D - -o NUL` 로 할 것.
-- 레이스 중 10초 폴링은 `LiveSessionController.fastPollDuringRace`(빌드 플래그 `LIVE_FAST_POLL`)로 켠다. 코드 기본값은 꺼짐이라 **릴리스 빌드에서 플래그를 넘겨야** 적용된다. 원래 끈 이유는 Vercel 요청 비용이었고 이전으로 사라졌으니, Railway 부하를 한두 번 확인한 뒤 기본값을 true 로 바꿔도 된다. 연습/퀄리는 켜도 20초를 유지한다.
+- 레이스/스프린트 중에는 **10초** 폴링(`LiveSessionController.racePollInterval`). **기본값이 켜짐**이라 플래그 없이 빌드해도 적용된다 — 되돌릴 때만 `--dart-define=LIVE_FAST_POLL=false`. 원래 꺼 두었던 이유는 Vercel 요청 비용이었고 Cloudflare 이전으로 사라졌다. 연습/퀄리는 랩타임 갱신이 드물어 20초를 유지한다.
 
 ## 미해결 사항
 
