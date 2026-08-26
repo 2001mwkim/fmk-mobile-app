@@ -69,6 +69,8 @@ flutter build appbundle --release
 - iOS·애플워치는 **2026-08-23 빌드 38(0.1.5)로 App Store 에 출시됐다** — IPA 에
   `Payload/Runner.app/Watch/FmkWatch.app`(+ `PlugIns/FmkWatchWidgets.appex`)이 서명까지 포함돼 나갔다.
   실기기에서의 위젯·알림·컴플리케이션 동작은 아직 체계적으로 점검하지 않았다
+  (0.1.7 에 워치 실기기 전용 32비트 버그 수정이 들어갔으니 점검은
+  `docs/watch_device_checklist.md` 체크리스트로 할 것)
 - Wear OS 미착수
 
 ## 릴리스 서명

@@ -379,6 +379,12 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   @visibleForTesting
   DateTime? get nextNetworkPollAt => _nextNetworkPollAt;
 
+  /// 디버그 진단용 — 현재 1순위 endpoint(폴백 사용 여부 확인).
+  String get activeUrl => _service.activeUrl;
+
+  /// 디버그 진단용 — 연속 fetch 실패 횟수(백오프 단계 확인).
+  int get consecutiveFailures => _consecutiveFailures;
+
   /// 외부에서 즉시 1회 갱신이 필요할 때.
   Future<void> refresh() {
     _nextNetworkPollAt = null;

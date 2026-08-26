@@ -92,19 +92,44 @@ struct FmkLiveState {
 }
 
 enum FmkLive {
-  /// 프로덕션 collector — 브리지 저장값(liveJsonUrl)이 없을 때의 폴백.
-  /// lib/services/live_session_service.dart 의 릴리스 기본값과 동일.
+  /// 프로덕션 collector(Railway 직결) — 브리지 저장값(liveJsonUrl)이 없을 때의
+  /// 기본값이자, 1순위가 실패했을 때의 **폴백 endpoint**.
+  ///
+  /// 폴백이 필요한 이유: 브리지가 주는 URL 은 Cloudflare 호스트인데, 국내
+  /// 리졸버의 스테일 위임으로 그 호스트가 간헐적 NXDOMAIN 이 된 사고가 있다
+  /// (0.1.6 라이브 센터 공백 — lib/services/live_session_service.dart 주석).
+  /// 앱(Dart)은 www 폴백을 쓰지만, 워치는 세션 창에서 8분 간격이라 요청량이
+  /// 미미하므로 Vercel 비용 없는 Railway 직결을 폴백으로 쓴다.
   static let fallbackUrl = "https://live-production-c03d.up.railway.app/live.json"
 
+  /// 마지막으로 성공한 endpoint 를 App Group 에 기억해 다음 fetch 의 1순위로
+  /// 쓴다(위젯 익스텐션 프로세스는 수시로 죽어서 메모리로는 유지 안 됨).
+  /// 한쪽이 오래 죽어 있을 때 매번 8초 타임아웃을 먼저 먹지 않기 위함이고,
+  /// DNS 가 정상화되면 1순위가 다시 성공하므로 별도 복구 로직은 필요 없다.
+  private static let preferredKey = "fmkLivePreferredEndpoint"
+
   static func fetch(payload: FmkPayload) async -> FmkLiveSnapshot? {
-    let raw = payload.liveJsonUrl.isEmpty ? fallbackUrl : payload.liveJsonUrl
-    guard let url = URL(string: raw) else { return nil }
-    var request = URLRequest(url: url)
-    request.timeoutInterval = 8
-    guard let (data, response) = try? await URLSession.shared.data(for: request),
-      let http = response as? HTTPURLResponse, http.statusCode == 200
-    else { return nil }
-    return parse(data: data)
+    let primary = payload.liveJsonUrl.isEmpty ? fallbackUrl : payload.liveJsonUrl
+    var endpoints = [primary]
+    if fallbackUrl != primary { endpoints.append(fallbackUrl) }
+
+    let store = UserDefaults(suiteName: fmkAppGroupId)
+    if let preferred = store?.string(forKey: preferredKey),
+      let index = endpoints.firstIndex(of: preferred), index != 0 {
+      endpoints.swapAt(0, index)
+    }
+
+    for raw in endpoints {
+      guard let url = URL(string: raw) else { continue }
+      var request = URLRequest(url: url)
+      request.timeoutInterval = 8
+      guard let (data, response) = try? await URLSession.shared.data(for: request),
+        let http = response as? HTTPURLResponse, http.statusCode == 200
+      else { continue }
+      store?.set(raw, forKey: preferredKey)
+      return parse(data: data)
+    }
+    return nil
   }
 
   static func parse(data: Data) -> FmkLiveSnapshot? {

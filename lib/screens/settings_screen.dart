@@ -10,6 +10,7 @@ import '../widgets/app_chip.dart';
 import '../widgets/app_ui.dart';
 import '../widgets/my_picks_card.dart';
 import '../services/live_activity_service.dart';
+import '../services/live_session_controller.dart';
 import '../services/notification_settings_controller.dart';
 import '../services/notification_service.dart';
 import '../services/widget_theme_controller.dart';
@@ -55,6 +56,8 @@ class SettingsScreen extends StatelessWidget {
             if (kDebugMode) ...const [
               SizedBox(height: 20),
               _Section(title: '개발자 (디버그)', child: _DebugLiveActivityCard()),
+              SizedBox(height: 20),
+              _Section(title: '라이브 연결 (디버그)', child: _DebugLivePollCard()),
             ],
           ],
         ),
@@ -809,6 +812,47 @@ void _showSnackBar(BuildContext context, String message) {
 
 /// 디버그 전용: Now Bar(라이브 액티비티) 렌더링을 실제 라이브 세션 없이 확인.
 /// 프로덕션 빌드에서는 노출되지 않는다(kDebugMode 가드).
+/// 라이브 폴링 진단(디버그 전용) — 0.1.6 NXDOMAIN 사고 때 어느 endpoint 를
+/// 타는지 밖에서 알 수 없어 원인 파악이 늦었다. 현재 1순위 endpoint 와
+/// 연속 실패 횟수를 보여줘 폴백/백오프 동작을 기기에서 바로 확인한다.
+class _DebugLivePollCard extends StatelessWidget {
+  const _DebugLivePollCard();
+
+  static String _fmtTime(DateTime? value) {
+    if (value == null) return '—';
+    final local = value.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: liveSessionController,
+      builder: (context, _) {
+        final c = liveSessionController;
+        // 호스트만 표시 — 행 폭에 전체 URL 은 안 들어간다.
+        final host = Uri.tryParse(c.activeUrl)?.host ?? c.activeUrl;
+        return AppCard(
+          child: Column(
+            children: [
+              _DlRow(label: '현재 endpoint', value: host, showTopBorder: false),
+              _DlRow(
+                label: '연속 실패',
+                value: c.consecutiveFailures == 0
+                    ? '없음'
+                    : '${c.consecutiveFailures}회 (백오프 중)',
+              ),
+              _DlRow(label: '마지막 시도', value: _fmtTime(c.lastFetchedAt)),
+              _DlRow(label: '마지막 성공', value: _fmtTime(c.lastSuccessAt)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _DebugLiveActivityCard extends StatelessWidget {
   const _DebugLiveActivityCard();
 
