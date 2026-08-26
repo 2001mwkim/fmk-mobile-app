@@ -10,7 +10,7 @@
 
 라이브 데이터는 별도 저장소의 collector가 제공한다:
 
-- **웹/collector**: `C:\Users\2001m\fmk-f1-calendar` (GitHub: 2001mwkim/fmk-f1-calendar)
+- **웹/collector**: GitHub `2001mwkim/fmk-f1-calendar` — Windows 머신은 `C:\Users\2001m\fmk-f1-calendar`, Mac 은 `~/Documents/fmk-f1-calendar`
 - collector 소스: `scripts/signalr-live-collector.ts` — F1 SignalR 피드 구독 → `live.json` HTTP 서빙
 - **배포**: main 브랜치 push → Railway 자동 배포 (`https://live-production-c03d.up.railway.app/live.json`)
 - 타입 동기화: 웹 `lib/live/types.ts` ↔ 앱 `lib/models/live_session.dart`는 **수동 복제** 관계다. collector가 내려주는 필드를 바꾸면 양쪽 모두 고칠 것.
@@ -21,8 +21,10 @@
 
 ## 명령어
 
-```powershell
-# flutter가 PATH에 없으면: C:\Users\2001m\flutter\bin\flutter.bat
+```bash
+# 개발 머신은 두 대다: Windows(안드로이드 릴리스 서명 키 보유)와 Mac(iOS/워치 빌드).
+# Windows 에서 flutter 가 PATH 에 없으면: C:\Users\2001m\flutter\bin\flutter.bat
+# Mac 은 /opt/homebrew/bin/flutter (PATH 에 있음)
 flutter analyze
 flutter test
 # 실기기용 빌드는 프로덕션 collector URL을 주입한다
@@ -79,4 +81,5 @@ flutter build appbundle --release
   키스토어 `C:/Users/2001m/upload-keystore.jks`(별칭 `upload`), 자격증명은
   `android/key.properties`(gitignore 대상, 저장소에 없음). key.properties 가 없는
   머신에서 `flutter build appbundle` 하면 서명 단계에서 실패하니, 릴리스 빌드는
-  이 파일이 있는 환경에서만 한다(디버그 빌드는 무관).
+  이 파일이 있는 환경에서만 한다(디버그 빌드는 무관). **Mac 에는 이 파일이 없다**
+  — 안드로이드 릴리스는 Windows 머신에서, iOS 아카이브는 Mac 에서 한다.
