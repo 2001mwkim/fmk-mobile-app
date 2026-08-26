@@ -50,6 +50,12 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   /// 세션이 없을 때 주기. 앱이 포그라운드여도 이 간격으로만 네트워크를 쓴다.
   static const Duration idlePollInterval = Duration(minutes: 5);
 
+  /// fetch 실패 직후 재시도 간격의 시작값. 실패에도 [idlePollInterval] 을 그대로
+  /// 적용하면, DNS 장애처럼 금방 풀릴 수 있는 실패에도 화면이 5분간 비어 있다
+  /// (2026-08-24 라이브 호스트 NXDOMAIN 사고). 연속 실패마다 2배씩 늘려
+  /// [idlePollInterval] 에서 멈추므로 장기 장애의 요청 비용도 늘지 않는다.
+  static const Duration retryPollInterval = Duration(seconds: 30);
+
   /// 레이스/스프린트 중 [racePollInterval] 로 당길지 여부. 기본값은 빌드 플래그
   /// [kLiveFastPollDuringRace] — 요청 수가 곧 비용이라 앞단 캐시를 갖추기 전엔
   /// 켜지 않는다. 테스트는 생성자로 직접 주입한다.
@@ -107,6 +113,7 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _timer;
   int _listeners = 0;
   DateTime? _nextNetworkPollAt;
+  int _consecutiveFailures = 0;
   bool _isForeground = true;
   bool _lifecycleAttached = false;
 
@@ -168,6 +175,7 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
     _nextNetworkPollAt = fetchedAt.add(_pollDelay(fetchedAt));
     _lastFetchedAt = fetchedAt;
     final result = await _service.fetchResult();
+    _consecutiveFailures = result.succeeded ? 0 : _consecutiveFailures + 1;
     final received = result.succeeded ? result.snapshot : null;
     final fetched = _acceptSnapshot(received);
 
@@ -234,7 +242,7 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
 
     // 방금 받은 스냅샷 기준으로 다음 호출 시각을 다시 잡는다. 레이스가 시작되면
     // 한 주기 기다리지 않고 곧바로 빠른 주기로 넘어간다.
-    _nextNetworkPollAt = fetchedAt.add(_pollDelayFor(next, fetchedAt));
+    _nextNetworkPollAt = fetchedAt.add(_nextDelayFor(next, fetchedAt));
 
     if (next == _snapshot &&
         nextIsStale == _isStale &&
@@ -377,7 +385,23 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
     return _poll();
   }
 
-  Duration _pollDelay(DateTime now) => _pollDelayFor(_snapshot, now);
+  Duration _pollDelay(DateTime now) => _nextDelayFor(_snapshot, now);
+
+  /// 스케줄 기준 주기와 실패 백오프 중 **짧은 쪽**. 레이스 중(10초)에는 실패해도
+  /// 백오프로 느려지지 않고, 세션이 없을 때(5분)는 실패 직후 빠르게 재시도한다.
+  Duration _nextDelayFor(LiveSessionSnapshot? current, DateTime now) {
+    final scheduled = _pollDelayFor(current, now);
+    if (_consecutiveFailures == 0) return scheduled;
+    final backoff = _failureDelay();
+    return backoff < scheduled ? backoff : scheduled;
+  }
+
+  /// 30초 → 60초 → 120초 … [idlePollInterval] 상한.
+  Duration _failureDelay() {
+    final steps = (_consecutiveFailures - 1).clamp(0, 4);
+    final backoff = retryPollInterval * (1 << steps);
+    return backoff > idlePollInterval ? idlePollInterval : backoff;
+  }
 
   Duration _pollDelayFor(LiveSessionSnapshot? current, DateTime now) {
     if (current != null && isLiveSnapshotSessionActive(current, now)) {
@@ -413,5 +437,5 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
 
 /// 앱 전역 컨트롤러(단일 타이머). main() 에서 enabled = true 로 켠다.
 final LiveSessionController liveSessionController = LiveSessionController(
-  const LiveSessionService(),
+  LiveSessionService(),
 );

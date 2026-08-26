@@ -35,6 +35,27 @@ const String kLiveJsonUrl = String.fromEnvironment(
       : 'http://localhost:8787/live.json',
 );
 
+/// [kLiveJsonUrl] 이 실패했을 때 대신 시도할 endpoint.
+///
+/// 2026-08-24 사고 대응. `live.formulamagazine.kr` 로 네임서버를 옮긴 직후,
+/// 국내 ISP 리졸버들이 옛 위임(dns3/dns4.viaweb.co.kr)을 계속 물고 있어서
+/// 해당 호스트가 **간헐적으로 NXDOMAIN** 이 됐다(리졸버 클러스터의 노드마다
+/// 캐시가 갈려 같은 통신사에서도 성공/실패가 번갈아 나왔다). 라이브 URL 이
+/// 단일 호스트에 묶여 있던 탓에 0.1.6 안드로이드의 라이브 센터가 통째로 비었다.
+///
+/// 폴백을 `www` 로 두는 이유: 이 호스트는 **옛 존(비아웹)과 새 존(Cloudflare)
+/// 양쪽 모두에** 있어서, 리졸버가 어느 위임을 물고 있든 100% 조회된다.
+/// 즉 위임이 갈라진 동안에도 확실히 살아 있는 유일한 경로다.
+///
+/// 폴백은 Vercel 엣지 요청(무료 100만/월)을 쓰므로 상시 경로가 되면 안 된다
+/// — [LiveSessionService] 가 성공한 endpoint 를 기억해, DNS 가 정상화되면
+/// 자연스럽게 Cloudflare 로 돌아간다.
+const String kLiveJsonFallbackUrl = String.fromEnvironment(
+  'LIVE_JSON_FALLBACK_URL',
+  // 로컬 collector 로 개발할 땐 폴백이 없다(빈 문자열 = 폴백 비활성).
+  defaultValue: _kIsReleaseBuild ? 'https://www.formulamagazine.kr/api/live' : '',
+);
+
 /// 레이스/스프린트 중 폴링을 10초로 당길지 여부(기본 true).
 ///
 /// 원래는 꺼 두었다 — 주기를 절반으로 줄이면 요청 수가 두 배가 되는데, 당시
@@ -67,12 +88,35 @@ const Duration kLiveFetchTimeout = Duration(seconds: 8);
 /// live.json 을 fetch 해서 [LiveSessionSnapshot] 으로 파싱한다.
 /// 직접 SignalR 에 연결하지 않고, collector 가 만든 JSON 만 읽는다.
 class LiveSessionService {
-  const LiveSessionService({this.url = kLiveJsonUrl, this.client});
+  LiveSessionService({
+    this.url = kLiveJsonUrl,
+    this.fallbackUrl = kLiveJsonFallbackUrl,
+    this.client,
+  });
 
   final String url;
 
+  /// [url] 이 실패했을 때 시도할 대체 endpoint. 빈 문자열이면 폴백하지 않는다.
+  final String fallbackUrl;
+
   /// 테스트 주입용 클라이언트(없으면 매 요청마다 생성/정리).
   final http.Client? client;
+
+  /// 시도 순서. 앞이 1순위다.
+  late final List<String> endpoints = <String>[
+    url,
+    if (fallbackUrl.isNotEmpty && fallbackUrl != url) fallbackUrl,
+  ];
+
+  /// 마지막으로 성공한 endpoint 의 인덱스 — 다음 폴링의 1순위가 된다.
+  ///
+  /// DNS 장애처럼 한쪽이 오래 죽어 있을 때 매번 죽은 쪽부터 찌르면 폴링마다
+  /// 타임아웃을 먹는다. 반대로 정상화되면 1순위가 다시 성공하므로 별도 복구
+  /// 로직 없이 원래 경로로 돌아온다.
+  int _preferredIndex = 0;
+
+  /// 현재 1순위 endpoint. 폴백이 쓰이고 있는지 확인·로깅용.
+  String get activeUrl => endpoints[_preferredIndex];
 
   /// 성공 시 스냅샷, 네트워크/파싱 실패 시 null. 예외를 던지지 않는다(앱 크래시 방지).
   Future<LiveSessionSnapshot?> fetch() async {
@@ -81,21 +125,38 @@ class LiveSessionService {
 
   /// fetch 성공 여부와 파싱된 스냅샷을 함께 반환한다.
   ///
-  /// `succeeded == false` 는 네트워크/타임아웃/HTTP 오류처럼 collector 에 접근하지
-  /// 못한 경우다. `succeeded == true && snapshot == null` 은 응답은 받았지만
-  /// 표시할 스냅샷이 없는 경우로 취급한다.
+  /// `succeeded == false` 는 [endpoints] 를 **전부** 시도했는데도 접근하지 못한
+  /// 경우다. `succeeded == true && snapshot == null` 은 응답은 받았지만 표시할
+  /// 스냅샷이 없는 경우로, 정상 응답이므로 폴백으로 넘어가지 않는다.
   Future<LiveSessionFetchResult> fetchResult() async {
+    for (var offset = 0; offset < endpoints.length; offset++) {
+      final index = (_preferredIndex + offset) % endpoints.length;
+      final result = await _fetchFrom(endpoints[index]);
+      if (result.succeeded) {
+        _preferredIndex = index;
+        return result;
+      }
+    }
+    return const LiveSessionFetchResult.failed();
+  }
+
+  Future<LiveSessionFetchResult> _fetchFrom(String endpoint) async {
     final httpClient = client ?? http.Client();
     try {
       final response = await httpClient
-          .get(Uri.parse(url))
+          .get(Uri.parse(endpoint))
           .timeout(kLiveFetchTimeout);
       if (response.statusCode != 200) {
         return const LiveSessionFetchResult.failed();
       }
-      return LiveSessionFetchResult.success(parseLiveJson(response.body));
+      // bodyBytes 로 직접 디코딩한다 — Vercel 폴백은 charset 없는
+      // `application/json` 을 주는데, http 패키지의 `body` 는 그 경우 latin1 로
+      // 풀어서 드라이버 한글 이름이 깨진다.
+      return LiveSessionFetchResult.success(
+        parseLiveJson(utf8.decode(response.bodyBytes, allowMalformed: true)),
+      );
     } catch (_) {
-      // 네트워크 오류/타임아웃/파싱 오류 모두 무시하고 null(라이브 UI 숨김).
+      // 네트워크 오류/타임아웃/파싱 오류 모두 무시하고 실패로 처리(다음 endpoint 시도).
       return const LiveSessionFetchResult.failed();
     } finally {
       if (client == null) httpClient.close();

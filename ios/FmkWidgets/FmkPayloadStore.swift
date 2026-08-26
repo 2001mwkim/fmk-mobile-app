@@ -150,9 +150,29 @@ struct FmkPayload {
 
     func str(_ key: String) -> String { store?.string(forKey: key) ?? "" }
     func num(_ key: String) -> Int { store?.integer(forKey: key) ?? 0 }
+    // epoch 밀리초는 반드시 double 로 읽는다 — 워치 실기기(arm64_32)는 Int 가
+    // 32비트라 integer(forKey:) 가 1.78e12 를 잘라먹고 1970년 날짜를 만든다
+    // (그러면 다음 세션이 항상 과거로 보여 D-day 가 D-DAY 로 굳는다).
+    // 시뮬레이터(64비트)에서는 재현되지 않으니 주의.
     func epoch(_ key: String) -> Date? {
-      let ms = num(key)
-      return ms > 0 ? Date(timeIntervalSince1970: Double(ms) / 1000.0) : nil
+      let ms = store?.double(forKey: key) ?? 0
+      return ms > 0 ? Date(timeIntervalSince1970: ms / 1000.0) : nil
+    }
+    // ARGB 값(0xFF……)은 Int32 범위를 넘어서, 워치(arm64_32)에서는
+    // [String: Int] 캐스팅이 통째로 실패해 팀 컬러가 전부 폴백 레드가 된다.
+    // NSNumber 로 받아 비트 패턴만 옮긴다(Color(argb:) 가 다시 UInt32 로 읽음).
+    func colorMap(_ key: String) -> [String: Int] {
+      guard let raw = store?.string(forKey: key),
+        let data = raw.data(using: .utf8),
+        let decoded = try? JSONSerialization.jsonObject(with: data),
+        let map = decoded as? [String: Any]
+      else { return [:] }
+      var out: [String: Int] = [:]
+      for (code, value) in map {
+        guard let number = value as? NSNumber else { continue }
+        out[code] = Int(Int32(truncatingIfNeeded: number.int64Value))
+      }
+      return out
     }
     func jsonMap<T>(_ key: String) -> [String: T] {
       guard let raw = store?.string(forKey: key),
@@ -205,7 +225,7 @@ struct FmkPayload {
       sessions: sessions,
       topThree: topThree,
       driverNamesKo: jsonMap("driverNamesKoJson"),
-      driverAccents: jsonMap("driverAccentsJson"),
+      driverAccents: colorMap("driverAccentsJson"),
       liveJsonUrl: str("liveJsonUrl")
     )
   }

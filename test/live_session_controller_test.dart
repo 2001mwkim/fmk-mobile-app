@@ -463,6 +463,95 @@ void main() {
       now.add(LiveSessionController.pollInterval),
     );
   });
+
+  test('세션이 없을 때 fetch 가 실패하면 idle 5분이 아니라 30초 뒤 재시도한다', () async {
+    // 2026-08-24 라이브 호스트 NXDOMAIN 사고 — 실패에도 idle 주기를 그대로 적용하면
+    // DNS 가 몇 초 만에 복구돼도 화면이 5분간 비어 있다.
+    final now = DateTime(2026, 6, 30, 12); // 어떤 세션 창에도 안 걸리는 시각
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([const LiveSessionFetchResult.failed()]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.retryPollInterval),
+    );
+  });
+
+  test('연속 실패는 2배씩 늘어 idle 주기에서 멈춘다', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final controller = LiveSessionController(
+      _FakeLiveSessionService(const []), // 목록이 비면 항상 실패한다
+      now: () => now,
+    );
+
+    final expected = <Duration>[
+      const Duration(seconds: 30),
+      const Duration(seconds: 60),
+      const Duration(seconds: 120),
+      const Duration(seconds: 240),
+      LiveSessionController.idlePollInterval, // 480초 > 5분이라 상한에서 멈춘다
+      LiveSessionController.idlePollInterval,
+    ];
+    for (final delay in expected) {
+      await controller.refresh();
+      expect(controller.nextNetworkPollAt, now.add(delay));
+    }
+  });
+
+  test('한 번 성공하면 백오프가 초기화된다', () async {
+    final now = DateTime(2026, 6, 30, 12);
+    final controller = LiveSessionController(
+      _FakeLiveSessionService(const [
+        LiveSessionFetchResult.failed(),
+        LiveSessionFetchResult.failed(),
+        LiveSessionFetchResult.success(null), // 정상 응답(표시할 세션 없음)
+        LiveSessionFetchResult.failed(),
+      ]),
+      now: () => now,
+    );
+
+    await controller.refresh();
+    await controller.refresh();
+    expect(controller.nextNetworkPollAt, now.add(const Duration(seconds: 60)));
+
+    await controller.refresh();
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.idlePollInterval),
+    );
+
+    // 다시 실패하면 30초부터 새로 시작한다.
+    await controller.refresh();
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.retryPollInterval),
+    );
+  });
+
+  test('레이스 중 실패는 백오프로 느려지지 않는다', () async {
+    // 레이스는 짧고 중요하다 — 스케줄 주기(10초)와 백오프(30초) 중 짧은 쪽을 쓴다.
+    final now = DateTime(2026, 6, 30, 12);
+    final controller = LiveSessionController(
+      _FakeLiveSessionService([
+        LiveSessionFetchResult.success(_liveSnapshot()),
+        const LiveSessionFetchResult.failed(),
+      ]),
+      fastPollDuringRace: true,
+      now: () => now,
+    );
+
+    await controller.refresh();
+    await controller.refresh();
+
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.racePollInterval),
+    );
+  });
 }
 
 LiveSessionSnapshot _liveSnapshot() {

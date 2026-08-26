@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_version.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -673,7 +674,7 @@ class _AppInfoCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'v0.1.0',
+                        kAppVersionLabel,
                         style: TextStyle(
                           fontSize: 11,
                           fontFamily: 'Pretendard',

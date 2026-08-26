@@ -39,6 +39,27 @@ func fmkNextSessionRow(payload: FmkPayload, at date: Date) -> FmkSessionRow? {
   return payload.sessions.indices.contains(index) ? payload.sessions[index] : nil
 }
 
+/// 작은 컴플리케이션 슬롯(사진 시계 얼굴의 원형·코너 등)용 짧은 세션 라벨.
+/// 브리지가 보내는 이름은 RaceSession.fullLabel('프리 프랙티스 1',
+/// '스프린트 퀄리파잉')이라 원형/코너에서는 통째로 잘린다 — 폭이 넓은
+/// 사각형·인라인만 원래 이름을 쓰고 나머지는 이 축약을 쓴다.
+/// 세션 id 는 races.dart 와 동일(fp1~fp3/qualifying/sprint/sprint_qualifying/race).
+func fmkShortSessionName(_ row: FmkSessionRow?) -> String {
+  guard let row else { return "NEXT" }
+  switch row.id {
+  case "fp1": return "FP1"
+  case "fp2": return "FP2"
+  case "fp3": return "FP3"
+  case "qualifying": return "Q"
+  case "sprint_qualifying": return "SQ"
+  case "sprint": return "SPR"
+  case "race": return "RACE"
+  default:
+    let name = row.name.trimmingCharacters(in: .whitespaces)
+    return name.isEmpty ? "NEXT" : String(name.prefix(3))
+  }
+}
+
 /// 다음 세션까지 남은 일수(당일 0). 정보 없으면 nil.
 func fmkDaysLeft(to start: Date?, from date: Date) -> Int? {
   guard let start else { return nil }

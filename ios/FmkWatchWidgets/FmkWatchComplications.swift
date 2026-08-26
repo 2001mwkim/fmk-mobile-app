@@ -92,8 +92,11 @@ struct FmkWatchScheduleView: View {
 
   private var nextRow: FmkSessionRow? { fmkNextSessionRow(payload: entry.payload, at: entry.date) }
   private var daysLeft: Int? { fmkDaysLeft(to: nextRow?.start, from: entry.date) }
-  /// 당일은 "D-DAY"(iOS 원형 잠금화면 위젯과 동일 표기).
+  /// 당일은 "D-DAY"(iOS 원형 잠금화면 위젯과 동일 표기). 폭이 넉넉한 사각형용.
   private var dday: String { daysLeft.map { $0 == 0 ? "D-DAY" : "D-\($0)" } ?? "—" }
+  /// 원형·코너용 — 그 슬롯의 글자 폭(약 38pt)에 "D-DAY"(19pt heavy 로 61.8pt)는
+  /// 62% 로 축소돼 위 라벨보다 작아진다. 당일만 "오늘"(32.9pt)로 줄여 원래 크기 유지.
+  private var ddayCompact: String { daysLeft.map { $0 == 0 ? "오늘" : "D-\($0)" } ?? "—" }
 
   var body: some View {
     switch family {
@@ -102,7 +105,7 @@ struct FmkWatchScheduleView: View {
         Text(live.isLive ? "🔴 LIVE P1 \(live.rows.first?.name ?? "—")"
                          : "🏁 \(live.badgeText) P1 \(live.rows.first?.name ?? "—")")
       } else if let row = nextRow {
-        Text("🏁 \(row.name) \(row.date) \(row.time)")
+        Text("🏁 \(fmkShortSessionName(row)) \(row.date) \(row.time)")
       } else {
         Text("🏁 비아 포뮬러")
       }
@@ -113,17 +116,17 @@ struct FmkWatchScheduleView: View {
           top: "P\(leader.position)",
           bottom: fmkDriverCode(name: leader.name, code: leader.code, payload: entry.payload))
       } else {
-        FmkWatchCircularTwoLine(top: nextRow?.name ?? "NEXT", bottom: dday)
+        FmkWatchCircularTwoLine(top: fmkShortSessionName(nextRow), bottom: ddayCompact)
       }
     case .accessoryCorner:
       // 코너: 큰 글자 1개 + 곡선 라벨(widgetLabel).
-      Text(entry.live?.isLive == true ? "LIVE" : dday)
+      Text(entry.live?.isLive == true ? "LIVE" : ddayCompact)
         .font(.system(size: 16, weight: .heavy)).minimumScaleFactor(0.6)
         .widgetLabel {
           if let live = entry.live {
             Text("P1 \(live.rows.first?.name ?? "—")")
           } else if let row = nextRow {
-            Text("\(row.name) \(row.time)")
+            Text("\(fmkShortSessionName(row)) \(row.time)")
           } else {
             Text("비아 포뮬러")
           }
@@ -178,7 +181,9 @@ struct FmkWatchStandingsView: View {
     let leader = rows.first
     switch family {
     case .accessoryInline:
-      Text(leader.map { "🏆 P1 \($0.name) \($0.points)pt" } ?? "🏆 드라이버 순위")
+      Text(
+        leader.map { "🏆 P1 \(fmkDriverCode(name: $0.name, payload: payload)) \($0.points)pt" }
+          ?? "🏆 드라이버 순위")
     case .accessoryCircular:
       FmkWatchCircularTwoLine(
         top: "P\(leader?.position ?? 1)",
@@ -186,7 +191,7 @@ struct FmkWatchStandingsView: View {
     case .accessoryCorner:
       Text(leader.map { fmkDriverCode(name: $0.name, payload: payload) } ?? "—")
         .font(.system(size: 16, weight: .heavy)).minimumScaleFactor(0.5)
-        .widgetLabel { Text("P1 \(leader?.name ?? "") · \(leader?.points ?? "—") pt") }
+        .widgetLabel { Text("P\(leader?.position ?? 1) \(leader?.points ?? "—")pt") }
     default:
       VStack(alignment: .leading, spacing: 1) {
         Text("드라이버 순위").font(.system(size: 11, weight: .heavy))
@@ -234,7 +239,7 @@ struct FmkWatchMyDriverView: View {
         top: ready ? "P\(data.position)" : "MY", bottom: ready ? data.code : "—")
     case .accessoryCorner:
       Text(ready ? "P\(data.position)" : "—").font(.system(size: 16, weight: .heavy))
-        .widgetLabel { Text(ready ? "\(data.code) · \(data.points) pt" : "MY DRIVER 미설정") }
+        .widgetLabel { Text(ready ? "\(data.code) \(data.points)pt" : "미설정") }
     default:
       VStack(alignment: .leading, spacing: 1) {
         Text("MY DRIVER").font(.system(size: 10, weight: .heavy))
