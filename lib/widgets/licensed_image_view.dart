@@ -154,10 +154,7 @@ Future<void> _showCredits(BuildContext context, LicensedImage image) {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => launchUrl(
-                      Uri.parse(image.sourceUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
+                    onPressed: () => _openLink(context, image.sourceUrl),
                     icon: const Icon(Icons.open_in_new_rounded, size: 16),
                     label: const Text('Commons 원본'),
                   ),
@@ -165,10 +162,7 @@ Future<void> _showCredits(BuildContext context, LicensedImage image) {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => launchUrl(
-                      Uri.parse(image.licenseUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
+                    onPressed: () => _openLink(context, image.licenseUrl),
                     icon: const Icon(Icons.description_outlined, size: 16),
                     label: const Text('라이선스'),
                   ),
@@ -178,6 +172,29 @@ Future<void> _showCredits(BuildContext context, LicensedImage image) {
           ],
         ),
       ),
+    ),
+  );
+}
+
+/// 출처/라이선스 링크를 외부 브라우저로 연다. 브라우저가 없거나 비활성화된
+/// 기기에서는 url_launcher 가 ACTIVITY_NOT_FOUND 를 던지는데(Sentry 0.1.6+43,
+/// 갤럭시 A17), 그대로 두면 미처리 예외로 올라가고 사용자는 무반응만 본다.
+/// 실패는 삼켜서 스낵바로 알린다(news_screen / settings_screen 과 같은 패턴).
+Future<void> _openLink(BuildContext context, String url) async {
+  var opened = false;
+  try {
+    opened = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+  } catch (_) {
+    opened = false;
+  }
+  if (opened || !context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('링크를 열 수 없습니다. 브라우저 앱이 필요해요.'),
+      behavior: SnackBarBehavior.floating,
     ),
   );
 }
