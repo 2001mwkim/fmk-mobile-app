@@ -6,7 +6,7 @@
 const String kAppVersion = '0.1.7';
 
 /// 스토어·버그 리포트에서 쓰는 빌드 번호(pubspec `version:` 의 `+` 뒤).
-const String kAppBuildNumber = '44';
+const String kAppBuildNumber = '45';
 
 /// 화면 표기 — 스토어 표기와 같은 "0.1.6 (43)" 꼴.
 const String kAppVersionLabel = 'v$kAppVersion ($kAppBuildNumber)';
