@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../data/circuit_info.dart';
+import '../data/gp_guides.dart';
 import '../widgets/flag_icon.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
 import '../models/circuit_info.dart';
+import '../models/gp_guide.dart';
 import '../models/race.dart';
 import '../models/race_result.dart';
 import '../models/race_session.dart';
@@ -84,6 +86,7 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
   Widget build(BuildContext context) {
     final status = getRaceDisplayStatus(race);
     final circuitInfo = getCircuitInfo(race.id);
+    final guide = getGpGuide(race.id);
     // 종료(취소 제외) 그랑프리면 결과 노출 (결과 없으면 placeholder).
     final showResultCard =
         getRaceStatus(race) == RaceStatus.ended && !race.isCancelled;
@@ -131,9 +134,17 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
             ],
             const SizedBox(height: 12),
             _SessionScheduleCard(race: race),
+            if (guide != null) ...[
+              const SizedBox(height: 12),
+              _GpGuideCard(race: race, guide: guide),
+            ],
             if (circuitInfo != null) ...[
               const SizedBox(height: 12),
-              _CircuitInfoCard(race: race, info: circuitInfo),
+              _CircuitInfoCard(
+                race: race,
+                info: circuitInfo,
+                lapRecord: guide?.lapRecord,
+              ),
             ],
           ],
         ),
@@ -702,10 +713,11 @@ class _SessionGroup {
 }
 
 class _CircuitInfoCard extends StatelessWidget {
-  const _CircuitInfoCard({required this.race, required this.info});
+  const _CircuitInfoCard({required this.race, required this.info, this.lapRecord});
 
   final Race race;
   final CircuitInfo info;
+  final GpLapRecord? lapRecord;
 
   @override
   Widget build(BuildContext context) {
@@ -733,6 +745,10 @@ class _CircuitInfoCard extends StatelessWidget {
           if (metrics.isNotEmpty) ...[
             const SizedBox(height: 12),
             _CompactMetrics(metrics: metrics),
+          ],
+          if (lapRecord != null) ...[
+            const SizedBox(height: 10),
+            _LapRecordRow(record: lapRecord!),
           ],
           const SizedBox(height: 12),
           const Divider(height: 1, color: _faintBorder),
@@ -923,6 +939,487 @@ class _MetricData {
 
   final String label;
   final String value;
+}
+
+/// 서킷 정보 카드 하단의 랩 레코드 행 — 결승 레이스 중 기록(퀄리 아님).
+class _LapRecordRow extends StatelessWidget {
+  const _LapRecordRow({required this.record});
+
+  final GpLapRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            '랩 레코드',
+            style: TextStyle(
+              fontSize: 10.5,
+              color: _muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            record.time,
+            style: const TextStyle(
+              fontSize: 15,
+              fontFamily: 'Pretendard',
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${record.driverKo} · ${record.year}',
+            style: const TextStyle(
+              fontSize: 11,
+              color: _muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 관전 가이드 카드 — 타이어 할당·서킷 특성·관전 포인트·최근 우승자.
+/// 데이터는 lib/data/gp_guides.dart 큐레이션(빠진 섹션은 렌더하지 않는다).
+class _GpGuideCard extends StatelessWidget {
+  const _GpGuideCard({required this.race, required this.guide});
+
+  final Race race;
+  final GpGuide guide;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = <Widget>[];
+
+    // 타이어: 미발표 상태는 안내 문구, 취소 GP 는 섹션 자체를 숨긴다.
+    if (guide.tyres != null) {
+      sections.add(_GuideSection(
+        label: '타이어 컴파운드',
+        child: _TyreAllocationRow(tyres: guide.tyres!),
+      ));
+    } else if (!race.isCancelled) {
+      sections.add(const _GuideSection(
+        label: '타이어 컴파운드',
+        child: Text(
+          '피렐리 발표 예정',
+          style: TextStyle(
+            fontSize: 12,
+            color: _nameMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ));
+    }
+
+    if (guide.traits != null) {
+      sections.add(_GuideSection(
+        label: '서킷 특성',
+        child: _TraitGauges(traits: guide.traits!),
+      ));
+    }
+
+    if (guide.watchPoints.isNotEmpty) {
+      sections.add(_GuideSection(
+        label: '관전 포인트',
+        child: _WatchPointList(points: guide.watchPoints),
+      ));
+    }
+
+    if (guide.recentWinners.isNotEmpty) {
+      sections.add(_GuideSection(
+        label: '최근 우승자',
+        child: _RecentWinnerList(winners: guide.recentWinners),
+      ));
+    }
+
+    if (sections.isEmpty) return const SizedBox.shrink();
+
+    final children = <Widget>[const _SectionTitle('관전 가이드')];
+    for (final section in sections) {
+      children.add(const SizedBox(height: 14));
+      children.add(section);
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// 관전 가이드의 소제목(뮤트 라벨) + 내용 묶음.
+class _GuideSection extends StatelessWidget {
+  const _GuideSection({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: _muted,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
+/// 컴파운드 3종을 타이어 마킹풍 링으로 표기. 앱 팔레트 규칙(노란색 금지)에
+/// 맞춰 소프트=레드, 미디엄=화이트, 하드=그레이 링을 쓴다(피렐리 실물 색과
+/// 다름 — 무른 쪽일수록 따뜻한 색이라는 직관만 유지).
+class _TyreAllocationRow extends StatelessWidget {
+  const _TyreAllocationRow({required this.tyres});
+
+  final TyreAllocation tyres;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TyreRing(
+              compound: tyres.soft,
+              label: '소프트',
+              ringColor: AppColors.redSoft,
+            ),
+          ),
+          Expanded(
+            child: _TyreRing(
+              compound: tyres.medium,
+              label: '미디엄',
+              ringColor: AppColors.white,
+            ),
+          ),
+          Expanded(
+            child: _TyreRing(
+              compound: tyres.hard,
+              label: '하드',
+              ringColor: _muted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TyreRing extends StatelessWidget {
+  const _TyreRing({
+    required this.compound,
+    required this.label,
+    required this.ringColor,
+  });
+
+  final String compound;
+  final String label;
+  final Color ringColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: ringColor, width: 2),
+          ),
+          child: Text(
+            compound,
+            style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'Pretendard',
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: _muted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 서킷 성격 게이지 3종(1~5). 채움은 모노톤 — 레드 액센트는 라이브 전용이라
+/// 쓰지 않는다.
+class _TraitGauges extends StatelessWidget {
+  const _TraitGauges({required this.traits});
+
+  final GpTraits traits;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _TraitGaugeRow(
+            label: '다운포스',
+            level: traits.downforce,
+            levelText: _levelWord(traits.downforce),
+          ),
+          const SizedBox(height: 10),
+          _TraitGaugeRow(
+            label: '타이어 부하',
+            level: traits.tyreStress,
+            levelText: _levelWord(traits.tyreStress),
+          ),
+          const SizedBox(height: 10),
+          _TraitGaugeRow(
+            label: '추월 난이도',
+            level: traits.overtaking,
+            levelText: _difficultyWord(traits.overtaking),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _levelWord(int level) {
+    switch (level) {
+      case 1:
+        return '매우 낮음';
+      case 2:
+        return '낮음';
+      case 3:
+        return '보통';
+      case 4:
+        return '높음';
+      default:
+        return '매우 높음';
+    }
+  }
+
+  static String _difficultyWord(int level) {
+    switch (level) {
+      case 1:
+        return '매우 쉬움';
+      case 2:
+        return '쉬움';
+      case 3:
+        return '보통';
+      case 4:
+        return '어려움';
+      default:
+        return '매우 어려움';
+    }
+  }
+}
+
+class _TraitGaugeRow extends StatelessWidget {
+  const _TraitGaugeRow({
+    required this.label,
+    required this.level,
+    required this.levelText,
+  });
+
+  final String label;
+  final int level;
+  final String levelText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 78,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _nameMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Row(
+            children: [
+              for (var i = 1; i <= 5; i++) ...[
+                if (i > 1) const SizedBox(width: 3),
+                Expanded(
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: i <= level ? AppColors.slate300 : _faintBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 58,
+          child: Text(
+            levelText,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WatchPointList extends StatelessWidget {
+  const _WatchPointList({required this.points});
+
+  final List<String> points;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < points.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 불릿 대신 얇은 레드 바 — 웹 매거진 인용구 톤.
+              Container(
+                width: 3,
+                height: 14,
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.red,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  points[i],
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: AppColors.slate300,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RecentWinnerList extends StatelessWidget {
+  const _RecentWinnerList({required this.winners});
+
+  final List<GpWinner> winners;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: _tileSurface,
+        border: Border.all(color: _faintBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          for (final winner in winners)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Row(
+                children: [
+                  Text(
+                    '${winner.year}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Pretendard',
+                      color: _muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      winner.driverKo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    winner.teamKo,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: _muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 String _circuitAssetPath(String raceId) => 'assets/circuits/$raceId.svg';

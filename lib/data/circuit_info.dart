@@ -25,11 +25,15 @@ const Map<String, CircuitInfo> circuitInfoByRaceId = {
     firstYear: 1987,
     totalRacesHeld: 36,
   ),
+  // 바레인 GP 는 2026 세팡 이전 개최(races.dart 주석 참고) — 수치는
+  // 세팡 인터내셔널 서킷 기준(사키르 5.412km/15턴/2004 였던 잔재 교정).
   'bahrain': CircuitInfo(
-    lengthKm: 5.412,
+    lengthKm: 5.543,
     turns: 15,
-    firstYear: 2004,
-    totalRacesHeld: 22,
+    laps: 56,
+    distanceKm: 310.408,
+    firstYear: 1999,
+    totalRacesHeld: 19,
   ),
   'saudi-arabia': CircuitInfo(
     lengthKm: 6.174,
