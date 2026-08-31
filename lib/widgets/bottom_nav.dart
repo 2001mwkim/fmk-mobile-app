@@ -32,7 +32,7 @@ class BottomNav extends StatelessWidget {
     // 같은 최대 폭에 맞춘다 — 엄지/시선이 닿는 위치를 본문과 일치시킨다.
     final gutter = 16 + AppLayout.contentGutter(context);
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.navSurface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),

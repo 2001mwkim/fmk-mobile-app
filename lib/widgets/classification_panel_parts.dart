@@ -25,8 +25,8 @@ class ClassificationPanelShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF141019),
+      decoration: BoxDecoration(
+        color: AppColors.panelSurface,
         borderRadius: _radius,
       ),
       foregroundDecoration: BoxDecoration(
@@ -60,7 +60,7 @@ class ClassificationHeaderContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: emphasized ? const Color(0x14EF4444) : AppColors.rowBorder,
+      color: emphasized ? AppColors.red.withValues(alpha: 0.08) : AppColors.rowBorder,
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
       child: child,
     );
@@ -75,7 +75,7 @@ class ClassificationColumnHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final style = TextStyle(
       fontSize: 9,
       fontFamily: 'Pretendard',
       color: AppColors.faint,
@@ -83,16 +83,16 @@ class ClassificationColumnHeader extends StatelessWidget {
       letterSpacing: 0.8,
     );
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.black20,
         border: Border(top: BorderSide(color: AppColors.divider)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          const SizedBox(width: 26, child: Text('POS', style: style)),
+          SizedBox(width: 26, child: Text('POS', style: style)),
           const SizedBox(width: 11),
-          const Expanded(child: Text('DRIVER', style: style)),
+          Expanded(child: Text('DRIVER', style: style)),
           Text(timeLabel, style: style),
         ],
       ),
@@ -141,8 +141,8 @@ class ClassificationRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isTopThree ? const Color(0x09FFFFFF) : null, // white/3.5
-        border: const Border(top: BorderSide(color: AppColors.rowBorder)),
+        color: isTopThree ? AppColors.white.withValues(alpha: 0.035) : null, // white/3.5
+        border: Border(top: BorderSide(color: AppColors.rowBorder)),
       ),
       padding: EdgeInsets.symmetric(
         horizontal: 16,
@@ -187,7 +187,7 @@ class ClassificationRow extends StatelessWidget {
                   fontSize: 13,
                   fontFamily: 'Pretendard',
                   color: isTopThree
-                      ? const Color(0xFFE8EDF6)
+                      ? AppColors.metallic
                       : AppColors.slate300,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
@@ -215,7 +215,7 @@ class ClassificationRow extends StatelessWidget {
                     subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       color: AppColors.faint,
                       fontWeight: FontWeight.w600,
@@ -276,11 +276,11 @@ class _ClassificationExpanderState extends State<ClassificationExpander> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: AppColors.black20,
+          color: AppColors.controlSurface,
           child: InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.rowBorder)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -303,7 +303,7 @@ class _ClassificationExpanderState extends State<ClassificationExpander> {
                             ? '${widget.startPosition}-${widget.endPosition}위'
                             : widget.collapsedCountLabel ??
                                   '+ ${widget.count}명 더',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontFamily: 'Pretendard',
                           color: AppColors.muted,

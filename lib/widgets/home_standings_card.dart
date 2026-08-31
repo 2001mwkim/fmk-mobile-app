@@ -67,7 +67,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       '챔피언십 순위',
                       style: TextStyle(
@@ -77,7 +77,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
                       ),
                     ),
                   ),
-                  const Text(
+                  Text(
                     '전체 보기',
                     style: TextStyle(
                       color: AppColors.textMuted,
@@ -86,7 +86,7 @@ class _HomeStandingsCardState extends State<HomeStandingsCard> {
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
                     size: 15,
                     color: AppColors.textMuted,
@@ -149,7 +149,7 @@ class _StandingsColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -193,7 +193,7 @@ class _StandingRow extends StatelessWidget {
               data.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -203,7 +203,7 @@ class _StandingRow extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             _formatPoints(data.points),
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.slate300,
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -262,18 +262,18 @@ class _RowData {
   switch (position) {
     case 1:
       return (
-        background: const Color(0x26EF4444),
+        background: AppColors.red.withValues(alpha: 0.15),
         foreground: AppColors.redSoft,
       );
     case 2:
       return (
-        background: const Color(0x2694A3B8), // slate-400/15
+        background: AppColors.slate400.withValues(alpha: 0.15), // slate-400/15
         foreground: AppColors.slate300,
       );
     case 3:
       return (
-        background: const Color(0x26F97316), // orange-500/15
-        foreground: const Color(0xFFFB923C), // orange-400
+        background: AppColors.orangeSoft.withValues(alpha: 0.15), // orange-500/15
+        foreground: AppColors.orangeSoft, // orange-400
       );
     default:
       return (background: AppColors.rowBorder, foreground: AppColors.muted);

@@ -13,8 +13,8 @@ import 'driver_detail_screen.dart';
 import 'team_detail_screen.dart';
 
 // 웹 순위 페이지 전용 색.
-const Color _muted = AppColors.muted; // #7880a0
-const Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
+final Color _muted = AppColors.muted; // #7880a0
+final Color _rowBorder = AppColors.rowBorder; // white/5 (행 구분선)
 
 enum _StandingsTab { drivers, constructors }
 
@@ -217,7 +217,7 @@ class _StandingRow extends StatelessWidget {
           decoration: BoxDecoration(
             border: isFirst
                 ? null
-                : const Border(top: BorderSide(color: _rowBorder)),
+                : Border(top: BorderSide(color: _rowBorder)),
           ),
           child: Row(
             children: [
@@ -240,7 +240,7 @@ class _StandingRow extends StatelessWidget {
                       data.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         color: AppColors.white,
                         fontWeight: FontWeight.w700,
@@ -252,7 +252,7 @@ class _StandingRow extends StatelessWidget {
                         data.teamLabel!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           color: _muted,
                           fontWeight: FontWeight.w600,
@@ -276,7 +276,7 @@ class _StandingRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textEnded,
                 size: 18,
@@ -329,7 +329,7 @@ class _PointsLabel extends StatelessWidget {
       children: [
         Text(
           _formatPoints(points),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontFamily: 'Pretendard',
             color: AppColors.slate300,
@@ -337,7 +337,7 @@ class _PointsLabel extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 2),
           child: Text(
             'PTS',
@@ -389,7 +389,7 @@ class _DataSourceFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         '데이터 출처: F1DB (CC BY 4.0)',
@@ -429,18 +429,18 @@ class _RowData {
   switch (position) {
     case 1:
       return (
-        background: const Color(0x26EF4444),
+        background: AppColors.red.withValues(alpha: 0.15),
         foreground: AppColors.redSoft,
       );
     case 2:
       return (
-        background: const Color(0x2694A3B8), // slate-400/15
+        background: AppColors.slate400.withValues(alpha: 0.15), // slate-400/15
         foreground: AppColors.slate300,
       );
     case 3:
       return (
-        background: const Color(0x26F97316), // orange-500/15
-        foreground: const Color(0xFFFB923C), // orange-400
+        background: AppColors.orangeSoft.withValues(alpha: 0.15), // orange-500/15
+        foreground: AppColors.orangeSoft, // orange-400
       );
     default:
       return (background: AppColors.rowBorder, foreground: _muted);

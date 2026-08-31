@@ -6,11 +6,11 @@ import '../widgets/app_card.dart';
 import '../widgets/app_chip.dart';
 
 // 웹 직관 페이지 전용 색.
-const Color _muted = AppColors.muted; // #7880a0
-const Color _subtitle = AppColors.heroSub; // #8088a8 (헤더 설명)
-const Color _descMuted = AppColors.textMuted; // #959bb6 (가이드 설명)
-const Color _nameMuted = AppColors.nameMuted; // #aab0cc
-const Color _tileSurface = AppColors.tileSurface; // #0e1018
+final Color _muted = AppColors.muted; // #7880a0
+final Color _subtitle = AppColors.heroSub; // #8088a8 (헤더 설명)
+final Color _descMuted = AppColors.textMuted; // #959bb6 (가이드 설명)
+final Color _nameMuted = AppColors.nameMuted; // #aab0cc
+final Color _tileSurface = AppColors.tileSurface; // #0e1018
 
 class VisitScreen extends StatelessWidget {
   const VisitScreen({super.key});
@@ -48,7 +48,7 @@ class _VisitHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,17 +96,17 @@ class _GuideProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: _radius,
       ),
-      foregroundDecoration: const BoxDecoration(
+      foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.fromBorderSide(
-          BorderSide(color: Color(0x33EF4444)), // red-500/20
+          BorderSide(color: AppColors.red.withValues(alpha: 0.2)), // red-500/20
         ),
       ),
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +167,7 @@ class _VisitGuideCard extends StatelessWidget {
                   guide.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     color: AppColors.white,
                     fontWeight: FontWeight.w800,
@@ -184,7 +184,7 @@ class _VisitGuideCard extends StatelessWidget {
             guide.description,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               color: _descMuted,
               height: 1.45,
@@ -212,7 +212,7 @@ class _RelatedGrandPrixRow extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
+        children: [
           Text(
             '관련 그랑프리',
             style: TextStyle(

@@ -36,7 +36,7 @@ class DetailBackButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
@@ -77,7 +77,7 @@ class SummaryMetrics extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Text(
@@ -196,7 +196,7 @@ class _MetricTile extends StatelessWidget {
                   Text(
                     value,
                     maxLines: 1,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.white,
                       fontSize: 20,
                       height: 1,
@@ -209,7 +209,7 @@ class _MetricTile extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -243,7 +243,7 @@ class StandingTrendCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '시즌 순위 흐름',
                   style: TextStyle(
@@ -276,13 +276,13 @@ class StandingTrendCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             '각 라운드 종료 기준 · 위쪽일수록 높은 순위',
             style: TextStyle(color: AppColors.textEnded, fontSize: 10),
           ),
           const SizedBox(height: 16),
           if (points.length < 2)
-            const SizedBox(
+            SizedBox(
               height: 90,
               child: Center(
                 child: Text(
@@ -405,7 +405,7 @@ class _TrendPainter extends CustomPainter {
   TextPainter _textPainter(String text) => TextPainter(
     text: TextSpan(
       text: text,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.textEnded,
         fontSize: 9,
         fontWeight: FontWeight.w700,
@@ -437,7 +437,7 @@ class DetailSectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.white,
               fontSize: 16,
               fontWeight: FontWeight.w900,

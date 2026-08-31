@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../data/country_flags.dart';
+import '../theme/app_colors.dart';
 
 /// 사각 국기 아이콘(assets/flags — flag-icons 4x3, MIT).
 ///
@@ -28,7 +29,7 @@ class FlagIcon extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(3),
           // 웹의 shadow-[0_0_0_1px_rgba(255,255,255,0.14)] 근사.
-          border: Border.all(color: const Color(0x24FFFFFF)),
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.14)),
         ),
         child: SvgPicture.asset(asset, fit: BoxFit.cover),
       );

@@ -47,7 +47,7 @@ class _NewsScreenState extends State<NewsScreen> {
                 const _NewsHeader(),
                 const SizedBox(height: 14),
                 if (snapshot.connectionState != ConnectionState.done)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 48),
                     child: Center(
                       child: CircularProgressIndicator(color: AppColors.red),
@@ -74,7 +74,7 @@ class _NewsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +139,7 @@ class _NewsCard extends StatelessWidget {
                       : '${item.sourceName} 외 ${item.relatedSources.length}곳',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontFamily: 'Pretendard',
                     color: AppColors.redSoft,
@@ -150,7 +150,7 @@ class _NewsCard extends StatelessWidget {
               ),
               Text(
                 ' · ${newsRelativeTimeKo(item.publishedAt, now)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   color: AppColors.muted,
                   fontWeight: FontWeight.w600,
@@ -178,7 +178,7 @@ class _NewsCard extends StatelessWidget {
                         item.titleKo,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           color: AppColors.white,
                           fontWeight: FontWeight.w800,
@@ -192,7 +192,7 @@ class _NewsCard extends StatelessWidget {
                       item.aiBriefKo,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         color: AppColors.nameMuted,
                         height: 1.45,
@@ -211,7 +211,7 @@ class _NewsCard extends StatelessWidget {
           // 태그 칩은 표시하지 않는다(정보 가치 대비 공간 소모 — tags 데이터는
           // 향후 필터/검색용으로 모델에 유지). 하단은 원문 보기만 우측 정렬.
           const SizedBox(height: 10),
-          const Align(
+          Align(
             alignment: Alignment.centerRight,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -274,7 +274,7 @@ class _NewsThumbnail extends StatelessWidget {
           width: _size,
           height: _size,
           color: AppColors.tileSurface,
-          child: const Icon(
+          child: Icon(
             Icons.image_not_supported_outlined,
             size: 18,
             color: AppColors.muted,
@@ -298,7 +298,7 @@ class _NewsEmptyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Text(
             '표시할 소식이 없습니다',

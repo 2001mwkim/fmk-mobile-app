@@ -568,18 +568,18 @@ String liveSessionLabelKo(String? sessionName, String? sessionType) {
   switch (position) {
     case 1:
       return (
-        background: const Color(0x26EF4444), // red-500/15
-        foreground: const Color(0xFFF87171), // red-400
+        background: AppColors.red.withValues(alpha: 0.15), // red-500/15
+        foreground: AppColors.redSoft, // red-400
       );
     case 2:
       return (
-        background: const Color(0x2694A3B8), // slate-400/15
-        foreground: const Color(0xFFCBD5E1), // slate-300
+        background: AppColors.slate400.withValues(alpha: 0.15), // slate-400/15
+        foreground: AppColors.slate300, // slate-300
       );
     case 3:
       return (
-        background: const Color(0x26F97316), // orange-500/15
-        foreground: const Color(0xFFFB923C), // orange-400
+        background: AppColors.orangeSoft.withValues(alpha: 0.15), // orange-500/15
+        foreground: AppColors.orangeSoft, // orange-400
       );
     default:
       return (

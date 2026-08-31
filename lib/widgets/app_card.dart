@@ -19,14 +19,20 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
-    this.backgroundColor = AppColors.card,
-    this.borderColor = AppColors.border,
-  });
+    // null 이면 현재 테마 팔레트의 card/border 를 쓴다(테마 도입으로
+    // AppColors 가 getter 라 기본 인자로 못 쓴다).
+    Color? backgroundColor,
+    Color? borderColor,
+  })  : _backgroundColor = backgroundColor, // ignore: prefer_initializing_formals
+        _borderColor = borderColor; // ignore: prefer_initializing_formals
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color backgroundColor;
-  final Color borderColor;
+  final Color? _backgroundColor;
+  final Color? _borderColor;
+
+  Color get backgroundColor => _backgroundColor ?? AppColors.card;
+  Color get borderColor => _borderColor ?? AppColors.border;
 
   /// 웹에서 Card 를 <Link> 로 감싸 클릭 가능하게 쓰던 경우를 위한 옵션.
   final VoidCallback? onTap;

@@ -52,29 +52,29 @@ class AppChip extends StatelessWidget {
   static _ChipSpec _specFor(AppChipVariant variant) {
     switch (variant) {
       case AppChipVariant.red:
-        return const _ChipSpec(
-          background: Color(0x26EF4444), // red-500 / 15%
+        return _ChipSpec(
+          background: AppColors.red.withValues(alpha: 0.15), // red-500 / 15%
           foreground: AppColors.redSoft, // red-400
         );
       case AppChipVariant.blue:
-        return const _ChipSpec(
-          background: Color(0x263B82F6), // blue-500 / 15%
+        return _ChipSpec(
+          background: AppColors.blueSoft.withValues(alpha: 0.15), // blue-500 / 15%
           foreground: AppColors.blueSoft, // blue-400
         );
       case AppChipVariant.neutral:
-        return const _ChipSpec(
+        return _ChipSpec(
           background: AppColors.faintBorder, // white / 6%
           foreground: AppColors.textMuted,
         );
       case AppChipVariant.mono:
-        return const _ChipSpec(
+        return _ChipSpec(
           background: AppColors.divider, // white / 7%
           foreground: AppColors.slate300,
           isPill: false,
         );
       case AppChipVariant.ended:
-        return const _ChipSpec(
-          background: Color(0x0AFFFFFF), // white / 4%
+        return _ChipSpec(
+          background: AppColors.white.withValues(alpha: 0.04), // white / 4%
           foreground: AppColors.textEnded,
         );
     }

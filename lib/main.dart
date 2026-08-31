@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app.dart';
+import 'services/app_theme_controller.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/fmk_live_activity_bridge.dart';
 import 'services/live_activity_service.dart';
@@ -127,8 +128,13 @@ void main() {
 
 /// 앱 부팅(라이브 폴링·위젯 브리지·알림 재등록 후 runApp). Sentry 초기화
 /// 여부와 무관하게 동일한 시작 절차를 공유한다.
-void _bootstrap() {
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 저장된 앱 테마를 첫 프레임 전에 적용한다(기본 다크 → 저장 테마로
+  // 번쩍이는 플래시 방지). prefs 실패 시 기본 다크로 계속 진행.
+  try {
+    await appThemeController.load();
+  } catch (_) {}
   liveSessionController.attachLifecycle();
   liveSessionController.enabled = true;
   // iOS Live Activity(잠금화면·다이나믹 아일랜드) — 라이브 폴링과 동기화.

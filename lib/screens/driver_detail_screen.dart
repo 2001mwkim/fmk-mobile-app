@@ -193,7 +193,7 @@ class _DriverHero extends StatelessWidget {
                   const SizedBox(height: 7),
                   Text(
                     standing.driverKo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.white,
                       fontSize: 22,
                       height: 1.12,
@@ -204,7 +204,7 @@ class _DriverHero extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     standing.driverEn,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.nameMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -224,7 +224,7 @@ class _DriverHero extends StatelessWidget {
                     standing.position == 1
                         ? '챔피언십 리더'
                         : '선두와 ${_formatPoints(gapToLeader)} PTS 차이',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -252,7 +252,7 @@ class _DriverHero extends StatelessWidget {
                             child: Text(
                               '${standing.teamKo} · $nationality',
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.slate300,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -261,7 +261,7 @@ class _DriverHero extends StatelessWidget {
                           ),
                           if (onOpenTeam != null) ...[
                             const SizedBox(width: 2),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right_rounded,
                               size: 16,
                               color: AppColors.textMuted,
@@ -375,7 +375,7 @@ class _TeammateCard extends StatelessWidget {
         const SizedBox(height: 7),
         Text(
           'P${value.position}  ·  ${value.points} PTS',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.white,
             fontSize: 13,
             fontWeight: FontWeight.w900,
@@ -404,7 +404,7 @@ class _RecentResultsCard extends StatelessWidget {
             child: DetailSectionTitle('최근 5경기'),
           ),
           if (results.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
               child: Text(
                 '아직 기록된 결과가 없습니다.',
@@ -424,7 +424,7 @@ class _RecentResultsCard extends StatelessWidget {
                     horizontal: 16,
                     vertical: 11,
                   ),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(top: BorderSide(color: AppColors.rowBorder)),
                   ),
                   child: Row(
@@ -459,7 +459,7 @@ class _RecentResultsCard extends StatelessWidget {
                           children: [
                             Text(
                               form.race.nameKo,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -468,7 +468,7 @@ class _RecentResultsCard extends StatelessWidget {
                             const SizedBox(height: 3),
                             Text(
                               'R${form.race.round} · ${form.result.points} PTS',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textEnded,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
@@ -477,7 +477,7 @@ class _RecentResultsCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
                         color: AppColors.textEnded,
                         size: 18,

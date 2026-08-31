@@ -32,7 +32,7 @@ class HomeQuickActionsCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '위젯 추가 방법',
                 style: TextStyle(
                   color: AppColors.white,
@@ -52,7 +52,7 @@ class HomeQuickActionsCard extends StatelessWidget {
                   children: [
                     Text(
                       '${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.redSoft,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
@@ -62,7 +62,7 @@ class HomeQuickActionsCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         step,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSoft,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -162,7 +162,7 @@ class _WidgetPickerSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '추가할 위젯 선택',
               style: TextStyle(
                 color: AppColors.white,
@@ -267,7 +267,7 @@ class _WidgetOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -278,7 +278,7 @@ class _WidgetOptionTile extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -287,7 +287,7 @@ class _WidgetOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 18,
                 color: AppColors.textMuted,
@@ -341,7 +341,7 @@ class _QuickActionTile extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -352,7 +352,7 @@ class _QuickActionTile extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,

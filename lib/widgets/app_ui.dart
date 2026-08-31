@@ -95,7 +95,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xxs),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.tileSurface,
         borderRadius: AppRadius.mediumBorder,
         border: Border.fromBorderSide(BorderSide(color: AppColors.hairline)),

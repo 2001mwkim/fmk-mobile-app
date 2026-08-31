@@ -40,12 +40,12 @@ class LicensedImageView extends StatelessWidget {
                 loadingBuilder: (context, child, progress) =>
                     progress == null ? child : const _ImageLoading(),
               ),
-            const DecoratedBox(
+            DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0x99090B12)],
+                  colors: [Colors.transparent, AppColors.background.withValues(alpha: 0.6)],
                   stops: [0.62, 1],
                 ),
               ),
@@ -71,13 +71,13 @@ class _CreditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xB3090B12),
+      color: AppColors.background.withValues(alpha: 0.7),
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         key: const ValueKey('photo-credits-button'),
         borderRadius: BorderRadius.circular(999),
         onTap: () => _showCredits(context, image),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -120,7 +120,7 @@ Future<void> _showCredits(BuildContext context, LicensedImage image) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.photo_camera_outlined,
@@ -142,7 +142,7 @@ Future<void> _showCredits(BuildContext context, LicensedImage image) {
             Text(
               'Photo: ${image.author} · ${image.license}'
               '${image.modified ? ' · Cropped' : ''}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.slate300,
                 fontSize: 13,
                 height: 1.5,
@@ -215,7 +215,7 @@ class _ImageLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    return ColoredBox(
       color: AppColors.tileSurface,
       child: Center(
         child: SizedBox(

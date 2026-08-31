@@ -7,15 +7,18 @@ class AppTheme {
 
   static const String fontFamily = 'Pretendard';
 
-  static ThemeData dark() {
+  /// 현재 선택된 팔레트(AppColors.palette)로 ThemeData 를 만든다.
+  /// 테마 전환 시 app.dart 가 이 함수를 다시 불러 MaterialApp 을 리빌드한다.
+  /// AppColors 가 getter 라 내부에 const 위젯 테마를 둘 수 없음에 주의.
+  static ThemeData current() {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.red,
-      brightness: Brightness.dark,
+      brightness: AppColors.brightness,
       primary: AppColors.red,
       surface: AppColors.card,
     );
 
-    const baseText = TextStyle(
+    final baseText = TextStyle(
       fontFamily: fontFamily,
       color: AppColors.white,
       leadingDistribution: TextLeadingDistribution.even,
@@ -72,12 +75,12 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: AppColors.brightness,
       fontFamily: fontFamily,
       colorScheme: colorScheme,
       textTheme: textTheme,
       scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.white,
         centerTitle: false,
@@ -85,20 +88,20 @@ class AppTheme {
         scrolledUnderElevation: 0,
       ),
       // 하단 네비는 widgets/bottom_nav.dart 의 커스텀 위젯이 담당.
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 0,
         // 웹 Card.tsx rounded-2xl + border-white/10
         shape: RoundedRectangleBorder(
           side: BorderSide(color: AppColors.border),
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
         ),
       ),
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: AppColors.border,
         thickness: 1,
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
+      progressIndicatorTheme: ProgressIndicatorThemeData(
         color: AppColors.red,
       ),
       textButtonTheme: TextButtonThemeData(
@@ -111,4 +114,7 @@ class AppTheme {
       ),
     );
   }
+
+  /// 이전 이름 호환(테마 도입 전 유일한 진입점). 새 코드는 current() 사용.
+  static ThemeData dark() => current();
 }

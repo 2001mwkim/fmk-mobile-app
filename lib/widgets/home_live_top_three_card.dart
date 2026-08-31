@@ -45,14 +45,14 @@ class HomeLiveTopThreeCard extends StatelessWidget {
     final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
 
     final surface = Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: _radius,
       ),
       foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.all(
-          color: ended ? AppColors.border : const Color(0x66EF4444), // red/40
+          color: ended ? AppColors.border : AppColors.red.withValues(alpha: 0.4), // red/40
         ),
       ),
       child: ClipRRect(
@@ -103,7 +103,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
                       s.sessionTitleKo,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         color: AppColors.white,
                         fontWeight: FontWeight.w800,
@@ -133,7 +133,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
                 raceNameKo,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   color: AppColors.white,
                   fontWeight: FontWeight.w800,
@@ -171,7 +171,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
             ),
             child: Text(
               lapText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontFamily: 'Pretendard',
                 color: AppColors.white,
@@ -185,7 +185,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
               s.topThreeLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 color: AppColors.muted,
                 fontWeight: FontWeight.w700,
@@ -200,7 +200,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         color: AppColors.muted,
         fontWeight: FontWeight.w700,
@@ -211,7 +211,7 @@ class HomeLiveTopThreeCard extends StatelessWidget {
   Widget _footer(bool ended) {
     final color = ended ? AppColors.nameMuted : AppColors.redSoft;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.black20, // black/20
         border: Border(top: BorderSide(color: AppColors.hairline)), // white/8
       ),
@@ -246,7 +246,7 @@ class _StaleBadge extends StatelessWidget {
         color: AppColors.hairline, // white/8
         borderRadius: BorderRadius.circular(5),
       ),
-      child: const Text(
+      child: Text(
         '업데이트 지연',
         style: TextStyle(
           fontSize: 10,
@@ -271,7 +271,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: ended
-            ? const Color(0x1AFFFFFF)
+            ? AppColors.border
             : AppColors.red, // white/10 : red
         borderRadius: BorderRadius.circular(6),
       ),
@@ -282,7 +282,7 @@ class _StatusBadge extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: ended ? AppColors.muted : AppColors.white,
+              color: ended ? AppColors.muted : AppColors.onAccent,
               shape: BoxShape.circle,
             ),
           ),
@@ -291,7 +291,7 @@ class _StatusBadge extends StatelessWidget {
             ended ? label : 'LIVE',
             style: TextStyle(
               fontSize: 10,
-              color: ended ? AppColors.nameMuted : AppColors.white,
+              color: ended ? AppColors.nameMuted : AppColors.onAccent,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -325,7 +325,7 @@ class _LiveClock extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontFamily: 'Pretendard',
             color: AppColors.heroSub,
@@ -357,7 +357,7 @@ class _TopThreeRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isFirst
             ? null
-            : const Border(
+            : Border(
                 top: BorderSide(color: AppColors.faintBorder),
               ), // white/6
       ),
@@ -379,10 +379,10 @@ class _TopThreeRow extends StatelessWidget {
             width: 38,
             child: Text(
               driver.code,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontFamily: 'Pretendard',
-                color: Color(0xFFE8EDF6),
+                color: AppColors.metallic,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
               ),
@@ -394,7 +394,7 @@ class _TopThreeRow extends StatelessWidget {
               driver.displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.white,
                 fontWeight: FontWeight.w700,

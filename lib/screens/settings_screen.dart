@@ -12,6 +12,7 @@ import '../widgets/my_picks_card.dart';
 import '../services/live_activity_service.dart';
 import '../services/live_session_controller.dart';
 import '../services/notification_settings_controller.dart';
+import '../services/app_theme_controller.dart';
 import '../services/notification_service.dart';
 import '../services/widget_theme_controller.dart';
 
@@ -21,12 +22,12 @@ const String _f1dbUrl = 'https://github.com/f1db/f1db';
 const String _privacyPolicyUrl = 'https://www.formulamagazine.kr/privacy';
 
 // 웹 설정 페이지 전용 색.
-const Color _muted = AppColors.muted; // #7880a0
-const Color _sectionMuted = AppColors.textMuted; // 섹션 제목/배지 텍스트
-const Color _nameMuted = AppColors.nameMuted; // #aab0cc
-const Color _tileSurface = AppColors.tileSurface; // #0e1018
-const Color _fmkDivider = AppColors.divider; // white/7
-const Color _faintBorder = AppColors.faintBorder; // white/6
+final Color _muted = AppColors.muted; // #7880a0
+final Color _sectionMuted = AppColors.textMuted; // 섹션 제목/배지 텍스트
+final Color _nameMuted = AppColors.nameMuted; // #aab0cc
+final Color _tileSurface = AppColors.tileSurface; // #0e1018
+final Color _fmkDivider = AppColors.divider; // white/7
+final Color _faintBorder = AppColors.faintBorder; // white/6
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -46,6 +47,8 @@ class SettingsScreen extends StatelessWidget {
             // fmkwidget://mypicks 가 이 화면을 연다(app.dart). 세션 알림은 홈
             // 헤더의 알림 버튼 → NotificationSettingsScreen 으로 이동했다.
             const _Section(title: 'MY PICKS', child: MyPicksCard()),
+            const SizedBox(height: 20),
+            const _Section(title: '테마', child: _AppThemeCard()),
             const SizedBox(height: 20),
             const _Section(title: '위젯', child: _WidgetThemeCard()),
             const SizedBox(height: 20),
@@ -110,7 +113,7 @@ class _BackButtonRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chevron_left,
               size: 24,
               color: AppColors.white,
@@ -134,7 +137,7 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'VIA FORMULA',
             style: TextStyle(
               fontSize: 11,
@@ -146,7 +149,7 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               color: AppColors.white,
               fontWeight: FontWeight.w800,
@@ -174,7 +177,7 @@ class _Section extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: _sectionMuted,
               fontWeight: FontWeight.w800,
@@ -183,6 +186,72 @@ class _Section extends StatelessWidget {
         ),
         child,
       ],
+    );
+  }
+}
+
+/// 앱 내부 색 테마 선택 카드. 위젯 테마와 별개다(홈 위젯은 네이티브 팔레트).
+/// 전환 시 MaterialApp 이 키 교체로 리마운트되므로(app.dart) 스낵바 대신
+/// 화면 전체가 즉시 새 팔레트로 바뀌는 것 자체가 피드백이다.
+class _AppThemeCard extends StatefulWidget {
+  const _AppThemeCard();
+
+  @override
+  State<_AppThemeCard> createState() => _AppThemeCardState();
+}
+
+class _AppThemeCardState extends State<_AppThemeCard> {
+  AppThemeMode _mode = appThemeController.mode;
+  bool _saving = false;
+
+  Future<void> _save(AppThemeMode mode) async {
+    if (_saving || mode == _mode) return;
+    setState(() {
+      _mode = mode;
+      _saving = true;
+    });
+    // 리마운트로 내비게이션 스택이 사라지므로, 설정 화면 복원을 예약한다.
+    appThemeController.markReopenSettings();
+    try {
+      await appThemeController.save(mode);
+    } catch (_) {
+      // prefs 저장 실패해도 팔레트는 이미 적용됨 — 다음 실행에만 못 미침.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardHeaderRow(title: '앱 테마', badge: '색상'),
+          const SizedBox(height: 16),
+          IgnorePointer(
+            ignoring: _saving,
+            child: Opacity(
+              opacity: _saving ? 0.65 : 1,
+              child: AppSegmentedControl<AppThemeMode>(
+                values: AppThemeMode.values,
+                selected: _mode,
+                labelFor: (mode) => mode.label,
+                onChanged: _save,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '다크는 기본 디자인, 라이트는 흰 배경에 레드 라인, 포매코는 포뮬러 매거진 코리아 스타일(검정 배경에 옐로 라인)이에요.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: _muted,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -259,8 +328,8 @@ class _WidgetThemeCardState extends State<_WidgetThemeCard> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            '지금은 위젯 색상만 바뀌어요. 앱 전체 색상 변경은 추후 업데이트에 반영될 예정입니다.',
+          Text(
+            '홈 화면 위젯의 색상만 바뀌어요. 앱 내부 색상은 위의 앱 테마에서 바꿀 수 있어요.',
             style: TextStyle(
               fontSize: 11.5,
               color: _muted,
@@ -415,7 +484,7 @@ class _NotificationToggleRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     color: AppColors.white,
                     fontWeight: FontWeight.w800,
@@ -424,7 +493,7 @@ class _NotificationToggleRow extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: _muted,
                     height: 1.4,
@@ -471,7 +540,7 @@ class _CardHeaderRow extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   color: AppColors.white,
                   fontWeight: FontWeight.w800,
@@ -486,7 +555,7 @@ class _CardHeaderRow extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: _muted,
               height: 1.45,
@@ -507,14 +576,14 @@ class _FmkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: _radius,
       ),
-      foregroundDecoration: const BoxDecoration(
+      foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.fromBorderSide(
-          BorderSide(color: Color(0x33EF4444)), // red-500/20
+          BorderSide(color: AppColors.red.withValues(alpha: 0.2)), // red-500/20
         ),
       ),
       child: ClipRRect(
@@ -522,7 +591,7 @@ class _FmkCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +629,7 @@ class _FmkCard extends StatelessWidget {
               ),
             ),
             DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color(0x1A000000), // black/10
                 border: Border(top: BorderSide(color: _fmkDivider)),
               ),
@@ -616,7 +685,7 @@ class _LinkRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         color: AppColors.white,
                         fontWeight: FontWeight.w700,
@@ -626,7 +695,7 @@ class _LinkRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: _muted,
                           fontWeight: FontWeight.w600,
@@ -657,13 +726,13 @@ class _AppInfoCard extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: _faintBorder)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Row(
                     children: [
                       Expanded(
@@ -740,7 +809,7 @@ class _DlRow extends StatelessWidget {
     final row = Container(
       decoration: BoxDecoration(
         border: showTopBorder
-            ? const Border(top: BorderSide(color: _faintBorder))
+            ? Border(top: BorderSide(color: _faintBorder))
             : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -749,7 +818,7 @@ class _DlRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: _muted,
                 fontWeight: FontWeight.w600,
@@ -765,7 +834,7 @@ class _DlRow extends StatelessWidget {
                 color: _nameMuted,
                 fontWeight: FontWeight.w700,
                 decoration: onTap == null ? null : TextDecoration.underline,
-                decorationColor: const Color(0x33FFFFFF), // white/20
+                decorationColor: AppColors.white.withValues(alpha: 0.2), // white/20
               ),
             ),
           ),

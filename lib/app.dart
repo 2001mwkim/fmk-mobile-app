@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/calendar_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/live_center_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/standings_screen.dart';
+import 'services/app_theme_controller.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/notification_service.dart';
 import 'services/notification_settings_controller.dart';
@@ -23,11 +25,33 @@ class FmkApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '비아 포뮬러',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
-      home: MainShell(runStartupPrompts: runStartupPrompts),
+    // 테마 전환 시 MaterialApp 전체를 리빌드한다 — AppColors 가 정적 getter 라
+    // 하위 위젯도 리빌드 한 번이면 새 팔레트를 읽는다(부분 리빌드 불가 구조).
+    return ValueListenableBuilder<AppThemeMode>(
+      valueListenable: appThemeController.notifier,
+      builder: (context, mode, _) {
+        // 앱에 AppBar 가 없어 상태바 아이콘 밝기를 아무도 안 정한다 —
+        // 라이트 테마에서 흰 아이콘이 흰 배경에 묻히지 않게 명시한다.
+        final isLight = AppColors.brightness == Brightness.light;
+        final overlay =
+            (isLight ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light)
+                .copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: AppColors.navSurface,
+          systemNavigationBarIconBrightness:
+              isLight ? Brightness.dark : Brightness.light,
+        );
+        return MaterialApp(
+          key: ValueKey<AppThemeMode>(mode),
+          title: '비아 포뮬러',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.current(),
+          home: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: overlay,
+            child: MainShell(runStartupPrompts: runStartupPrompts),
+          ),
+        );
+      },
     );
   }
 }
@@ -66,6 +90,20 @@ class _MainShellState extends State<MainShell> {
       null,
     ];
     _bindWidgetLaunch();
+    // 테마 전환 리마운트 직후라면 설정 화면을 즉시(무애니메이션) 복원한다 —
+    // 사용자는 설정에서 테마를 바꿨는데 홈으로 튕기면 어색하다.
+    if (appThemeController.consumeReopenSettings()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          PageRouteBuilder<void>(
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+            pageBuilder: (_, _, _) => const SettingsScreen(),
+          ),
+        );
+      });
+    }
     if (widget.runStartupPrompts) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _maybePromptNotificationOptIn(),
@@ -204,12 +242,12 @@ class _NotificationOptInDialog extends StatelessWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [AppColors.heroGradTop, AppColors.card],
           ),
-          border: Border.all(color: const Color(0x33F25C5C)),
+          border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(22),
           boxShadow: const [
             BoxShadow(
@@ -227,9 +265,9 @@ class _NotificationOptInDialog extends StatelessWidget {
               child: Container(
                 width: 150,
                 height: 150,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0x12F25C5C),
+                  color: AppColors.heroAccent.withValues(alpha: 0.07),
                 ),
               ),
             ),
@@ -243,18 +281,18 @@ class _NotificationOptInDialog extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0x1FF25C5C),
-                      border: Border.all(color: const Color(0x4DF25C5C)),
+                      color: AppColors.heroAccent.withValues(alpha: 0.12),
+                      border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_active_outlined,
                       color: AppColors.heroAccentBright,
                       size: 25,
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     '레이스 시작을 놓치지 마세요',
                     style: TextStyle(
                       color: AppColors.white,
@@ -265,7 +303,7 @@ class _NotificationOptInDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     '레이스 시작 30분 전에 알림을 보내드려요.',
                     style: TextStyle(
                       color: AppColors.nameMuted,
@@ -278,7 +316,7 @@ class _NotificationOptInDialog extends StatelessWidget {
                     children: [
                       TextButton(
                         onPressed: onLater,
-                        child: const Text(
+                        child: Text(
                           '다음에',
                           style: TextStyle(color: AppColors.muted),
                         ),
@@ -288,7 +326,7 @@ class _NotificationOptInDialog extends StatelessWidget {
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.red,
-                            foregroundColor: AppColors.white,
+                            foregroundColor: AppColors.onAccent,
                             minimumSize: const Size(0, 46),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

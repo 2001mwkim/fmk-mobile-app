@@ -207,7 +207,7 @@ class _Header extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
+          children: [
             Expanded(
               child: Text(
                 '내 드라이버 · 내 팀',
@@ -223,7 +223,7 @@ class _Header extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           '응원하는 드라이버와 팀을 고르면 홈 위젯(MY DRIVER · MY TEAM)에 순위·포인트가 팀 컬러로 표시됩니다.',
           style: TextStyle(
             fontSize: 12,
@@ -351,7 +351,7 @@ class _PickTile extends StatelessWidget {
                           subline ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.nameMuted,
@@ -361,7 +361,7 @@ class _PickTile extends StatelessWidget {
                         Text(
                           statLine ?? '',
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: AppColors.slate300,
@@ -370,14 +370,14 @@ class _PickTile extends StatelessWidget {
                       ] else ...[
                         Text(
                           emptyLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: AppColors.white,
                           ),
                         ),
                         const SizedBox(height: 3),
-                        const Text(
+                        Text(
                           '탭해서 고르기',
                           style: TextStyle(
                             fontSize: 11,
@@ -597,7 +597,7 @@ class _PickerScaffold extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             letterSpacing: 1.8,
                             color: AppColors.redSoft,
@@ -607,7 +607,7 @@ class _PickerScaffold extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           subtitle,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             color: AppColors.white,
                             fontWeight: FontWeight.w900,
@@ -694,7 +694,7 @@ class _PickGridCard extends StatelessWidget {
                         color: accent,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.check,
                         size: 12,
                         color: AppColors.white,
@@ -720,7 +720,7 @@ class _PickGridCard extends StatelessWidget {
                           Text(
                             headline,
                             maxLines: 1,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               height: 1,
                               letterSpacing: -0.4,
@@ -735,7 +735,7 @@ class _PickGridCard extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textSoft,
@@ -749,7 +749,7 @@ class _PickGridCard extends StatelessWidget {
                               subtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.muted,
@@ -759,7 +759,7 @@ class _PickGridCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             stat,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               color: AppColors.slate300,

@@ -11,11 +11,11 @@ import '../widgets/app_ui.dart';
 import 'race_detail_screen.dart';
 
 // 웹 calendar 전용 색 (globals/CalendarClient 에서 사용하는 값).
-const Color _muted = AppColors.muted; // #7880a0
-const Color _nameMuted = AppColors.nameMuted; // #aab0cc (비활성 카드 이름)
-const Color _endedSurface = AppColors.tileSurface; // #0e1018 (비활성 카드 표면)
-const Color _hairline = AppColors.hairline; // white/8
-const Color _faintLine = AppColors.faintBorder; // white/6
+final Color _muted = AppColors.muted; // #7880a0
+final Color _nameMuted = AppColors.nameMuted; // #aab0cc (비활성 카드 이름)
+final Color _endedSurface = AppColors.tileSurface; // #0e1018 (비활성 카드 표면)
+final Color _hairline = AppColors.hairline; // white/8
+final Color _faintLine = AppColors.faintBorder; // white/6
 
 enum _CalendarFilter {
   all('전체'),
@@ -193,7 +193,7 @@ class _InactiveDivider extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12, top: 2),
       child: Row(
         children: [
-          const Text(
+          Text(
             '종료된 그랑프리',
             style: TextStyle(
               fontSize: 12,
@@ -257,7 +257,7 @@ class _ActiveRaceCard extends StatelessWidget {
                 children: [
                   Text(
                     race.roundLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       color: AppColors.textEnded,
                       fontWeight: FontWeight.w800,
@@ -273,7 +273,7 @@ class _ActiveRaceCard extends StatelessWidget {
                             race.nameKo,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               height: 1.25,
                               color: AppColors.white,
@@ -298,7 +298,7 @@ class _ActiveRaceCard extends StatelessWidget {
                 children: [
                   Text(
                     dateText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppColors.white,
                       fontWeight: FontWeight.w700,
@@ -310,7 +310,7 @@ class _ActiveRaceCard extends StatelessWidget {
                       '${race.circuitKo} · ${race.cityKo}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: _muted),
+                      style: TextStyle(fontSize: 11, color: _muted),
                     ),
                   ),
                 ],
@@ -353,7 +353,7 @@ class _ActiveRaceCard extends StatelessWidget {
                       race.nameKo,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         color: AppColors.white,
                         fontWeight: FontWeight.w900,
@@ -375,7 +375,7 @@ class _ActiveRaceCard extends StatelessWidget {
           _RaceInfoLine(
             dateText: dateText,
             venueText: '${race.circuitKo} · ${race.cityKo}',
-            dateStyle: const TextStyle(
+            dateStyle: TextStyle(
               fontSize: 15,
               fontFamily: 'Pretendard',
               color: AppColors.redSoft,
@@ -385,13 +385,13 @@ class _ActiveRaceCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(top: BorderSide(color: _hairline)),
             ),
             padding: const EdgeInsets.only(top: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   '상세 일정 보기',
                   style: TextStyle(
@@ -440,7 +440,7 @@ class _RaceInfoLine extends StatelessWidget {
           dateText,
           style:
               dateStyle ??
-              const TextStyle(
+              TextStyle(
                 fontSize: 15,
                 fontFamily: 'Pretendard',
                 color: AppColors.white,
@@ -454,7 +454,7 @@ class _RaceInfoLine extends StatelessWidget {
             venueText,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: _muted, height: 1.2),
+            style: TextStyle(fontSize: 12, color: _muted, height: 1.2),
           ),
         ),
       ],
@@ -492,7 +492,7 @@ class _CompactRaceCard extends StatelessWidget {
                     children: [
                       Text(
                         race.roundLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontFamily: 'Pretendard',
                           color: AppColors.textEnded,
@@ -506,7 +506,7 @@ class _CompactRaceCard extends StatelessWidget {
                           race.nameKo,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             color: _nameMuted,
                             fontWeight: FontWeight.w700,

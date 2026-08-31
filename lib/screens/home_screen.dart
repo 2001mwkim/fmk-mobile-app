@@ -306,7 +306,7 @@ class _NextRaceCard extends StatelessWidget {
                             semanticsLabel: race.nameKo,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 30,
                               height: 1.1,
                               color: AppColors.white,
@@ -322,7 +322,7 @@ class _NextRaceCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   '${race.circuitKo} · ${race.locationLabel}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: AppColors.heroSubText,
                     fontWeight: FontWeight.w500,
@@ -338,7 +338,7 @@ class _NextRaceCard extends StatelessWidget {
             child: boxedSession == null
                 ? Text(
                     race.cancelNote ?? '세션 정보가 아직 준비되지 않았습니다.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textMuted,
                     ),
@@ -357,7 +357,7 @@ class _NextRaceCard extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0x40000000), // black/25
+                color: AppColors.heroListSurface, // 다크: black/25
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -399,7 +399,7 @@ class _HeroBadge extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
@@ -501,16 +501,16 @@ class _HeroCountSeg extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(top: 10, bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0x0DFFFFFF), // white/5
+        color: AppColors.rowBorder, // white/5
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x12FFFFFF)), // white/7
+        border: Border.all(color: AppColors.divider), // white/7
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               height: 1.1,
               color: AppColors.white,
@@ -521,7 +521,7 @@ class _HeroCountSeg extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               color: AppColors.heroMeta,
               fontWeight: FontWeight.w600,
@@ -557,8 +557,9 @@ class _HeroSessionRow extends StatelessWidget {
     final status = getSessionStatus(race, session, now);
     final isDone = status == SessionStatus.ended;
     final highlight = isNext && !isDone;
-    final isRace = session.id == 'race' && !isDone;
-    final emphasized = highlight || isRace;
+    // 레이스 행 상시 강조는 2026-08 제거 — 다음 세션 하이라이트와 겹쳐
+    // "다음이 레이스인가?" 하는 혼동을 줬다. 강조는 다음 세션 하나만.
+    final emphasized = highlight;
 
     final nameColor = isDone
         ? AppColors.textEnded
@@ -583,7 +584,7 @@ class _HeroSessionRow extends StatelessWidget {
             width: 11,
             child: Center(
               child: isDone
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
                       size: 11,
                       color: AppColors.textEnded,

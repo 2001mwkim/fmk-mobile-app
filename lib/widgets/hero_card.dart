@@ -28,17 +28,17 @@ class HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         // 공용 카드(AppCard)와 동일한 네이비로 통일 — 아래 레드 테두리만이
         // 히어로를 구분하는 액센트가 된다.
         color: AppColors.card,
         borderRadius: _radius,
       ),
       // 테두리는 내용 위에 그려 모서리에서 가려지지 않게 한다.
-      foregroundDecoration: const BoxDecoration(
+      foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.fromBorderSide(
-          BorderSide(color: Color(0x38F25C5C)), // rgba(242,92,92,0.22)
+          BorderSide(color: AppColors.heroAccent.withValues(alpha: 0.22)), // rgba(242,92,92,0.22)
         ),
       ),
       child: ClipRRect(

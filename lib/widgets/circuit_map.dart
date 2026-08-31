@@ -44,7 +44,7 @@ class _TrackMapPlaceholder extends StatelessWidget {
     return SizedBox.expand(
       child: CustomPaint(
         painter: const _DiagonalBandsPainter(),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -53,7 +53,7 @@ class _TrackMapPlaceholder extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontFamily: 'Pretendard',
-                  color: Color(0xFF6B7090),
+                  color: AppColors.circuitLabel,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 2.5,
                 ),
@@ -81,7 +81,7 @@ class _DiagonalBandsPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = AppColors.tileSurface);
 
     final paint = Paint()
-      ..color = const Color(0xFF12141E)
+      ..color = AppColors.circuitBand
       ..style = PaintingStyle.stroke
       ..strokeWidth = 11; // 11px 밴드
 

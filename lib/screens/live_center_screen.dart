@@ -73,7 +73,7 @@ class _OfflineCenter extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              const _StatusPill(label: '다음 라이브', color: AppColors.blueSoft),
+              _StatusPill(label: '다음 라이브', color: AppColors.blueSoft),
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
@@ -83,7 +83,7 @@ class _OfflineCenter extends StatelessWidget {
                       '${race.nameKo} · ${session?.fullLabel ?? '일정 준비 중'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -93,7 +93,7 @@ class _OfflineCenter extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         '${session.date} ${session.time} KST',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -103,7 +103,7 @@ class _OfflineCenter extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.schedule, color: AppColors.textMuted, size: 18),
+              Icon(Icons.schedule, color: AppColors.textMuted, size: 18),
             ],
           ),
         ),
@@ -116,9 +116,9 @@ class _OfflineCenter extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _TimingPreviewCard(session: session),
-              const Divider(height: 1, color: AppColors.rowBorder),
+              Divider(height: 1, color: AppColors.rowBorder),
               const _RaceControlPreviewCard(),
-              const Divider(height: 1, color: AppColors.rowBorder),
+              Divider(height: 1, color: AppColors.rowBorder),
               const _WeatherPreviewCard(),
             ],
           ),
@@ -146,7 +146,7 @@ class _TimingPreviewCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '실시간 순위',
                   style: TextStyle(
@@ -158,7 +158,7 @@ class _TimingPreviewCard extends StatelessWidget {
               ),
               Text(
                 'TIME / GAP',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.faint,
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
@@ -172,7 +172,7 @@ class _TimingPreviewCard extends StatelessWidget {
           child: Text(
             '전체 드라이버 순위와 랩타임·타이어·섹터가 실시간으로 올라옵니다.'
             '${startLabel == null ? '' : '\n$startLabel'}',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 12,
               height: 1.5,
@@ -190,7 +190,7 @@ class _WeatherPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +222,7 @@ class _RaceControlPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +309,7 @@ class _SessionHeader extends StatelessWidget {
               if (snapshot.updatedAtLabel != null)
                 Text(
                   snapshot.updatedAtLabel!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.faint,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -346,7 +346,7 @@ class _SessionHeader extends StatelessWidget {
                             race?.nameKo ?? snapshot.raceName ?? 'F1 라이브',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.white,
                               fontSize: 20,
                               height: 1.15,
@@ -359,7 +359,7 @@ class _SessionHeader extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       snapshot.sessionTitleKo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -414,7 +414,7 @@ class _TimingMetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.black20,
+        color: AppColors.controlSurface,
         border: Border.all(color: AppColors.hairline),
         borderRadius: BorderRadius.circular(9),
       ),
@@ -423,7 +423,7 @@ class _TimingMetricChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.redSoft,
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -433,7 +433,7 @@ class _TimingMetricChip extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.white,
               fontSize: 14,
               fontWeight: FontWeight.w900,
@@ -664,7 +664,7 @@ class _WeatherMetric extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -776,7 +776,7 @@ class _TimingCardState extends State<_TimingCard> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   '실시간 순위',
                   style: TextStyle(
                     color: AppColors.white,
@@ -790,7 +790,7 @@ class _TimingCardState extends State<_TimingCard> {
                 if (headerLabel != null)
                   Text(
                     headerLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.faint,
                       fontSize: 8,
                       fontWeight: FontWeight.w800,
@@ -808,7 +808,7 @@ class _TimingCardState extends State<_TimingCard> {
             ),
           ),
           if (drivers.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(16, 6, 16, 18),
               child: Text(
                 '타이밍 데이터 수신 대기 중',
@@ -928,7 +928,7 @@ class _BoardTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.black20,
+        color: AppColors.controlSurface,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -985,7 +985,7 @@ class _DriverRow extends StatelessWidget {
   final int tireScaleLaps;
   final String? qualifyingPrefix;
 
-  static const TextStyle _tinyLabelStyle = TextStyle(
+  static final TextStyle _tinyLabelStyle = TextStyle(
     color: AppColors.faint,
     fontSize: 8,
     fontWeight: FontWeight.w800,
@@ -993,10 +993,10 @@ class _DriverRow extends StatelessWidget {
   );
 
   /// 최고기록 플래그 → 색: 'ob' 퍼플(전체) / 'pb' 그린(개인) / 기본.
-  static Color _flagColor(String? flag, {Color fallback = AppColors.slate300}) {
+  static Color _flagColor(String? flag, {Color? fallback}) {
     if (flag == 'ob') return AppColors.timingPurple;
     if (flag == 'pb') return AppColors.greenSoft;
-    return fallback;
+    return fallback ?? AppColors.slate300;
   }
 
   /// 섹터 상세 — 서버가 구버전이면 sector1~3 값으로 폴백.
@@ -1018,7 +1018,7 @@ class _DriverRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.rowBorder)),
       ),
       child: Row(
@@ -1027,7 +1027,7 @@ class _DriverRow extends StatelessWidget {
             width: 25,
             child: Text(
               '${driver.position}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.slate300,
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
@@ -1047,7 +1047,7 @@ class _DriverRow extends StatelessWidget {
             width: 44,
             child: Text(
               driver.code,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
@@ -1187,7 +1187,7 @@ class _DriverRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.rowBorder)),
       ),
       child: Row(
@@ -1196,7 +1196,7 @@ class _DriverRow extends StatelessWidget {
             width: 18,
             child: Text(
               '${driver.position}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.nameMuted,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
@@ -1217,7 +1217,7 @@ class _DriverRow extends StatelessWidget {
             child: Text(
               driver.code,
               maxLines: 1,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
@@ -1256,7 +1256,7 @@ class _DriverRow extends StatelessWidget {
     );
   }
 
-  static const TextStyle _tireMetaStyle = TextStyle(
+  static final TextStyle _tireMetaStyle = TextStyle(
     color: AppColors.slate300,
     fontSize: 9.5,
     height: 1.15,
@@ -1376,7 +1376,7 @@ class _StintTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (stints.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 30,
         child: Align(
           alignment: Alignment.centerLeft,
@@ -1419,7 +1419,7 @@ class _StintTimeline extends StatelessWidget {
                     '${boundaries[index]}',
                     maxLines: 1,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.slate300,
                       fontSize: 9.5,
                       height: 1,
@@ -1505,7 +1505,7 @@ class _TyreBadge extends StatelessWidget {
       ),
       child: Text(
         _compoundShort(compound),
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.white,
           fontSize: 9,
           height: 1,
@@ -1520,7 +1520,9 @@ class _TyreBadge extends StatelessWidget {
 /// 인터미디엇 그린 · 웻 블루). 노란색 금지 규칙의 예외 — 깃발처럼 F1
 /// 도메인 의미색이라 다른 색으로 바꾸면 오히려 오독된다.
 Color _compoundColor(String value) => switch (value.trim().toUpperCase()) {
-  'SOFT' => AppColors.red,
+  // 테마 액센트(red)가 아니라 고정 의미색 — FMK(옐로 액센트) 테마에서도
+  // 소프트는 레드로 보여야 미디엄과 구분된다.
+  'SOFT' => AppColors.tyreSoft,
   'MEDIUM' => AppColors.flagYellow,
   'HARD' => AppColors.slate300,
   'INTERMEDIATE' => AppColors.greenSoft,
@@ -1541,7 +1543,7 @@ class _WeatherCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '트랙 & 날씨',
             style: TextStyle(
               color: AppColors.white,
@@ -1558,7 +1560,7 @@ class _WeatherCard extends StatelessWidget {
           ),
           if (weather.rainfall == true) ...[
             const SizedBox(height: 12),
-            const _StatusPill(label: '강수 감지', color: AppColors.blueSoft),
+            _StatusPill(label: '강수 감지', color: AppColors.blueSoft),
           ],
         ],
       ),
@@ -1591,7 +1593,7 @@ class _RaceControlCardState extends State<_RaceControlCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '레이스 컨트롤',
             style: TextStyle(
               color: AppColors.white,
@@ -1601,7 +1603,7 @@ class _RaceControlCardState extends State<_RaceControlCard> {
           ),
           const SizedBox(height: 12),
           if (messages.isEmpty)
-            const Text(
+            Text(
               '새로운 레이스 컨트롤 메시지가 없습니다.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             )
@@ -1645,7 +1647,7 @@ class _ControlMessage extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.rowBorder)),
       ),
       child: Row(
@@ -1667,7 +1669,7 @@ class _ControlMessage extends StatelessWidget {
               children: [
                 Text(
                   message.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.slate300,
                     fontSize: 12,
                     height: 1.4,
@@ -1678,7 +1680,7 @@ class _ControlMessage extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     [?time, ?message.category].join(' · '),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.faint,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -1805,7 +1807,8 @@ Color _messageColor(LiveRaceControlMessage message) {
   final text =
       '${message.flag ?? ''} ${message.category ?? ''} ${message.message}'
           .toUpperCase();
-  if (text.contains('RED')) return AppColors.red;
+  // FIA 적기 의미색 — 테마 액센트와 무관하게 항상 레드.
+  if (text.contains('RED')) return AppColors.flagRed;
   if (text.contains('YELLOW') ||
       text.contains('SAFETY CAR') ||
       text.contains('VSC')) {

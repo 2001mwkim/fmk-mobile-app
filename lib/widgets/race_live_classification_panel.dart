@@ -26,8 +26,8 @@ class RaceLiveClassificationPanel extends StatelessWidget {
   final bool isStale;
   final DateTime? now;
 
-  static const Color _faint = AppColors.faint;
-  static const Color _nameMuted = AppColors.nameMuted;
+  static final Color _faint = AppColors.faint;
+  static final Color _nameMuted = AppColors.nameMuted;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class RaceLiveClassificationPanel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: ClassificationPanelShell(
-        borderColor: ended ? AppColors.border : const Color(0x66EF4444),
+        borderColor: ended ? AppColors.border : AppColors.red.withValues(alpha: 0.4),
         children: [
           _header(s, ended),
           ClassificationColumnHeader(timeLabel: s.gapColumnLabel),
@@ -93,7 +93,7 @@ class RaceLiveClassificationPanel extends StatelessWidget {
                         s.sessionTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           color: AppColors.white,
                           fontWeight: FontWeight.w800,
@@ -119,7 +119,7 @@ class RaceLiveClassificationPanel extends StatelessWidget {
                   s.classificationTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: _nameMuted,
                     fontWeight: FontWeight.w800,
@@ -130,7 +130,7 @@ class RaceLiveClassificationPanel extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 '${s.classification.length} DRIVERS',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontFamily: 'Pretendard',
                   color: _faint,
@@ -155,10 +155,10 @@ class _StaleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF), // white/8
+        color: AppColors.hairline, // white/8
         borderRadius: BorderRadius.circular(5),
       ),
-      child: const Text(
+      child: Text(
         '업데이트 지연',
         style: TextStyle(
           fontSize: 10,
@@ -181,7 +181,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: ended ? const Color(0x1AFFFFFF) : AppColors.red,
+        color: ended ? AppColors.border : AppColors.red,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -191,7 +191,7 @@ class _StatusBadge extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: ended ? AppColors.muted : AppColors.white,
+              color: ended ? AppColors.muted : AppColors.onAccent,
               shape: BoxShape.circle,
             ),
           ),
@@ -200,7 +200,7 @@ class _StatusBadge extends StatelessWidget {
             ended ? liveEndedPanelLabel : 'LIVE',
             style: TextStyle(
               fontSize: 10,
-              color: ended ? AppColors.nameMuted : AppColors.white,
+              color: ended ? AppColors.nameMuted : AppColors.onAccent,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -226,7 +226,7 @@ class _LapChip extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontFamily: 'Pretendard',
           color: AppColors.white,
@@ -260,7 +260,7 @@ class _LiveClock extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontFamily: 'Pretendard',
             color: AppColors.heroSub,

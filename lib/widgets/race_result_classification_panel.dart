@@ -101,7 +101,7 @@ class RaceResultClassificationPanel extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               statusLabel!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppColors.nameMuted,
                 fontWeight: FontWeight.w700,
@@ -113,7 +113,7 @@ class RaceResultClassificationPanel extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               '$driverCount DRIVERS',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontFamily: 'Pretendard',
                 color: AppColors.faint,

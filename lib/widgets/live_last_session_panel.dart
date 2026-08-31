@@ -41,7 +41,7 @@ class LiveLastSessionPanel extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     color: AppColors.white,
                     fontWeight: FontWeight.w800,
@@ -49,7 +49,7 @@ class LiveLastSessionPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 '세션 종료 기준',
                 style: TextStyle(
                   fontSize: 10,

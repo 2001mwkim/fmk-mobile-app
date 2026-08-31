@@ -22,11 +22,11 @@ import '../widgets/race_live_classification_panel.dart';
 import '../widgets/race_result_classification_panel.dart';
 
 // 웹 상세 페이지 전용 색 (page.tsx / globals 에서 사용하는 값).
-const Color _muted = AppColors.muted; // #7880a0
-const Color _heroSub = AppColors.heroSub; // #8088a8
-const Color _nameMuted = AppColors.nameMuted; // #aab0cc
-const Color _tileSurface = AppColors.tileSurface; // #0e1018
-const Color _faintBorder = AppColors.faintBorder; // white/6
+final Color _muted = AppColors.muted; // #7880a0
+final Color _heroSub = AppColors.heroSub; // #8088a8
+final Color _nameMuted = AppColors.nameMuted; // #aab0cc
+final Color _tileSurface = AppColors.tileSurface; // #0e1018
+final Color _faintBorder = AppColors.faintBorder; // white/6
 
 class RaceDetailScreen extends StatefulWidget {
   const RaceDetailScreen({
@@ -104,7 +104,7 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
                 race.isCancelled ? '그랑프리 상세 · 취소됨' : '그랑프리 상세 · R${race.round}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   color: _muted,
                   fontWeight: FontWeight.w700,
@@ -234,7 +234,7 @@ class _SessionResultTabs extends StatelessWidget {
             raceSessionTypeLabel(type),
             style: TextStyle(
               fontSize: 12,
-              color: isActive ? AppColors.white : AppColors.textMuted,
+              color: isActive ? AppColors.onAccent : AppColors.textMuted,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -264,7 +264,7 @@ class _DetailBackButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.chevron_left, size: 22, color: AppColors.white),
@@ -297,11 +297,11 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: _radius,
       ),
-      foregroundDecoration: const BoxDecoration(
+      foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
@@ -324,7 +324,7 @@ class _HeroCard extends StatelessWidget {
                           race.nameKo,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             color: AppColors.white,
                             fontWeight: FontWeight.w900,
@@ -337,7 +337,7 @@ class _HeroCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${race.circuitKo} · ${race.locationLabel}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: _heroSub,
                       fontWeight: FontWeight.w500,
@@ -346,7 +346,7 @@ class _HeroCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${race.startDate} – ${race.endDate}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Pretendard',
                       color: AppColors.redSoft,
@@ -395,7 +395,7 @@ class _TrackMapPanel extends StatelessWidget {
       height: 158,
       width: double.infinity,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: _faintBorder)),
         ),
         child: Stack(
@@ -432,15 +432,15 @@ class _RoundPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0x80000000), // black/50
+        color: AppColors.scrimPill,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontFamily: 'Pretendard',
-          color: AppColors.slate300,
+          color: AppColors.scrimPillText,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -539,7 +539,7 @@ class _SessionScheduleList extends StatelessWidget {
         for (var g = 0; g < groups.length; g++) ...[
           if (g > 0) ...[
             const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+            Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
             const SizedBox(height: 10),
           ],
           _DayLabel(date: groups[g].date),
@@ -569,7 +569,7 @@ class _DayLabel extends StatelessWidget {
 
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontFamily: 'Pretendard',
         color: _muted,
@@ -595,7 +595,7 @@ class _SessionTimeline extends StatelessWidget {
     return Stack(
       children: [
         if (sessions.length > 1)
-          const Positioned(
+          Positioned(
             left: 5,
             top: 24,
             bottom: 24,
@@ -744,7 +744,7 @@ class _CircuitInfoCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${race.circuitKo} · ${race.locationLabel}',
-            style: const TextStyle(fontSize: 12, color: _muted),
+            style: TextStyle(fontSize: 12, color: _muted),
           ),
           if (stats.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -752,14 +752,14 @@ class _CircuitInfoCard extends StatelessWidget {
           ],
           if (lapRecord != null) ...[
             const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+            Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
             const SizedBox(height: 14),
             _LapRecordRow(record: lapRecord!),
           ],
           const SizedBox(height: 14),
-          const Divider(height: 1, color: _faintBorder),
+          Divider(height: 1, color: _faintBorder),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Circuit layouts: F1DB (CC BY 4.0)',
             style: TextStyle(
               fontSize: 10,
@@ -837,7 +837,7 @@ class _CircuitStatCell extends StatelessWidget {
                 stat.value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontFamily: 'Pretendard',
                   color: AppColors.white,
@@ -850,7 +850,7 @@ class _CircuitStatCell extends StatelessWidget {
               const SizedBox(width: 3),
               Text(
                 stat.unit!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontFamily: 'Pretendard',
                   color: _muted,
@@ -865,7 +865,7 @@ class _CircuitStatCell extends StatelessWidget {
           stat.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10.5,
             color: _muted,
             fontWeight: FontWeight.w600,
@@ -904,7 +904,7 @@ class _ResultsPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return DottedBorderBox(
       child: Column(
-        children: const [
+        children: [
           Text(
             '결과 데이터 준비 중',
             style: TextStyle(
@@ -954,7 +954,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         color: AppColors.white,
         fontWeight: FontWeight.w800,
@@ -985,7 +985,7 @@ class _LapRecordRow extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '랩 레코드',
               style: TextStyle(
                 fontSize: 11,
@@ -997,7 +997,7 @@ class _LapRecordRow extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${record.driverKo} · ${record.year}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: _nameMuted,
                 fontWeight: FontWeight.w600,
@@ -1040,7 +1040,7 @@ class _GpGuideCard extends StatelessWidget {
         child: _TyreAllocationRow(tyres: guide.tyres!),
       ));
     } else if (!race.isCancelled) {
-      sections.add(const _GuideSection(
+      sections.add(_GuideSection(
         label: '타이어 컴파운드',
         child: Text(
           '피렐리 발표 예정',
@@ -1085,7 +1085,7 @@ class _GpGuideCard extends StatelessWidget {
       if (i > 0) {
         children.add(const SizedBox(height: 16));
         children.add(
-          const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+          Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
         );
         children.add(const SizedBox(height: 14));
       }
@@ -1116,7 +1116,7 @@ class _GuideSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             color: _muted,
             fontWeight: FontWeight.w700,
@@ -1146,6 +1146,7 @@ class _TyreAllocationRow extends StatelessWidget {
             compound: tyres.soft,
             label: '소프트',
             ringColor: AppColors.tyreSoft,
+            labelColor: AppColors.tyreSoftLabel,
           ),
         ),
         Expanded(
@@ -1153,6 +1154,7 @@ class _TyreAllocationRow extends StatelessWidget {
             compound: tyres.medium,
             label: '미디엄',
             ringColor: AppColors.tyreMedium,
+            labelColor: AppColors.tyreMediumLabel,
           ),
         ),
         Expanded(
@@ -1160,6 +1162,7 @@ class _TyreAllocationRow extends StatelessWidget {
             compound: tyres.hard,
             label: '하드',
             ringColor: AppColors.tyreHard,
+            labelColor: AppColors.tyreHardLabel,
           ),
         ),
       ],
@@ -1172,11 +1175,15 @@ class _TyreRing extends StatelessWidget {
     required this.compound,
     required this.label,
     required this.ringColor,
+    required this.labelColor,
   });
 
   final String compound;
   final String label;
   final Color ringColor;
+
+  /// 라벨 텍스트 색 — 라이트 테마에선 링 색보다 진한 변형(팔레트 참조).
+  final Color labelColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1203,7 +1210,8 @@ class _TyreRing extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Pretendard',
-              color: AppColors.white,
+              // 원판이 테마와 무관하게 검정(실물 타이어)이라 항상 흰색.
+              color: AppColors.pureWhite,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1213,7 +1221,7 @@ class _TyreRing extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: ringColor,
+            color: labelColor,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1304,7 +1312,7 @@ class _TraitGaugeRow extends StatelessWidget {
           width: 78,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: _nameMuted,
               fontWeight: FontWeight.w600,
@@ -1328,7 +1336,7 @@ class _TraitGaugeRow extends StatelessWidget {
                               AppColors.red,
                               (level - 1) / 4,
                             )
-                          : const Color(0x17FFFFFF),
+                          : AppColors.white.withValues(alpha: 0.09),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -1343,7 +1351,7 @@ class _TraitGaugeRow extends StatelessWidget {
           child: Text(
             levelText,
             textAlign: TextAlign.right,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               color: AppColors.white,
               fontWeight: FontWeight.w700,
@@ -1375,7 +1383,7 @@ class _WatchPointList extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 1),
                 child: Text(
                   (i + 1).toString().padLeft(2, '0'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontFamily: 'Pretendard',
                     color: AppColors.redSoft,
@@ -1388,7 +1396,7 @@ class _WatchPointList extends StatelessWidget {
               Expanded(
                 child: Text(
                   points[i],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     height: 1.5,
                     color: AppColors.white,
@@ -1422,7 +1430,7 @@ class _RecentWinnerList extends StatelessWidget {
                 width: 42,
                 child: Text(
                   '${winners[i].year}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontFamily: 'Pretendard',
                     color: _muted,
@@ -1444,7 +1452,7 @@ class _RecentWinnerList extends StatelessWidget {
                   winners[i].driverKo,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     color: AppColors.white,
                     fontWeight: FontWeight.w700,
@@ -1454,7 +1462,7 @@ class _RecentWinnerList extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 winners[i].teamKo,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   color: _nameMuted,
                   fontWeight: FontWeight.w600,

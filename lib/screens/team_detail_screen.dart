@@ -170,7 +170,7 @@ class _TeamIdentityCard extends StatelessWidget {
                   children: [
                     Text(
                       standing.teamKo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -180,7 +180,7 @@ class _TeamIdentityCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       standing.teamEn,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.nameMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -202,7 +202,7 @@ class _TeamIdentityCard extends StatelessWidget {
                   ),
                   Text(
                     '${standing.points} PTS',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.slate300,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
@@ -251,7 +251,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.slate300,
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -285,7 +285,7 @@ class _DriverContributionCard extends StatelessWidget {
           const DetailSectionTitle('드라이버 포인트 기여도'),
           const SizedBox(height: 14),
           if (drivers.isEmpty)
-            const Text(
+            Text(
               '드라이버 정보가 없습니다.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             )
@@ -304,7 +304,7 @@ class _DriverContributionCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           driver.driverKo,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -320,7 +320,7 @@ class _DriverContributionCard extends StatelessWidget {
                         ),
                       ),
                       if (onOpenDriver != null)
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
                           size: 18,
                           color: AppColors.textEnded,
@@ -366,7 +366,7 @@ class _TeamRecentResultsCard extends StatelessWidget {
             child: DetailSectionTitle('최근 팀 결과'),
           ),
           if (results.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
               child: Text(
                 '아직 기록된 결과가 없습니다.',
@@ -386,7 +386,7 @@ class _TeamRecentResultsCard extends StatelessWidget {
                     horizontal: 16,
                     vertical: 10,
                   ),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(top: BorderSide(color: AppColors.rowBorder)),
                   ),
                   child: Row(
@@ -412,7 +412,7 @@ class _TeamRecentResultsCard extends StatelessWidget {
                           children: [
                             Text(
                               form.result.driverKo,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -421,7 +421,7 @@ class _TeamRecentResultsCard extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${form.race.nameKo} · ${form.result.points} PTS',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textEnded,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
@@ -430,7 +430,7 @@ class _TeamRecentResultsCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
                         size: 18,
                         color: AppColors.textEnded,
