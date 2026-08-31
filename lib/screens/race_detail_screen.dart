@@ -481,10 +481,8 @@ class _SessionScheduleCard extends StatelessWidget {
   }
 }
 
-// 세션 일정: 서킷 정보 박스와 같은 구조(tileSurface 박스 + 뮤트 라벨 +
-// 화이트 값)로 앱 언어에 맞춘다. 하루(금/토/일)를 뮤트 날짜 라벨로 구분하고
-// 그 아래 세션 행(명칭 좌 · 시간 우)을 나열한다. 세션 명칭·시간은 데이터
-// 그대로(24h KST). 레드는 라이브 세션에만(앱 액센트 규칙), 종료는 흐리게.
+// 날짜별 타임라인을 평면으로 배치하고, 현재 세션 또는 가장 가까운
+// 예정 세션 하나만 강조한다. 모든 시간은 데이터에 저장된 24h KST다.
 class _SessionScheduleList extends StatelessWidget {
   const _SessionScheduleList({required this.race});
 
@@ -493,6 +491,25 @@ class _SessionScheduleList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final statuses = <RaceSession, SessionStatus>{
+      for (final session in race.sessions)
+        session: getSessionStatus(race, session, now),
+    };
+    RaceSession? highlightedSession;
+    for (final session in race.sessions) {
+      if (statuses[session] == SessionStatus.live) {
+        highlightedSession = session;
+        break;
+      }
+    }
+    if (highlightedSession == null) {
+      for (final session in race.sessions) {
+        if (statuses[session] == SessionStatus.upcoming) {
+          highlightedSession = session;
+          break;
+        }
+      }
+    }
 
     // 날짜(=하루)별 그룹화 — 데이터 순서(금→토→일) 유지.
     final groups = <_SessionGroup>[];
@@ -504,32 +521,24 @@ class _SessionScheduleList extends StatelessWidget {
       }
     }
 
-    final children = <Widget>[];
-    for (var g = 0; g < groups.length; g++) {
-      if (g > 0) children.add(const SizedBox(height: 12));
-      children.add(_DayLabel(date: groups[g].date));
-      children.add(const SizedBox(height: 2));
-      for (final session in groups[g].sessions) {
-        children.add(
-          _SessionRow(
-            status: getSessionStatus(race, session, now),
-            session: session,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var g = 0; g < groups.length; g++) ...[
+          if (g > 0) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+            const SizedBox(height: 10),
+          ],
+          _DayLabel(date: groups[g].date),
+          const SizedBox(height: 4),
+          _SessionTimeline(
+            sessions: groups[g].sessions,
+            statuses: statuses,
+            highlightedSession: highlightedSession,
           ),
-        );
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
-      ),
+        ],
+      ],
     );
   }
 }
@@ -537,7 +546,6 @@ class _SessionScheduleList extends StatelessWidget {
 class _DayLabel extends StatelessWidget {
   const _DayLabel({required this.date});
 
-  // date 포맷은 "8.21 금" — "8.21 (금)" 으로 표기한다.
   final String date;
 
   @override
@@ -545,35 +553,89 @@ class _DayLabel extends StatelessWidget {
     final parts = date.split(' ');
     final dateText = parts.isNotEmpty ? parts.first : date;
     final dowText = parts.length > 1 ? parts[1] : '';
-    final label = dowText.isEmpty ? dateText : '$dateText ($dowText)';
+    final label = dowText.isEmpty ? dateText : '$dateText $dowText';
 
     return Text(
       label,
       style: const TextStyle(
-        fontSize: 12,
+        fontSize: 13,
         fontFamily: 'Pretendard',
         color: _muted,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.2,
       ),
     );
   }
 }
 
-class _SessionRow extends StatelessWidget {
-  const _SessionRow({required this.status, required this.session});
+class _SessionTimeline extends StatelessWidget {
+  const _SessionTimeline({
+    required this.sessions,
+    required this.statuses,
+    required this.highlightedSession,
+  });
 
-  final SessionStatus status;
-  final RaceSession session;
+  final List<RaceSession> sessions;
+  final Map<RaceSession, SessionStatus> statuses;
+  final RaceSession? highlightedSession;
 
   @override
   Widget build(BuildContext context) {
-    final isLive = status == SessionStatus.live;
-    final isEnded = status == SessionStatus.ended;
-    final color = isLive ? AppColors.redSoft : AppColors.white;
+    return Stack(
+      children: [
+        if (sessions.length > 1)
+          const Positioned(
+            left: 5,
+            top: 24,
+            bottom: 24,
+            child: SizedBox(
+              width: 1,
+              child: ColoredBox(color: AppColors.divider),
+            ),
+          ),
+        Column(
+          children: [
+            for (final session in sessions)
+              _SessionRow(
+                status: statuses[session]!,
+                session: session,
+                isHighlighted: identical(session, highlightedSession),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
-    Widget row = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+class _SessionRow extends StatelessWidget {
+  const _SessionRow({
+    required this.status,
+    required this.session,
+    required this.isHighlighted,
+  });
+
+  final SessionStatus status;
+  final RaceSession session;
+  final bool isHighlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnded = status == SessionStatus.ended;
+    final color = isHighlighted ? AppColors.white : AppColors.nameMuted;
+
+    Widget content = Container(
+      key: isHighlighted ? const ValueKey('highlighted-session-row') : null,
+      constraints: const BoxConstraints(minHeight: 46),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: isHighlighted
+          ? BoxDecoration(
+              color: AppColors.red.withValues(alpha: 0.10),
+              border: Border.all(
+                color: AppColors.redSoft.withValues(alpha: 0.28),
+              ),
+              borderRadius: BorderRadius.circular(10),
+            )
+          : null,
       child: Row(
         children: [
           Expanded(
@@ -584,7 +646,7 @@ class _SessionRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: color,
-                fontWeight: isLive ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ),
@@ -594,7 +656,7 @@ class _SessionRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontFamily: 'Pretendard',
-              color: color,
+              color: isHighlighted ? AppColors.white : _muted,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -603,9 +665,32 @@ class _SessionRow extends StatelessWidget {
     );
 
     if (isEnded) {
-      row = Opacity(opacity: 0.4, child: row);
+      content = Opacity(opacity: 0.4, child: content);
     }
-    return row;
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 11,
+                height: 11,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isHighlighted
+                      ? AppColors.redSoft
+                      : AppColors.dotInactive,
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: content),
+        ],
+      ),
+    );
   }
 }
 
