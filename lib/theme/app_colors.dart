@@ -26,6 +26,13 @@ class AppColors {
   static const Color redSoft = Color(0xFFF87171);
   static const Color greenSoft = Color(0xFF4ADE80);
 
+  // 타이어 컴파운드 마킹색(피렐리 실물: 소프트=레드, 미디엄=옐로, 하드=화이트).
+  // 미디엄 옐로는 "노란색 금지" 규칙의 유일한 승인 예외 — 실물 의미색이라
+  // 다른 UI 강조에는 여전히 쓰지 말 것.
+  static const Color tyreSoft = redSoft;
+  static const Color tyreMedium = Color(0xFFFFD12E);
+  static const Color tyreHard = Color(0xFFF4F4F6);
+
   // Live Center weather metrics. Each metric keeps a stable accent so it can
   // be recognized at a glance without relying on the label alone.
   static const Color weatherAir = Color(0xFFFB7185);

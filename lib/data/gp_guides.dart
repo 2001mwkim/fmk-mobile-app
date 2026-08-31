@@ -15,7 +15,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '카를로스 사인츠', teamKo: '페라리'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 3, tyreStress: 3, overtaking: 4),
     watchPoints: [
@@ -29,7 +29,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:32.238', driverKo: '미하엘 슈마허', year: 2004),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 3, tyreStress: 4, overtaking: 2),
     watchPoints: [
@@ -42,9 +42,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     tyres: TyreAllocation(hard: 'C1', medium: 'C2', soft: 'C3'),
     lapRecord: GpLapRecord(time: '1:30.965', driverKo: '키미 안토넬리', year: 2025),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 5, overtaking: 4),
     watchPoints: [
@@ -61,8 +61,8 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:34.080', driverKo: '제바스티안 페텔', year: 2017),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 4, overtaking: 2),
     watchPoints: [
@@ -76,8 +76,8 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:30.734', driverKo: '루이스 해밀턴', year: 2021),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '세르히오 페레즈', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '세르히오 페레즈', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 2, tyreStress: 3, overtaking: 3),
     watchPoints: [
@@ -91,7 +91,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '랜도 노리스', teamKo: '맥라렌'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 3, tyreStress: 3, overtaking: 3),
     watchPoints: [
@@ -105,8 +105,8 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:13.078', driverKo: '발테리 보타스', year: 2019),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '조지 러셀', teamKo: '메르세데스'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 2, tyreStress: 3, overtaking: 2),
     watchPoints: [
@@ -121,7 +121,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '샤를 르클레르', teamKo: '페라리'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 5, tyreStress: 1, overtaking: 5),
     watchPoints: [
@@ -135,8 +135,8 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:15.743', driverKo: '오스카 피아스트리', year: 2025),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 4, overtaking: 4),
     watchPoints: [
@@ -151,7 +151,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '조지 러셀', teamKo: '메르세데스'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 2, tyreStress: 3, overtaking: 2),
     watchPoints: [
@@ -166,7 +166,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '루이스 해밀턴', teamKo: '메르세데스'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 5, overtaking: 3),
     watchPoints: [
@@ -181,7 +181,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '루이스 해밀턴', teamKo: '메르세데스'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 2, tyreStress: 4, overtaking: 2),
     watchPoints: [
@@ -196,7 +196,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 5, tyreStress: 4, overtaking: 5),
     watchPoints: [
@@ -211,7 +211,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '랜도 노리스', teamKo: '맥라렌'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 3, overtaking: 4),
     watchPoints: [
@@ -224,9 +224,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     tyres: TyreAllocation(hard: 'C3', medium: 'C4', soft: 'C5'),
     lapRecord: GpLapRecord(time: '1:20.901', driverKo: '랜도 노리스', year: 2025),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
       GpWinner(year: 2024, driverKo: '샤를 르클레르', teamKo: '페라리'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 1, tyreStress: 2, overtaking: 1),
     watchPoints: [
@@ -249,9 +249,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     tyres: TyreAllocation(hard: 'C3', medium: 'C4', soft: 'C5'),
     lapRecord: GpLapRecord(time: '1:43.009', driverKo: '샤를 르클레르', year: 2019),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
       GpWinner(year: 2024, driverKo: '오스카 피아스트리', teamKo: '맥라렌'),
-      GpWinner(year: 2023, driverKo: '세르히오 페레즈', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '세르히오 페레즈', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 2, tyreStress: 2, overtaking: 1),
     watchPoints: [
@@ -279,9 +279,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
   'united-states-2026': GpGuide(
     lapRecord: GpLapRecord(time: '1:36.169', driverKo: '샤를 르클레르', year: 2019),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
       GpWinner(year: 2024, driverKo: '샤를 르클레르', teamKo: '페라리'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 4, overtaking: 2),
     watchPoints: [
@@ -295,7 +295,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
       GpWinner(year: 2024, driverKo: '카를로스 사인츠', teamKo: '페라리'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 5, tyreStress: 3, overtaking: 3),
     watchPoints: [
@@ -308,8 +308,8 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     lapRecord: GpLapRecord(time: '1:10.540', driverKo: '발테리 보타스', year: 2018),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 3, tyreStress: 3, overtaking: 2),
     watchPoints: [
@@ -321,9 +321,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
   'las-vegas-2026': GpGuide(
     lapRecord: GpLapRecord(time: '1:33.365', driverKo: '막스 베르스타펜', year: 2025),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
       GpWinner(year: 2024, driverKo: '조지 러셀', teamKo: '메르세데스'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 1, tyreStress: 2, overtaking: 2),
     watchPoints: [
@@ -335,9 +335,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
   'qatar-2026': GpGuide(
     lapRecord: GpLapRecord(time: '1:22.384', driverKo: '랜도 노리스', year: 2024),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2024, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 4, tyreStress: 5, overtaking: 3),
     watchPoints: [
@@ -349,9 +349,9 @@ const Map<String, GpGuide> gpGuideByRaceId = {
   'abu-dhabi-2026': GpGuide(
     lapRecord: GpLapRecord(time: '1:25.637', driverKo: '케빈 마그누센', year: 2024),
     recentWinners: [
-      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
       GpWinner(year: 2024, driverKo: '랜도 노리스', teamKo: '맥라렌'),
-      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불'),
+      GpWinner(year: 2023, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
     ],
     traits: GpTraits(downforce: 3, tyreStress: 2, overtaking: 3),
     watchPoints: [

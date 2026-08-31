@@ -5,6 +5,7 @@ import '../data/gp_guides.dart';
 import '../widgets/flag_icon.dart';
 import '../data/race_results.dart';
 import '../data/races.dart';
+import '../data/team_colors.dart';
 import '../models/circuit_info.dart';
 import '../models/gp_guide.dart';
 import '../models/race.dart';
@@ -721,14 +722,17 @@ class _CircuitInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final metrics = <_MetricData>[
+    final stats = <_CircuitStat>[
       if (info.lengthKm != null)
-        _MetricData('서킷 길이', '${_formatNumber(info.lengthKm!)} km'),
-      if (info.turns != null) _MetricData('코너 수', '${info.turns}'),
-      if (info.laps != null) _MetricData('레이스 랩 수', '${info.laps}'),
+        _CircuitStat('서킷 길이', _formatNumber(info.lengthKm!), unit: 'km'),
+      if (info.turns != null) _CircuitStat('코너 수', '${info.turns}'),
+      if (info.laps != null) _CircuitStat('레이스 랩 수', '${info.laps}'),
       if (info.distanceKm != null)
-        _MetricData('총 거리', '${info.distanceKm!.toStringAsFixed(1)} km'),
-      if (info.firstYear != null) _MetricData('첫 개최', '${info.firstYear}'),
+        _CircuitStat('총 거리', info.distanceKm!.toStringAsFixed(1), unit: 'km'),
+      if (info.firstYear != null) _CircuitStat('첫 개최', '${info.firstYear}'),
+      // 통산 개최 — 0(신규 서킷)이면 숨긴다.
+      if ((info.totalRacesHeld ?? 0) > 0)
+        _CircuitStat('통산 개최', '${info.totalRacesHeld}', unit: '회'),
     ];
 
     return AppCard(
@@ -742,15 +746,17 @@ class _CircuitInfoCard extends StatelessWidget {
             '${race.circuitKo} · ${race.locationLabel}',
             style: const TextStyle(fontSize: 12, color: _muted),
           ),
-          if (metrics.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _CompactMetrics(metrics: metrics),
+          if (stats.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _CircuitStatStrip(stats: stats),
           ],
           if (lapRecord != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
+            const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+            const SizedBox(height: 14),
             _LapRecordRow(record: lapRecord!),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           const Divider(height: 1, color: _faintBorder),
           const SizedBox(height: 10),
           const Text(
@@ -767,73 +773,96 @@ class _CircuitInfoCard extends StatelessWidget {
   }
 }
 
-// 서킷 지표를 하나의 조밀한 3열 그리드로 묶는다(기존엔 지표마다 테두리
-// 타일이라 세로로 길었다). 값(위)·라벨(아래)만 남겨 높이를 압축한다.
-class _CompactMetrics extends StatelessWidget {
-  const _CompactMetrics({required this.metrics});
+// 서킷 지표를 F1 중계 그래픽풍 스탯 스트립으로 — 3열 × N행, 열 사이는
+// 세로 헤어라인으로만 구분(박스 중첩 없음). 값은 큰 Pretendard, 단위는
+// 작은 뮤트로 분리해 숫자가 먼저 읽히게 한다.
+class _CircuitStatStrip extends StatelessWidget {
+  const _CircuitStatStrip({required this.stats});
 
-  final List<_MetricData> metrics;
+  final List<_CircuitStat> stats;
 
   static const int _cols = 3;
 
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[];
-    for (var i = 0; i < metrics.length; i += _cols) {
+    for (var i = 0; i < stats.length; i += _cols) {
       final cells = <Widget>[];
       for (var c = 0; c < _cols; c++) {
         final idx = i + c;
-        if (c > 0) cells.add(const SizedBox(width: 12));
+        final hasStat = idx < stats.length;
+        if (c > 0) {
+          // 다음 슬롯이 비어 있으면 헤어라인도 그리지 않는다.
+          cells.add(
+            hasStat
+                ? Container(
+                    width: 1,
+                    margin: const EdgeInsets.symmetric(horizontal: 14),
+                    color: AppColors.rowBorder,
+                  )
+                : const SizedBox(width: 29),
+          );
+        }
         cells.add(
           Expanded(
-            child: idx < metrics.length
-                ? _CompactMetric(data: metrics[idx])
+            child: hasStat
+                ? _CircuitStatCell(stat: stats[idx])
                 : const SizedBox.shrink(),
           ),
         );
       }
-      if (rows.isNotEmpty) rows.add(const SizedBox(height: 14));
-      rows.add(
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: cells),
-      );
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 16));
+      rows.add(IntrinsicHeight(child: Row(children: cells)));
     }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(children: rows),
-    );
+    return Column(children: rows);
   }
 }
 
-class _CompactMetric extends StatelessWidget {
-  const _CompactMetric({required this.data});
+class _CircuitStatCell extends StatelessWidget {
+  const _CircuitStatCell({required this.stat});
 
-  final _MetricData data;
+  final _CircuitStat stat;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          data.value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Pretendard',
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(
+                stat.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontFamily: 'Pretendard',
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            if (stat.unit != null) ...[
+              const SizedBox(width: 3),
+              Text(
+                stat.unit!,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'Pretendard',
+                  color: _muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
-          data.label,
+          stat.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -934,14 +963,16 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _MetricData {
-  const _MetricData(this.label, this.value);
+class _CircuitStat {
+  const _CircuitStat(this.label, this.value, {this.unit});
 
   final String label;
   final String value;
+  final String? unit;
 }
 
 /// 서킷 정보 카드 하단의 랩 레코드 행 — 결승 레이스 중 기록(퀄리 아님).
+/// 기록은 라이브 타이밍과 같은 퍼플(F1 패스티스트 랩 관례색)의 큰 타이포로.
 class _LapRecordRow extends StatelessWidget {
   const _LapRecordRow({required this.record});
 
@@ -949,44 +980,43 @@ class _LapRecordRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Text(
-            '랩 레코드',
-            style: TextStyle(
-              fontSize: 10.5,
-              color: _muted,
-              fontWeight: FontWeight.w600,
+    return Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '랩 레코드',
+              style: TextStyle(
+                fontSize: 11,
+                color: _muted,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
             ),
-          ),
-          const Spacer(),
-          Text(
-            record.time,
-            style: const TextStyle(
-              fontSize: 15,
-              fontFamily: 'Pretendard',
-              color: AppColors.white,
-              fontWeight: FontWeight.w800,
+            const SizedBox(height: 4),
+            Text(
+              '${record.driverKo} · ${record.year}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: _nameMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+          ],
+        ),
+        const Spacer(),
+        Text(
+          record.time,
+          style: const TextStyle(
+            fontSize: 22,
+            fontFamily: 'Pretendard',
+            color: AppColors.timingPurple,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
           ),
-          const SizedBox(width: 8),
-          Text(
-            '${record.driverKo} · ${record.year}',
-            style: const TextStyle(
-              fontSize: 11,
-              color: _muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1046,10 +1076,20 @@ class _GpGuideCard extends StatelessWidget {
 
     if (sections.isEmpty) return const SizedBox.shrink();
 
-    final children = <Widget>[const _SectionTitle('관전 가이드')];
-    for (final section in sections) {
-      children.add(const SizedBox(height: 14));
-      children.add(section);
+    // 섹션 사이는 중첩 박스 대신 얇은 디바이더 — 세션 일정 카드와 같은 문법.
+    final children = <Widget>[
+      const _SectionTitle('관전 가이드'),
+      const SizedBox(height: 16),
+    ];
+    for (var i = 0; i < sections.length; i++) {
+      if (i > 0) {
+        children.add(const SizedBox(height: 16));
+        children.add(
+          const Divider(height: 1, thickness: 1, color: AppColors.rowBorder),
+        );
+        children.add(const SizedBox(height: 14));
+      }
+      children.add(sections[i]);
     }
 
     return AppCard(
@@ -1090,9 +1130,8 @@ class _GuideSection extends StatelessWidget {
   }
 }
 
-/// 컴파운드 3종을 타이어 마킹풍 링으로 표기. 앱 팔레트 규칙(노란색 금지)에
-/// 맞춰 소프트=레드, 미디엄=화이트, 하드=그레이 링을 쓴다(피렐리 실물 색과
-/// 다름 — 무른 쪽일수록 따뜻한 색이라는 직관만 유지).
+/// 컴파운드 3종을 피렐리 실물 마킹색 링(소프트=레드/미디엄=옐로/하드=화이트)
+/// 으로 표기. 미디엄 옐로는 "노란색 금지" 규칙의 승인 예외(app_colors.dart).
 class _TyreAllocationRow extends StatelessWidget {
   const _TyreAllocationRow({required this.tyres});
 
@@ -1100,38 +1139,30 @@ class _TyreAllocationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _TyreRing(
-              compound: tyres.soft,
-              label: '소프트',
-              ringColor: AppColors.redSoft,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _TyreRing(
+            compound: tyres.soft,
+            label: '소프트',
+            ringColor: AppColors.tyreSoft,
           ),
-          Expanded(
-            child: _TyreRing(
-              compound: tyres.medium,
-              label: '미디엄',
-              ringColor: AppColors.white,
-            ),
+        ),
+        Expanded(
+          child: _TyreRing(
+            compound: tyres.medium,
+            label: '미디엄',
+            ringColor: AppColors.tyreMedium,
           ),
-          Expanded(
-            child: _TyreRing(
-              compound: tyres.hard,
-              label: '하드',
-              ringColor: _muted,
-            ),
+        ),
+        Expanded(
+          child: _TyreRing(
+            compound: tyres.hard,
+            label: '하드',
+            ringColor: AppColors.tyreHard,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1151,31 +1182,39 @@ class _TyreRing extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // 실물 타이어 사이드월처럼 검은 원판 + 컬러 링, 은은한 글로우.
         Container(
-          width: 40,
-          height: 40,
+          width: 46,
+          height: 46,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: ringColor, width: 2),
+            color: const Color(0xFF07080D),
+            border: Border.all(color: ringColor, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: ringColor.withValues(alpha: 0.28),
+                blurRadius: 14,
+              ),
+            ],
           ),
           child: Text(
             compound,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               fontFamily: 'Pretendard',
               color: AppColors.white,
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 10.5,
-            color: _muted,
-            fontWeight: FontWeight.w600,
+          style: TextStyle(
+            fontSize: 11,
+            color: ringColor,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -1192,34 +1231,26 @@ class _TraitGauges extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          _TraitGaugeRow(
-            label: '다운포스',
-            level: traits.downforce,
-            levelText: _levelWord(traits.downforce),
-          ),
-          const SizedBox(height: 10),
-          _TraitGaugeRow(
-            label: '타이어 부하',
-            level: traits.tyreStress,
-            levelText: _levelWord(traits.tyreStress),
-          ),
-          const SizedBox(height: 10),
-          _TraitGaugeRow(
-            label: '추월 난이도',
-            level: traits.overtaking,
-            levelText: _difficultyWord(traits.overtaking),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        _TraitGaugeRow(
+          label: '다운포스',
+          level: traits.downforce,
+          levelText: _levelWord(traits.downforce),
+        ),
+        const SizedBox(height: 12),
+        _TraitGaugeRow(
+          label: '타이어 부하',
+          level: traits.tyreStress,
+          levelText: _levelWord(traits.tyreStress),
+        ),
+        const SizedBox(height: 12),
+        _TraitGaugeRow(
+          label: '추월 난이도',
+          level: traits.overtaking,
+          levelText: _difficultyWord(traits.overtaking),
+        ),
+      ],
     );
   }
 
@@ -1284,12 +1315,20 @@ class _TraitGaugeRow extends StatelessWidget {
           child: Row(
             children: [
               for (var i = 1; i <= 5; i++) ...[
-                if (i > 1) const SizedBox(width: 3),
+                if (i > 1) const SizedBox(width: 4),
                 Expanded(
                   child: Container(
-                    height: 5,
+                    height: 6,
                     decoration: BoxDecoration(
-                      color: i <= level ? AppColors.slate300 : _faintBorder,
+                      // 채움은 레드 계열로 강도를 표현(높을수록 진하게),
+                      // 빈 칸은 흐린 화이트 — 이전 회색조는 가시성이 낮았다.
+                      color: i <= level
+                          ? Color.lerp(
+                              AppColors.redSoft,
+                              AppColors.red,
+                              (level - 1) / 4,
+                            )
+                          : const Color(0x17FFFFFF),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -1298,14 +1337,14 @@ class _TraitGaugeRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         SizedBox(
-          width: 58,
+          width: 60,
           child: Text(
             levelText,
             textAlign: TextAlign.right,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: AppColors.white,
               fontWeight: FontWeight.w700,
             ),
@@ -1327,18 +1366,22 @@ class _WatchPointList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < points.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
+          if (i > 0) const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 불릿 대신 얇은 레드 바 — 웹 매거진 인용구 톤.
-              Container(
-                width: 3,
-                height: 14,
-                margin: const EdgeInsets.only(top: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.red,
-                  borderRadius: BorderRadius.circular(999),
+              // 매거진식 번호(01 02 03) — 불릿/바보다 편집물 톤이 산다.
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  (i + 1).toString().padLeft(2, '0'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Pretendard',
+                    color: AppColors.redSoft,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1346,9 +1389,9 @@ class _WatchPointList extends StatelessWidget {
                 child: Text(
                   points[i],
                   style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.45,
-                    color: AppColors.slate300,
+                    fontSize: 13.5,
+                    height: 1.5,
+                    color: AppColors.white,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1368,56 +1411,59 @@ class _RecentWinnerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: _tileSurface,
-        border: Border.all(color: _faintBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          for (final winner in winners)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 7),
-              child: Row(
-                children: [
-                  Text(
-                    '${winner.year}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Pretendard',
-                      color: _muted,
-                      fontWeight: FontWeight.w700,
-                    ),
+    // 평면 행 + 팀 컬러 스트라이프(순위 화면과 같은 문법) — 박스 중첩 제거.
+    return Column(
+      children: [
+        for (var i = 0; i < winners.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          Row(
+            children: [
+              SizedBox(
+                width: 42,
+                child: Text(
+                  '${winners[i].year}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontFamily: 'Pretendard',
+                    color: _muted,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      winner.driverKo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    winner.teamKo,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: _muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              Container(
+                width: 3,
+                height: 16,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  color: getTeamColor(winners[i].teamKo),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  winners[i].driverKo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                winners[i].teamKo,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: _nameMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
