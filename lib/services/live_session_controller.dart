@@ -45,7 +45,18 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 레이스/스프린트 진행 중 주기. 순위가 가장 빠르게 바뀌는 구간이라 짧을수록
   /// 체감 품질이 좋다. [fastPollDuringRace] 가 true 일 때만 쓴다.
-  static const Duration racePollInterval = Duration(seconds: 10);
+  ///
+  /// 5초 = Cloudflare 엣지 캐시 TTL(collector 의 `s-maxage=5`)과 동일. 그보다
+  /// 짧게 찔러도 엣지가 같은 응답을 돌려주므로 의미가 없고, 같으면 "새 데이터가
+  /// 생길 때마다" 받는 최적점이다. origin(Railway) 부하는 캐시가 흡수해 사용자
+  /// 수와 무관하게 분당 12회로 고정되고, Cloudflare 무료는 요청 수를 세지 않는다.
+  static const Duration racePollInterval = Duration(seconds: 5);
+
+  /// Vercel 폴백 경로([LiveSessionService.fallbackUrl])로 붙어 있을 때의 하한.
+  /// 폴백은 Vercel 엣지 요청(무료 100만/월)을 쓰므로, DNS 장애가 레이스와 겹쳤을 때
+  /// 5초 폴링이 그대로 Vercel 로 가면 한 레이스에 한도를 넘길 수 있다
+  /// (5초 × 2시간 = 1,440건/사용자). 폴백 중에는 이 값보다 빠르게 폴링하지 않는다.
+  static const Duration fallbackPollInterval = Duration(seconds: 10);
 
   /// 세션이 없을 때 주기. 앱이 포그라운드여도 이 간격으로만 네트워크를 쓴다.
   static const Duration idlePollInterval = Duration(minutes: 5);
@@ -382,6 +393,9 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   /// 디버그 진단용 — 현재 1순위 endpoint(폴백 사용 여부 확인).
   String get activeUrl => _service.activeUrl;
 
+  /// 마지막 성공 endpoint 가 1순위(Cloudflare)가 아닌 폴백(Vercel)인지.
+  bool get _onFallback => _service.activeUrl != _service.url;
+
   /// 디버그 진단용 — 연속 fetch 실패 횟수(백오프 단계 확인).
   int get consecutiveFailures => _consecutiveFailures;
 
@@ -412,9 +426,13 @@ class LiveSessionController extends ChangeNotifier with WidgetsBindingObserver {
   Duration _pollDelayFor(LiveSessionSnapshot? current, DateTime now) {
     if (current != null && isLiveSnapshotSessionActive(current, now)) {
       // 레이스/스프린트만 당긴다. 연습/퀄리는 랩타임 갱신이 드물어 20초로 충분.
-      return fastPollDuringRace && current.isRaceOrSprint
+      final base = fastPollDuringRace && current.isRaceOrSprint
           ? racePollInterval
           : pollInterval;
+      // Vercel 폴백 중에는 [fallbackPollInterval] 아래로 내려가지 않는다.
+      return _onFallback && base < fallbackPollInterval
+          ? fallbackPollInterval
+          : base;
     }
     for (final race in races) {
       if (race.isCancelled) continue;

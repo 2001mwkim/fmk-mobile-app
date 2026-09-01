@@ -398,7 +398,7 @@ void main() {
       expect(controller.isStale, isFalse);
     },
   );
-  test('레이스 중에는 10초로 당기고, 끄면 20초를 유지한다', () async {
+  test('레이스 중에는 5초로 당기고, 끄면 20초를 유지한다', () async {
     final now = DateTime(2026, 6, 30, 12);
     final race = _liveSnapshot(); // sessionType: 'Race'
 
@@ -423,7 +423,31 @@ void main() {
     expect(slow.nextNetworkPollAt, now.add(LiveSessionController.pollInterval));
   });
 
-  test('기본값이 켜짐이라 dart-define 없이도 레이스는 10초다', () async {
+  test('Vercel 폴백 중에는 레이스라도 fallbackPollInterval 아래로 안 내려간다', () async {
+    // 5초 폴링이 폴백(Vercel 엣지 요청, 무료 100만/월)으로 그대로 가면 DNS 장애가
+    // 레이스와 겹쳤을 때 한 레이스에 한도를 넘길 수 있다 — 폴백 중엔 10초로 묶는다.
+    final now = DateTime(2026, 6, 30, 12);
+    final controller = LiveSessionController(
+      _FakeLiveSessionService(
+        [LiveSessionFetchResult.success(_liveSnapshot())],
+        onFallback: true,
+      ),
+      fastPollDuringRace: true,
+      now: () => now,
+    );
+    await controller.refresh();
+    expect(
+      controller.nextNetworkPollAt,
+      now.add(LiveSessionController.fallbackPollInterval),
+    );
+    expect(
+      LiveSessionController.fallbackPollInterval >
+          LiveSessionController.racePollInterval,
+      isTrue,
+    );
+  });
+
+  test('기본값이 켜짐이라 dart-define 없이도 레이스는 5초다', () async {
     final now = DateTime(2026, 6, 30, 12);
     final controller = LiveSessionController(
       _FakeLiveSessionService([
@@ -592,10 +616,17 @@ LiveSessionSnapshot _liveSnapshot() {
 }
 
 class _FakeLiveSessionService extends LiveSessionService {
-  _FakeLiveSessionService(this.results) : super(url: 'test://live');
+  _FakeLiveSessionService(this.results, {this.onFallback = false})
+    : super(url: 'test://live', fallbackUrl: 'test://fallback');
 
   final List<LiveSessionFetchResult> results;
+
+  /// true 면 마지막 성공 endpoint 가 폴백(Vercel)이라고 가장한다.
+  final bool onFallback;
   int _calls = 0;
+
+  @override
+  String get activeUrl => onFallback ? fallbackUrl : url;
 
   @override
   Future<LiveSessionFetchResult> fetchResult() async {
