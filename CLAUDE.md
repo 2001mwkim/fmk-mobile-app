@@ -75,6 +75,17 @@ flutter build appbundle --release
   `docs/watch_device_checklist.md` 체크리스트로 할 것)
 - Wear OS 미착수
 
+## 업데이트 권장 팝업 (릴리스 절차에 포함)
+
+- 앱은 시작 시 하루 1회 `https://live.formulamagazine.kr/app-version.json`(collector
+  `data/app-version.json`, Cloudflare 5분 캐시 — Vercel 미사용)을 받아 자기 빌드 번호와
+  비교한다(`lib/services/app_update_service.dart`, 팝업은 `app.dart` `_maybePromptAppUpdate`).
+  latest 보다 낮으면 "나중에" 가능한 권장 팝업, minSupported 미만이면 닫을 수 없는 강제 팝업.
+  "나중에"를 누른 버전은 다시 묻지 않고, 더 새 버전이 나오면 다시 묻는다.
+- **스토어에 새 버전이 반영된 뒤** 자매 저장소에서 `npm run app-version -- android 47`
+  (iOS 는 `-- ios 0.1.9`) → commit → push → Railway 재배포. 심사 전에 올리면 사용자가 없는
+  버전으로 헛걸음하므로 **자동화하지 않는다**. `--min N` 은 심각 버그 때만(강제 업데이트).
+
 ## 릴리스 서명
 
 - release 빌드는 실제 업로드 키로 서명됨(CN=Minuk Kim / Formula Magazine Korea).

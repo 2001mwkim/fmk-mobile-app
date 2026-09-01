@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
@@ -12,6 +13,7 @@ import 'screens/standings_screen.dart';
 import 'services/app_theme_controller.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/notification_service.dart';
+import 'services/app_update_service.dart';
 import 'services/notification_settings_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
@@ -106,8 +108,61 @@ class _MainShellState extends State<MainShell> {
     }
     if (widget.runStartupPrompts) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _maybePromptNotificationOptIn(),
+        // 두 팝업이 겹치지 않게 순차: 알림 권유 → 업데이트 권장.
+        (_) => _maybePromptNotificationOptIn().then(
+          (_) => _maybePromptAppUpdate(),
+        ),
       );
+    }
+  }
+
+  /// 새 버전이 스토어에 올라오면 하루 1회 업데이트를 권한다. 버전 정보는
+  /// collector 의 app-version.json(사람이 심사 통과 후 올림) — 자세한 규칙은
+  /// [AppUpdateService]/[AppUpdateGate]. minSupported 미만이면 닫을 수 없다.
+  Future<void> _maybePromptAppUpdate() async {
+    try {
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final gate = AppUpdateGate(prefs);
+      final now = DateTime.now();
+      if (!gate.shouldCheck(now)) return;
+
+      const service = AppUpdateService();
+      final info = await service.fetch();
+      await gate.markChecked(now);
+      if (info == null || !mounted) return;
+
+      final verdict = decideAppUpdate(
+        current: service.currentVersion,
+        info: info,
+      );
+      if (verdict == AppUpdateVerdict.none) return;
+      if (gate.isSkipped(info, verdict)) return;
+
+      final mandatory = verdict == AppUpdateVerdict.mandatory;
+      final open = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !mandatory,
+        builder: (dialogContext) => PopScope(
+          canPop: !mandatory,
+          child: _AppUpdateDialog(
+            message: info.message,
+            mandatory: mandatory,
+            onLater: () => Navigator.of(dialogContext).pop(false),
+            onUpdate: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ),
+      );
+      if (open != true) {
+        if (!mandatory) await gate.skip(info);
+        return;
+      }
+      await launchUrl(
+        Uri.parse(info.storeUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      // 네트워크/prefs/url_launcher 실패는 조용히 무시 — 팝업은 부가 기능.
     }
   }
 
@@ -220,6 +275,145 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
+      ),
+    );
+  }
+}
+
+/// 업데이트 권장/강제 팝업 — [_NotificationOptInDialog] 와 같은 톤.
+/// [mandatory] 면 "나중에"가 없고 배리어/뒤로가기로 닫히지 않는다(호출부 PopScope).
+class _AppUpdateDialog extends StatelessWidget {
+  const _AppUpdateDialog({
+    required this.message,
+    required this.mandatory,
+    required this.onLater,
+    required this.onUpdate,
+  });
+
+  final String message;
+  final bool mandatory;
+  final VoidCallback onLater;
+  final VoidCallback onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.heroGradTop, AppColors.card],
+          ),
+          border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.2)),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -42,
+              top: -54,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.heroAccent.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.heroAccent.withValues(alpha: 0.12),
+                      border: Border.all(
+                        color: AppColors.heroAccent.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(
+                      Icons.system_update_alt_rounded,
+                      color: AppColors.heroAccentBright,
+                      size: 25,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    mandatory ? '업데이트가 필요해요' : '새 버전이 나왔어요',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 20,
+                      height: 1.3,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    mandatory
+                        ? '이 버전은 더 이상 지원되지 않아요. 계속 쓰려면 업데이트해 주세요.'
+                        : message,
+                    style: TextStyle(
+                      color: AppColors.nameMuted,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      if (!mandatory) ...[
+                        TextButton(
+                          onPressed: onLater,
+                          child: Text(
+                            '나중에',
+                            style: TextStyle(color: AppColors.muted),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.red,
+                            foregroundColor: AppColors.onAccent,
+                            minimumSize: const Size(0, 46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: onUpdate,
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          label: const Text(
+                            '업데이트',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
