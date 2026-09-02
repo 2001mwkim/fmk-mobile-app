@@ -4,8 +4,67 @@ import 'package:fmk_app/models/live_session.dart';
 import 'package:fmk_app/screens/live_center_screen.dart';
 import 'package:fmk_app/theme/app_colors.dart';
 import 'package:fmk_app/theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('video delay picker applies one timeline to status and clock', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final capturedAt = DateTime.now().subtract(const Duration(seconds: 65));
+    final snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '2026-09-02T10:00:00Z',
+      raceName: 'Italian Grand Prix',
+      sessionType: 'Qualifying',
+      sessionName: 'Qualifying',
+      remainingTime: '10:00',
+      playbackCapturedAt: capturedAt,
+      playbackDelaySeconds: 60,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: LiveCenterScreen(snapshotOverride: snapshot),
+      ),
+    );
+
+    await tester.tap(find.text('영상 지연'));
+    await tester.pumpAndSettle();
+    expect(find.text('영상 지연 맞추기'), findsOneWidget);
+
+    await tester.tap(find.text('60초'));
+    await tester.tap(find.text('적용'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LIVE · 60초 지연'), findsOneWidget);
+    expect(find.text('60초 지연'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('실시간으로 복귀'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('영상 지연'), findsOneWidget);
+    expect(find.text('LIVE · 60초 지연'), findsNothing);
+    expect(find.text('LIVE'), findsOneWidget);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt('live_center_delay_seconds'), 0);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text && RegExp(r'^09:\d{2}$').hasMatch(widget.data ?? ''),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('weather metrics form a readable two-by-two grid on mobile', (
     tester,
   ) async {

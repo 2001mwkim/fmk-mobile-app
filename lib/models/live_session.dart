@@ -238,6 +238,8 @@ class LiveSessionSnapshot {
     this.weather,
     this.raceControlMessages = const [],
     this.lastSession,
+    this.playbackCapturedAt,
+    this.playbackDelaySeconds = 0,
   });
 
   final LiveSessionStatus status;
@@ -277,6 +279,23 @@ class LiveSessionSnapshot {
 
   /// 가장 최근에 끝난 세션의 최종 순위(컨트롤러가 스냅샷과 별개로 보존).
   final LiveLastSession? lastSession;
+
+  /// 지연 재생 스냅샷이 collector에 저장된 시각과 요청한 지연값.
+  /// 실시간 응답에는 없으며 기본값 0이라 기존 화면에는 영향을 주지 않는다.
+  final DateTime? playbackCapturedAt;
+  final int playbackDelaySeconds;
+
+  /// 지연 재생 목표 시각과 실제로 선택된 스냅샷 사이의 차이.
+  /// 시간제 세션의 로컬 카운트다운이 버퍼/캐시 간격만큼 뒤처지지 않게 쓴다.
+  Duration playbackOffsetAt(DateTime now) {
+    final capturedAt = playbackCapturedAt;
+    if (capturedAt == null || playbackDelaySeconds <= 0) return Duration.zero;
+    final playhead = now.subtract(Duration(seconds: playbackDelaySeconds));
+    final offset = playhead.difference(capturedAt);
+    return offset.isNegative
+        ? Duration.zero
+        : Duration(seconds: offset.inSeconds);
+  }
 
   bool get isEnded => status == LiveSessionStatus.ended;
 

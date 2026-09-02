@@ -12,10 +12,12 @@ class LiveSessionBuilder extends StatefulWidget {
     super.key,
     required this.builder,
     this.latestSession = false,
+    this.controller,
   });
 
   /// true면 일반 라이브 노출 기한 대신 라이브 센터용 최근 세션을 구독한다.
   final bool latestSession;
+  final LiveSessionController? controller;
 
   final Widget Function(
     BuildContext context,
@@ -29,15 +31,27 @@ class LiveSessionBuilder extends StatefulWidget {
 }
 
 class _LiveSessionBuilderState extends State<LiveSessionBuilder> {
+  LiveSessionController get _controller =>
+      widget.controller ?? liveSessionController;
+
   @override
   void initState() {
     super.initState();
-    liveSessionController.addListener(_onChange);
+    _controller.addListener(_onChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant LiveSessionBuilder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldController = oldWidget.controller ?? liveSessionController;
+    if (oldController == _controller) return;
+    oldController.removeListener(_onChange);
+    _controller.addListener(_onChange);
   }
 
   @override
   void dispose() {
-    liveSessionController.removeListener(_onChange);
+    _controller.removeListener(_onChange);
     super.dispose();
   }
 
@@ -47,14 +61,15 @@ class _LiveSessionBuilderState extends State<LiveSessionBuilder> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = _controller;
     return widget.builder(
       context,
       widget.latestSession
-          ? liveSessionController.latestSessionSnapshot
-          : liveSessionController.snapshot,
+          ? controller.latestSessionSnapshot
+          : controller.snapshot,
       widget.latestSession
-          ? liveSessionController.latestSessionIsStale
-          : liveSessionController.isStale,
+          ? controller.latestSessionIsStale
+          : controller.isStale,
     );
   }
 }

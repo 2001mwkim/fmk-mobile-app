@@ -129,6 +129,24 @@ void main() {
     expect(session('Qualifying', remaining: null).showRemainingTime, isFalse);
   });
 
+  test('delayed playback offset follows the selected historical snapshot', () {
+    final snapshot = LiveSessionSnapshot(
+      status: LiveSessionStatus.live,
+      updatedAt: '',
+      playbackCapturedAt: DateTime.parse('2026-09-02T10:00:00Z'),
+      playbackDelaySeconds: 60,
+    );
+
+    expect(
+      snapshot.playbackOffsetAt(DateTime.parse('2026-09-02T10:01:05Z')),
+      const Duration(seconds: 5),
+    );
+    expect(
+      snapshot.playbackOffsetAt(DateTime.parse('2026-09-02T10:00:30Z')),
+      Duration.zero,
+    );
+  });
+
   test('pre-start ended race snapshot does not mark the race ended', () {
     // F1 피드는 퀄리 종료 후 SessionInfo 를 미리 Race 로 전환하고 상태값은
     // 직전 세션의 Finalised 가 남아, 일요일 낮에 '레이스 ended' 스냅샷이 온다.

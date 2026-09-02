@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../models/race_session.dart';
 import '../services/live_session_controller.dart';
+import '../services/live_session_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -14,24 +16,107 @@ import '../widgets/flag_icon.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/app_ui.dart';
 
-class LiveCenterScreen extends StatelessWidget {
+const String _liveCenterDelayPrefsKey = 'live_center_delay_seconds';
+const int _maxLiveCenterDelaySeconds = 120;
+
+class LiveCenterScreen extends StatefulWidget {
   const LiveCenterScreen({super.key, this.snapshotOverride, this.nowOverride});
 
   final LiveSessionSnapshot? snapshotOverride;
   final DateTime? nowOverride;
 
   @override
+  State<LiveCenterScreen> createState() => _LiveCenterScreenState();
+}
+
+class _LiveCenterScreenState extends State<LiveCenterScreen> {
+  int _delaySeconds = 0;
+  LiveSessionController? _delayedController;
+  bool _delayChangedByUser = false;
+
+  LiveSessionController get _activeController =>
+      _delayedController ?? liveSessionController;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadSavedDelay());
+  }
+
+  Future<void> _loadSavedDelay() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_liveCenterDelayPrefsKey) ?? 0;
+      if (!mounted || _delayChangedByUser) return;
+      _setDelay(saved.clamp(0, _maxLiveCenterDelaySeconds), persist: false);
+    } catch (_) {
+      // 설정 로드 실패는 실시간 기본값으로 안전하게 폴백한다.
+    }
+  }
+
+  void _setDelay(int seconds, {bool persist = true}) {
+    final next = seconds.clamp(0, _maxLiveCenterDelaySeconds);
+    if (persist) _delayChangedByUser = true;
+    if (next == _delaySeconds) return;
+
+    final previous = _delayedController;
+    LiveSessionController? delayed;
+    if (next > 0) {
+      delayed = LiveSessionController(LiveSessionService(delaySeconds: next));
+      delayed.enabled = true;
+      delayed.attachLifecycle();
+    }
+
+    setState(() {
+      _delaySeconds = next;
+      _delayedController = delayed;
+    });
+    if (previous != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+    }
+    if (persist) unawaited(_saveDelay(next));
+  }
+
+  Future<void> _saveDelay(int seconds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_liveCenterDelayPrefsKey, seconds);
+    } catch (_) {
+      // 설정 저장 실패가 라이브 시청을 방해하지 않게 한다.
+    }
+  }
+
+  Future<void> _openDelayPicker() async {
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.card,
+      builder: (context) => _LiveDelaySheet(initialSeconds: _delaySeconds),
+    );
+    if (selected != null && mounted) _setDelay(selected);
+  }
+
+  @override
+  void dispose() {
+    _delayedController?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: LiveSessionBuilder(
+          controller: widget.snapshotOverride == null
+              ? _activeController
+              : liveSessionController,
           latestSession: true,
           builder: (context, snapshot, isStale) {
-            final value = snapshotOverride ?? snapshot;
+            final value = widget.snapshotOverride ?? snapshot;
             return RefreshIndicator(
               color: AppColors.red,
               backgroundColor: AppColors.card,
-              onRefresh: liveSessionController.refresh,
+              onRefresh: _activeController.refresh,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: AppLayout.pagePadding(context, top: 14, bottom: 28),
@@ -41,14 +126,270 @@ class LiveCenterScreen extends StatelessWidget {
                     description: '실시간 순위와 세션 상황을 한곳에서 확인하세요.',
                   ),
                   const SizedBox(height: 16),
-                  if (value == null)
-                    _OfflineCenter(now: nowOverride ?? DateTime.now())
+                  if (value?.status == LiveSessionStatus.live ||
+                      _delaySeconds > 0) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _LiveDelayControls(
+                        delaySeconds: _delaySeconds,
+                        onConfigure: _openDelayPicker,
+                        onReturnLive: () => _setDelay(0),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (value == null && _delaySeconds > 0)
+                    _DelayPreparing(delaySeconds: _delaySeconds)
+                  else if (value == null)
+                    _OfflineCenter(now: widget.nowOverride ?? DateTime.now())
                   else
-                    _LiveContent(snapshot: value, isStale: isStale),
+                    _LiveContent(
+                      snapshot: value,
+                      isStale: isStale,
+                      delaySeconds: _delaySeconds,
+                    ),
                 ],
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveDelayControls extends StatelessWidget {
+  const _LiveDelayControls({
+    required this.delaySeconds,
+    required this.onConfigure,
+    required this.onReturnLive,
+  });
+
+  final int delaySeconds;
+  final VoidCallback onConfigure;
+  final VoidCallback onReturnLive;
+
+  @override
+  Widget build(BuildContext context) {
+    final delayed = delaySeconds > 0;
+    final configureButton = OutlinedButton.icon(
+      onPressed: onConfigure,
+      icon: const Icon(Icons.history_rounded, size: 17),
+      label: Text(delayed ? '$delaySeconds초 지연' : '영상 지연'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: delayed ? AppColors.warningAmber : AppColors.textMuted,
+        side: BorderSide(
+          color: delayed
+              ? AppColors.warningAmber.withValues(alpha: 0.55)
+              : AppColors.hairline,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+
+    if (!delayed) return configureButton;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        configureButton,
+        const SizedBox(width: 6),
+        IconButton.outlined(
+          onPressed: onReturnLive,
+          tooltip: '실시간으로 복귀',
+          icon: const Icon(Icons.sensors_rounded, size: 18),
+          color: AppColors.textMuted,
+          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+          style: IconButton.styleFrom(
+            side: BorderSide(color: AppColors.hairline),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DelayPreparing extends StatelessWidget {
+  const _DelayPreparing({required this.delaySeconds});
+
+  final int delaySeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.warningAmber,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$delaySeconds초 지연 데이터 준비 중',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveDelaySheet extends StatefulWidget {
+  const _LiveDelaySheet({required this.initialSeconds});
+
+  final int initialSeconds;
+
+  @override
+  State<_LiveDelaySheet> createState() => _LiveDelaySheetState();
+}
+
+class _LiveDelaySheetState extends State<_LiveDelaySheet> {
+  late int _seconds = widget.initialSeconds;
+
+  String get _label => _seconds == 0 ? '실시간' : '$_seconds초 지연';
+
+  @override
+  Widget build(BuildContext context) {
+    const presets = <int>[0, 30, 60, 90];
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.hairline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '영상 지연 맞추기',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: '닫기',
+                  icon: const Icon(Icons.close_rounded),
+                  color: AppColors.textMuted,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            SegmentedButton<int>(
+              segments: presets
+                  .map(
+                    (value) => ButtonSegment<int>(
+                      value: value,
+                      label: Text(value == 0 ? '실시간' : '$value초'),
+                    ),
+                  )
+                  .toList(growable: false),
+              selected: presets.contains(_seconds) ? <int>{_seconds} : <int>{},
+              emptySelectionAllowed: true,
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                if (selection.isNotEmpty) {
+                  setState(() => _seconds = selection.first);
+                }
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                textStyle: WidgetStateProperty.all(
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                IconButton.outlined(
+                  onPressed: _seconds == 0
+                      ? null
+                      : () => setState(
+                          () => _seconds = (_seconds - 5).clamp(
+                            0,
+                            _maxLiveCenterDelaySeconds,
+                          ),
+                        ),
+                  tooltip: '5초 줄이기',
+                  icon: const Icon(Icons.remove_rounded),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        _label,
+                        style: TextStyle(
+                          color: _seconds > 0
+                              ? AppColors.warningAmber
+                              : AppColors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Slider(
+                        value: _seconds.toDouble(),
+                        min: 0,
+                        max: _maxLiveCenterDelaySeconds.toDouble(),
+                        divisions: _maxLiveCenterDelaySeconds ~/ 5,
+                        label: _label,
+                        onChanged: (value) =>
+                            setState(() => _seconds = value.round()),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton.outlined(
+                  onPressed: _seconds == _maxLiveCenterDelaySeconds
+                      ? null
+                      : () => setState(
+                          () => _seconds = (_seconds + 5).clamp(
+                            0,
+                            _maxLiveCenterDelaySeconds,
+                          ),
+                        ),
+                  tooltip: '5초 늘리기',
+                  icon: const Icon(Icons.add_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context, _seconds),
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: const Text('적용'),
+            ),
+          ],
         ),
       ),
     );
@@ -251,17 +592,26 @@ class _RaceControlPreviewCard extends StatelessWidget {
 }
 
 class _LiveContent extends StatelessWidget {
-  const _LiveContent({required this.snapshot, required this.isStale});
+  const _LiveContent({
+    required this.snapshot,
+    required this.isStale,
+    required this.delaySeconds,
+  });
 
   final LiveSessionSnapshot snapshot;
   final bool isStale;
+  final int delaySeconds;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SessionHeader(snapshot: snapshot, isStale: isStale),
+        _SessionHeader(
+          snapshot: snapshot,
+          isStale: isStale,
+          delaySeconds: delaySeconds,
+        ),
         const SizedBox(height: 12),
         _TimingCard(snapshot: snapshot),
         const SizedBox(height: 12),
@@ -276,10 +626,15 @@ class _LiveContent extends StatelessWidget {
 }
 
 class _SessionHeader extends StatelessWidget {
-  const _SessionHeader({required this.snapshot, required this.isStale});
+  const _SessionHeader({
+    required this.snapshot,
+    required this.isStale,
+    required this.delaySeconds,
+  });
 
   final LiveSessionSnapshot snapshot;
   final bool isStale;
+  final int delaySeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +642,10 @@ class _SessionHeader extends StatelessWidget {
         snapshot.trackStatusMessage ?? _trackStatusLabel(snapshot.trackStatus);
     final race = resolveLiveRace(snapshot.raceId, snapshot.raceName);
     final (statusLabel, statusColor) = switch (snapshot.status) {
-      LiveSessionStatus.live => ('LIVE', AppColors.red),
+      LiveSessionStatus.live => (
+        delaySeconds > 0 ? 'LIVE · $delaySeconds초 지연' : 'LIVE',
+        delaySeconds > 0 ? AppColors.warningAmber : AppColors.red,
+      ),
       LiveSessionStatus.ended => ('최종 결과', AppColors.muted),
       LiveSessionStatus.inactive => ('세션 준비', AppColors.blueSoft),
     };
@@ -454,11 +812,13 @@ class _RemainingMetric extends StatefulWidget {
     required this.label,
     required this.remaining,
     required this.stopped,
+    this.playbackOffset = Duration.zero,
   });
 
   final String label;
   final String remaining;
   final bool stopped;
+  final Duration playbackOffset;
 
   @override
   State<_RemainingMetric> createState() => _RemainingMetricState();
@@ -483,7 +843,8 @@ class _RemainingMetricState extends State<_RemainingMetric> {
   void didUpdateWidget(covariant _RemainingMetric oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.remaining != widget.remaining ||
-        oldWidget.stopped != widget.stopped) {
+        oldWidget.stopped != widget.stopped ||
+        oldWidget.playbackOffset != widget.playbackOffset) {
       _sync();
     }
   }
@@ -516,6 +877,7 @@ class _RemainingMetricState extends State<_RemainingMetric> {
     if (_baseSeconds < 0) return widget.remaining;
     var seconds = _baseSeconds;
     if (!widget.stopped) {
+      seconds -= widget.playbackOffset.inSeconds;
       seconds -= DateTime.now().difference(_receivedAt).inSeconds;
     }
     if (seconds < 0) seconds = 0;
@@ -881,6 +1243,7 @@ class _TimingSessionMetric extends StatelessWidget {
         label: _sessionAbbreviation(snapshot),
         remaining: snapshot.remainingTime!,
         stopped: snapshot.clockStopped || snapshot.isEnded,
+        playbackOffset: snapshot.playbackOffsetAt(DateTime.now()),
       );
     }
     return const SizedBox.shrink();

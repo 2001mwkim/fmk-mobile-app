@@ -57,6 +57,72 @@ void main() {
     expect(log, [_primary]);
   });
 
+  test('라이브 센터 지연값을 primary와 fallback 요청에 보존한다', () async {
+    final log = <String>[];
+    const delayedPrimary = '$_primary?delay=60';
+    const delayedFallback = '$_fallback?delay=60';
+    final service = LiveSessionService(
+      url: _primary,
+      fallbackUrl: _fallback,
+      delaySeconds: 60,
+      client: _client(healthy: {delayedFallback}, log: log),
+    );
+
+    final result = await service.fetchResult();
+
+    expect(result.succeeded, isTrue);
+    expect(log, [delayedPrimary, delayedFallback]);
+  });
+
+  test('지연 재생 메타데이터를 스냅샷에 연결한다', () async {
+    final body = jsonEncode({
+      ...jsonDecode(_body()) as Map<String, dynamic>,
+      'playback': {
+        'requestedDelaySeconds': 75,
+        'capturedAt': '2026-09-02T10:00:00Z',
+      },
+    });
+    final service = LiveSessionService(
+      url: _primary,
+      fallbackUrl: '',
+      client: MockClient(
+        (_) async => http.Response.bytes(
+          utf8.encode(body),
+          200,
+          headers: const {'content-type': 'application/json'},
+        ),
+      ),
+    );
+
+    final snapshot = await service.fetch();
+
+    expect(snapshot?.playbackDelaySeconds, 75);
+    expect(
+      snapshot?.playbackCapturedAt,
+      DateTime.parse('2026-09-02T10:00:00Z'),
+    );
+  });
+
+  test('delay 쿼리를 무시하는 구버전 서버의 최신 데이터는 숨긴다', () async {
+    final service = LiveSessionService(
+      url: _primary,
+      fallbackUrl: '',
+      delaySeconds: 60,
+      client: MockClient(
+        (_) async => http.Response.bytes(
+          utf8.encode(_body()),
+          200,
+          headers: const {'content-type': 'application/json'},
+        ),
+      ),
+    );
+
+    final result = await service.fetchResult();
+
+    expect(result.succeeded, isTrue);
+    expect(result.snapshot, isNull);
+  });
+
   test('1순위가 죽으면 폴백으로 살아난다', () async {
     final log = <String>[];
     final service = LiveSessionService(
@@ -162,9 +228,9 @@ void main() {
 
     final result = await service.fetchResult();
 
-    // 세션이 비었는지 판정은 컨트롤러(_isSessionSnapshot)의 몫이고, 여기서
-    // 중요한 건 "정상 응답이므로 폴백을 안 탄다"는 것뿐이다.
+    // 정상적인 빈 응답이므로 스냅샷은 null이고 폴백으로 넘어가지 않는다.
     expect(result.succeeded, isTrue);
+    expect(result.snapshot, isNull);
     expect(log, [_primary]);
   });
 

@@ -92,6 +92,18 @@ flutter build appbundle --release
 Android Now Bar(`LiveActivityService.kt`)는 브리지가 저장한 `liveJsonUrl` 키를 쓰므로
 자동으로 새 주소를 따라간다.
 
+## 라이브 센터 영상 지연
+
+라이브 센터는 `live.json?delay=N`으로 0~120초의 영상 동기화 지연을 요청한다.
+collector는 최근 5분의 전체 스냅샷을 1초 단위 메모리 링 버퍼에 보관하고,
+요청 재생 시각보다 새롭지 않은 가장 가까운 스냅샷을 반환한다. 응답의
+`playback.capturedAt`은 시간제 세션 카운트다운 보정에 사용한다.
+
+Cloudflare와 Vercel은 쿼리 문자열별로 캐시가 분리되어야 한다. 구버전 collector가
+쿼리를 무시해 최신 데이터를 노출하지 않도록 앱도 playback 메타데이터를 검증하므로,
+배포 순서는 **collector → 앱**을 지킨다. 홈·위젯·Live Activity는 쿼리 없는 기존
+실시간 endpoint를 계속 사용한다.
+
 ## 선택 사항
 
 **collector gzip** — Cloudflare 가 사용자에게 보낼 때 자동 압축하므로 급하지 않다.

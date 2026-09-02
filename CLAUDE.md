@@ -65,6 +65,7 @@ flutter build appbundle --release
 - **라이브는 2026-08-24 이전 완료** — `live.formulamagazine.kr`(Cloudflare 무료, 주황 구름 → Railway collector). 구성·점검법·주의사항은 `docs/live_cdn_migration.md`. **`formulamagazine.kr` 네임서버가 Cloudflare 로 옮겨졌고 이 도메인에 다음(Daum) 메일이 붙어 있으니**, DNS 를 손볼 일이 생기면 그 문서의 레코드 표를 먼저 볼 것. 순위·결과·소식은 클라이언트 캐시(6시간/30분)가 있어 Vercel 무료로 충분하니 옮기지 않았다.
 - 측정값(2026-08-24): 이전 후 **0.15초 / 4.1 KB / cf-cache-status HIT**(직결은 0.55초·29.5 KB). Cloudflare 가 응답을 자동 압축하므로 collector gzip 은 선택 사항이다. collector 는 `Cache-Control: ... s-maxage=5 ...` 를 이미 보내고 있고, **HEAD 요청에는 404 를 준다** — 점검은 `curl -s -D - -o NUL` 로 할 것.
 - 레이스/스프린트 중에는 **10초** 폴링(`LiveSessionController.racePollInterval`). **기본값이 켜짐**이라 플래그 없이 빌드해도 적용된다 — 되돌릴 때만 `--dart-define=LIVE_FAST_POLL=false`. 원래 꺼 두었던 이유는 Vercel 요청 비용이었고 Cloudflare 이전으로 사라졌다. 연습/퀄리는 랩타임 갱신이 드물어 20초를 유지한다.
+- 라이브 센터만 영상 동기화용 **0~120초 지연**을 지원한다(`live_center_delay_seconds`, 5초 단위). 홈·위젯·Live Activity는 항상 실시간이다. 앱은 `live.json?delay=N`을 별도 컨트롤러로 폴링하며, collector는 최근 5분을 1초 버킷으로 메모리 보관한다. 지연 응답의 `playback.requestedDelaySeconds`와 `capturedAt`이 없으면 구버전 서버가 쿼리를 무시한 것으로 보고 최신 스냅샷을 노출하지 않는다. 따라서 배포는 collector를 먼저, 앱을 나중에 한다.
 
 ## 미해결 사항
 

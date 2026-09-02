@@ -53,7 +53,9 @@ const String kLiveJsonUrl = String.fromEnvironment(
 const String kLiveJsonFallbackUrl = String.fromEnvironment(
   'LIVE_JSON_FALLBACK_URL',
   // 로컬 collector 로 개발할 땐 폴백이 없다(빈 문자열 = 폴백 비활성).
-  defaultValue: _kIsReleaseBuild ? 'https://www.formulamagazine.kr/api/live' : '',
+  defaultValue: _kIsReleaseBuild
+      ? 'https://www.formulamagazine.kr/api/live'
+      : '',
 );
 
 /// 레이스/스프린트 중 폴링을 10초로 당길지 여부(기본 true).
@@ -92,6 +94,7 @@ class LiveSessionService {
     this.url = kLiveJsonUrl,
     this.fallbackUrl = kLiveJsonFallbackUrl,
     this.client,
+    this.delaySeconds = 0,
   });
 
   final String url;
@@ -101,6 +104,9 @@ class LiveSessionService {
 
   /// 테스트 주입용 클라이언트(없으면 매 요청마다 생성/정리).
   final http.Client? client;
+
+  /// 라이브 센터 전용 재생 지연. 전역 라이브 서비스는 기본값 0을 유지한다.
+  final int delaySeconds;
 
   /// 시도 순서. 앞이 1순위다.
   late final List<String> endpoints = <String>[
@@ -144,7 +150,7 @@ class LiveSessionService {
     final httpClient = client ?? http.Client();
     try {
       final response = await httpClient
-          .get(Uri.parse(endpoint))
+          .get(_requestUri(endpoint))
           .timeout(kLiveFetchTimeout);
       if (response.statusCode != 200) {
         return const LiveSessionFetchResult.failed();
@@ -152,15 +158,46 @@ class LiveSessionService {
       // bodyBytes 로 직접 디코딩한다 — Vercel 폴백은 charset 없는
       // `application/json` 을 주는데, http 패키지의 `body` 는 그 경우 latin1 로
       // 풀어서 드라이버 한글 이름이 깨진다.
-      return LiveSessionFetchResult.success(
-        parseLiveJson(utf8.decode(response.bodyBytes, allowMalformed: true)),
+      final snapshot = parseLiveJson(
+        utf8.decode(response.bodyBytes, allowMalformed: true),
       );
+      // 구버전 서버가 delay 쿼리를 무시하면 최신 데이터가 스포일러가 된다.
+      // 요청한 지연값과 수집 시각이 모두 확인된 응답만 화면에 전달한다.
+      if (delaySeconds > 0 &&
+          snapshot != null &&
+          (snapshot.playbackDelaySeconds != delaySeconds ||
+              (snapshot.playbackCapturedAt == null &&
+                  _hasSessionContent(snapshot)))) {
+        return const LiveSessionFetchResult.success(null);
+      }
+      return LiveSessionFetchResult.success(snapshot);
     } catch (_) {
       // 네트워크 오류/타임아웃/파싱 오류 모두 무시하고 실패로 처리(다음 endpoint 시도).
       return const LiveSessionFetchResult.failed();
     } finally {
       if (client == null) httpClient.close();
     }
+  }
+
+  Uri _requestUri(String endpoint) {
+    final uri = Uri.parse(endpoint);
+    if (delaySeconds <= 0) return uri;
+    return uri.replace(
+      queryParameters: <String, String>{
+        ...uri.queryParameters,
+        'delay': '$delaySeconds',
+      },
+    );
+  }
+
+  bool _hasSessionContent(LiveSessionSnapshot snapshot) {
+    return (snapshot.raceId?.isNotEmpty ?? false) ||
+        (snapshot.raceName?.isNotEmpty ?? false) ||
+        (snapshot.sessionKey?.isNotEmpty ?? false) ||
+        (snapshot.sessionType?.isNotEmpty ?? false) ||
+        (snapshot.sessionName?.isNotEmpty ?? false) ||
+        snapshot.classification.isNotEmpty ||
+        snapshot.topThree.isNotEmpty;
   }
 }
 
@@ -184,9 +221,15 @@ LiveSessionSnapshot? parseLiveJson(String body) {
     if (decoded is! Map) return null;
 
     // collector 는 { snapshot, collector } 로 감싸지만, snapshot 단독도 허용.
-    final raw = decoded['snapshot'] ?? decoded;
+    // 명시적인 snapshot:null은 wrapper 자체를 빈 스냅샷으로 오인하지 않는다.
+    final raw = decoded.containsKey('snapshot') ? decoded['snapshot'] : decoded;
+    if (raw == null) return null;
     if (raw is! Map) return null;
     final map = raw.cast<String, dynamic>();
+    final playbackRaw = decoded['playback'];
+    final playback = playbackRaw is Map
+        ? playbackRaw.cast<String, dynamic>()
+        : const <String, dynamic>{};
 
     return LiveSessionSnapshot(
       status: _parseStatus(map['status']),
@@ -216,6 +259,8 @@ LiveSessionSnapshot? parseLiveJson(String body) {
       ),
       // lastSession 은 스냅샷이 아니라 body 최상위 필드(스냅샷과 수명이 다름).
       lastSession: _parseLastSession(decoded['lastSession']),
+      playbackCapturedAt: _dateTime(playback['capturedAt']),
+      playbackDelaySeconds: _int(playback['requestedDelaySeconds']) ?? 0,
     );
   } catch (_) {
     return null;
