@@ -188,14 +188,21 @@ struct FmkPayload {
     return dates.sorted()
   }
 
-  func nextScheduleRow(at date: Date) -> FmkSessionRow? {
+  /// 강조할 세션 인덱스(0-based). 일정 화면·콤팩트·잠금화면이 같은 규칙을
+  /// 쓰도록 여기서만 판정한다 — 패밀리마다 다르게 고르면 레이스 중에 작은
+  /// 위젯은 "레이스", 중형은 아무것도 강조하지 않는 상태가 된다.
+  func nextScheduleIndex(at date: Date) -> Int? {
     let highlight = highlightIndex(at: date)
-    if highlight > 0 && highlight <= sessions.count { return sessions[highlight - 1] }
+    if highlight > 0 && highlight <= sessions.count { return highlight - 1 }
     // The final race remains visible while running, never rewind to past FP1.
-    return sessions.first {
+    return sessions.firstIndex {
       guard let start = $0.start, let end = $0.end else { return false }
       return start <= date && date < end
     }
+  }
+
+  func nextScheduleRow(at date: Date) -> FmkSessionRow? {
+    nextScheduleIndex(at: date).map { sessions[$0] }
   }
 
   /// 앱이 한 번도 데이터를 저장하지 않은 상태(위젯만 먼저 추가).

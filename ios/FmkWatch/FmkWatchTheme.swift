@@ -31,12 +31,12 @@ extension Color {
   }
 }
 
-/// 다음 세션(하이라이트) 행 선택 — iOS FmkLockWidgetView.nextRow 와 동일 규칙.
+/// 다음 세션(하이라이트) 행 선택 — 판정은 iOS 와 공유하는
+/// FmkPayload.nextScheduleIndex 한 곳에만 둔다. 예전처럼 다가오는 세션이
+/// 없을 때 첫 행으로 되돌리면, 레이스가 달리는 중에 컴플리케이션이 이미
+/// 끝난 FP1 을 다음 일정으로 보여준다.
 func fmkNextSessionRow(payload: FmkPayload, at date: Date) -> FmkSessionRow? {
-  let highlight = payload.highlightIndex(at: date)
-  let index = (1...5).contains(highlight) && highlight <= payload.sessions.count
-    ? highlight - 1 : 0
-  return payload.sessions.indices.contains(index) ? payload.sessions[index] : nil
+  payload.nextScheduleRow(at: date)
 }
 
 /// 작은 컴플리케이션 슬롯(사진 시계 얼굴의 원형·코너 등)용 짧은 세션 라벨.

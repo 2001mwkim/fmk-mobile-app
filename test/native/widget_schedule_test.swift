@@ -54,6 +54,16 @@ struct WidgetScheduleTests {
     assert(first.nextScheduleRow(at: raceStart)?.id == "race")
     assert(first.nextScheduleRow(at: raceEnd) == nil) // no past FP1 fallback
 
+    // 진행 중 세션은 강조 대상이다 — 일정 화면이 이 인덱스로 행 색을 정하므로
+    // nil 이 되면 레이스가 달리는 동안 모든 행이 '지난 일정'으로 흐려진다.
+    assert(first.nextScheduleIndex(at: fp.addingTimeInterval(-1)) == 0)
+    assert(first.nextScheduleIndex(at: raceStart) == 1)
+    assert(first.nextScheduleIndex(at: raceEnd.addingTimeInterval(-1)) == 1)
+    assert(first.nextScheduleIndex(at: raceEnd) == nil)
+    // 다가오는 세션이 있으면 진행 중 세션보다 그쪽을 먼저 강조한다
+    // (FP1 진행 중 → 다음 세션인 레이스). 콤팩트·잠금화면과 같은 규칙.
+    assert(first.nextScheduleIndex(at: fp) == 1)
+
     // KST midnight is 15:00 UTC, regardless of the phone's time zone.
     let beforeMidnight = date("2026-09-17T14:59:59Z")
     let midnight = beforeMidnight.addingTimeInterval(1)

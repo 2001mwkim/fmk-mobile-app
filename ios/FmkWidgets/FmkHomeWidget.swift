@@ -207,7 +207,9 @@ struct FmkScheduleView: View {
 
   var body: some View {
     let payload = entry.payload
-    let highlight = payload.highlightIndex(at: entry.date)
+    // 진행 중인 세션도 강조 대상이다 — 다음 세션만 강조하면 레이스가 달리는
+    // 2시간 동안 5행 전부 '지난 일정' 색으로 흐려져 위젯이 꺼진 것처럼 보인다.
+    let focus = payload.nextScheduleIndex(at: entry.date)
     // 행들이 위젯 높이를 균등하게 채운다(.frame(maxHeight: .infinity)) —
     // 고정 spacing 만 쓰면 systemMedium 하단이 빈 공간으로 남는다.
     VStack(alignment: .leading, spacing: 0) {
@@ -230,8 +232,8 @@ struct FmkScheduleView: View {
       }
 
       ForEach(Array(payload.sessions.enumerated()), id: \.offset) { index, row in
-        let isNext = highlight == index + 1
-        let isPast = highlight > index + 1 || (highlight == 0 && row.start != nil)
+        let isNext = focus == index
+        let isPast = focus.map { index < $0 } ?? (row.start != nil)
         HStack(spacing: 7) {
           Circle()
             .fill(FmkTheme.red)
