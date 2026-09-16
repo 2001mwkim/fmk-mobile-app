@@ -46,9 +46,7 @@ class SharedPreferencesNotificationSettingsStore
       );
     }
     if (legacyRaceOnly) {
-      return const NotificationPreferences(
-        categories: {SessionCategory.race},
-      );
+      return const NotificationPreferences(categories: {SessionCategory.race});
     }
     return const NotificationPreferences();
   }
@@ -124,7 +122,16 @@ class NotificationSettingsController {
     }
 
     await _store.save(next);
-    final scheduledCount = await _reschedule(next);
+    final int scheduledCount;
+    try {
+      scheduledCount = await _reschedule(next);
+    } on NotificationPermissionDenied {
+      return NotificationSettingsUpdateResult(
+        preferences: next,
+        scheduledCount: 0,
+        permissionDenied: true,
+      );
+    }
     return NotificationSettingsUpdateResult(
       preferences: next,
       scheduledCount: scheduledCount,
@@ -133,7 +140,12 @@ class NotificationSettingsController {
 
   Future<int> refreshScheduledNotifications() async {
     final preferences = await _store.load();
-    return _reschedule(preferences);
+    try {
+      return await _reschedule(preferences);
+    } on NotificationPermissionDenied {
+      // Keep preferences so a later refresh can retry after authorization.
+      return 0;
+    }
   }
 
   Future<int> _reschedule(NotificationPreferences preferences) async {

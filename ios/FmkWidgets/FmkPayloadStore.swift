@@ -14,6 +14,58 @@ struct FmkSessionRow {
   let end: Date?
 }
 
+// Codable uses Double for epochs, including on the 32-bit watch architecture.
+struct FmkScheduleCalendar: Decodable {
+  let version: Int
+  let races: [FmkCalendarRace]
+
+  static func decode(_ raw: String?) -> FmkScheduleCalendar? {
+    guard let data = raw?.data(using: .utf8),
+      let value = try? JSONDecoder().decode(Self.self, from: data),
+      value.version == 1,
+      value.races.allSatisfy({ race in
+        !race.id.isEmpty && !race.sessions.isEmpty && race.sessions.count <= 5
+          && race.endEpochMs.isFinite && race.endEpochMs > 0
+          && race.sessions.allSatisfy {
+            $0.startEpochMs.isFinite && $0.endEpochMs.isFinite
+              && $0.startEpochMs > 0 && $0.endEpochMs > $0.startEpochMs
+              && $0.endEpochMs <= race.endEpochMs
+          }
+      })
+    else { return nil }
+    return value
+  }
+
+  func race(at date: Date) -> FmkCalendarRace? {
+    races.filter { $0.end > date }.min { $0.start < $1.start }
+  }
+}
+
+struct FmkCalendarRace: Decodable {
+  let id: String
+  let name: String
+  let flag: String
+  let endEpochMs: Double
+  let sessions: [FmkCalendarSession]
+  var start: Date { sessions.map { $0.row.start! }.min()! }
+  var end: Date { Date(timeIntervalSince1970: endEpochMs / 1000) }
+}
+
+struct FmkCalendarSession: Decodable {
+  let id: String
+  let name: String
+  let date: String
+  let time: String
+  let startEpochMs: Double
+  let endEpochMs: Double
+  var row: FmkSessionRow {
+    FmkSessionRow(
+      name: name, date: date, time: time, id: id,
+      start: Date(timeIntervalSince1970: startEpochMs / 1000),
+      end: Date(timeIntervalSince1970: endEpochMs / 1000))
+  }
+}
+
 struct FmkTopRow: Identifiable {
   let position: Int
   let name: String
@@ -95,6 +147,56 @@ struct FmkPayload {
   let driverNamesKo: [String: String]
   let driverAccents: [String: Int]
   let liveJsonUrl: String
+  var scheduleCalendar: FmkScheduleCalendar? = nil
+
+  static var scheduleTimeCalendar: Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "Asia/Seoul")!
+    return calendar
+  }
+
+  /// Project the saved season at the entry's date, not the app's last launch.
+  /// A missing/invalid new snapshot retains compatibility with older installs.
+  func schedule(at date: Date) -> FmkPayload {
+    guard let calendar = scheduleCalendar else { return self }
+    let race = calendar.race(at: date)
+    return FmkPayload(
+      mode: "default", gpFlag: race?.flag ?? "", gpName: race?.name ?? "일정 종료",
+      scheduleGpFlag: race?.flag ?? "", scheduleGpName: race?.name ?? "일정 종료",
+      scheduleRaceId: race?.id ?? "", liveBadge: "", resultSessionLabel: "",
+      lapCurrent: 0, lapTotal: 0, sessionHighlightIndex: 0,
+      sessions: race?.sessions.map { $0.row }.sorted { $0.start! < $1.start! } ?? [],
+      topThree: [], driverNamesKo: driverNamesKo, driverAccents: driverAccents,
+      liveJsonUrl: liveJsonUrl)
+  }
+
+  /// Pre-render 35 days of changes; reload daily to extend this safety margin.
+  /// No network or app execution is required when WidgetKit asks for a timeline.
+  func scheduleEntryDates(from now: Date) -> [Date] {
+    let calendar = Self.scheduleTimeCalendar
+    let horizon = calendar.date(byAdding: .day, value: 35, to: now)!
+    var dates: Set<Date> = [now]
+    var midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))!
+    while midnight <= horizon {
+      dates.insert(midnight)
+      midnight = calendar.date(byAdding: .day, value: 1, to: midnight)!
+    }
+    let rows = scheduleCalendar?.races.flatMap { $0.sessions.map { $0.row } } ?? sessions
+    let boundaries = rows.flatMap { [$0.start, $0.end].compactMap { $0 } }
+      + (scheduleCalendar?.races.map { $0.end } ?? [])
+    for date in boundaries where date > now && date <= horizon { dates.insert(date) }
+    return dates.sorted()
+  }
+
+  func nextScheduleRow(at date: Date) -> FmkSessionRow? {
+    let highlight = highlightIndex(at: date)
+    if highlight > 0 && highlight <= sessions.count { return sessions[highlight - 1] }
+    // The final race remains visible while running, never rewind to past FP1.
+    return sessions.first {
+      guard let start = $0.start, let end = $0.end else { return false }
+      return start <= date && date < end
+    }
+  }
 
   /// 앱이 한 번도 데이터를 저장하지 않은 상태(위젯만 먼저 추가).
   var isEmpty: Bool { sessions.isEmpty && gpName.isEmpty }
@@ -226,7 +328,8 @@ struct FmkPayload {
       topThree: topThree,
       driverNamesKo: jsonMap("driverNamesKoJson"),
       driverAccents: colorMap("driverAccentsJson"),
-      liveJsonUrl: str("liveJsonUrl")
+      liveJsonUrl: str("liveJsonUrl"),
+      scheduleCalendar: FmkScheduleCalendar.decode(store?.string(forKey: "scheduleCalendarV1"))
     )
   }
 

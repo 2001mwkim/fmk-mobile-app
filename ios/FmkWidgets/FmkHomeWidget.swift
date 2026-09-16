@@ -1,12 +1,7 @@
 import SwiftUI
 import WidgetKit
 
-// 일정·라이브 위젯 — Android FmkHomeWidgetProvider 의 iOS 대응.
-// iOS 는 위젯 토글이 없으므로 상태 자동 전환으로 대신한다:
-//   라이브 중 → 라이브 순위, 종료 직후(노출 기한 내) → 결과, 평상시 → 일정.
-// systemMedium 이 기본(일정 5행), systemSmall 은 Android 콤팩트 대응.
-// 자동 전환이 불편한 사용자를 위해 FmkSplitWidgets.swift 에 일정 전용 /
-// 라이브·결과 전용 위젯이 따로 있다(이 파일의 뷰·타임라인 로직을 재사용).
+// Schedule timeline projected from the locally saved season calendar.
 struct FmkHomeEntry: TimelineEntry {
   let date: Date
   let payload: FmkPayload
@@ -15,41 +10,25 @@ struct FmkHomeEntry: TimelineEntry {
 
 struct FmkHomeProvider: TimelineProvider {
   func placeholder(in context: Context) -> FmkHomeEntry {
-    FmkHomeEntry(date: Date(), payload: .load(), live: nil)
+    let now = Date()
+    return FmkHomeEntry(date: now, payload: FmkPayload.load().schedule(at: now), live: nil)
   }
 
   func getSnapshot(in context: Context, completion: @escaping (FmkHomeEntry) -> Void) {
-    completion(FmkHomeEntry(date: Date(), payload: .load(), live: nil))
+    let now = Date()
+    completion(FmkHomeEntry(date: now, payload: FmkPayload.load().schedule(at: now), live: nil))
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<FmkHomeEntry>) -> Void) {
     let payload = FmkPayload.load()
     let now = Date()
-
-    // 세션 창(시작 5분 전 ~ 종료 40분 후)에서만 live.json 을 직접 fetch.
-    // WidgetKit 갱신 예산이 하루 수십 회라 평상시에는 네트워크를 아낀다.
-    // 평상시: 저장 데이터로 렌더. 세션 시작마다 하이라이트가 스스로 넘어가도록
-    // 미래 세션 경계에 엔트리를 미리 깔아 둔다(네트워크 불필요).
-    var entries: [FmkHomeEntry] = [FmkHomeEntry(date: now, payload: payload, live: nil)]
-    for row in payload.sessions {
-      if let start = row.start, start > now {
-        entries.append(FmkHomeEntry(date: start, payload: payload, live: nil))
-      }
+    let entries = payload.scheduleEntryDates(from: now).map { date in
+      FmkHomeEntry(date: date, payload: payload.schedule(at: date), live: nil)
     }
-    entries.sort { $0.date < $1.date }
-
-    // 다음 갱신: 다음 세션 창 시작 직전(없으면 6시간 후).
-    let nextWindow = payload.sessions
-      .compactMap { $0.start }
-      .filter { $0 > now }
-      .map { $0.addingTimeInterval(-5 * 60) }
-      .min()
-    let reload = min(nextWindow ?? now.addingTimeInterval(6 * 3600),
-                     now.addingTimeInterval(6 * 3600))
-    completion(Timeline(entries: entries, policy: .after(max(reload, now))))
+    // Extend the horizon daily; pre-rendered entries cover delayed reloads.
+    completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(24 * 3600))))
   }
 
-  /// 세션 창 판정 — FmkLiveResultProvider 도 같은 규칙을 쓴다.
   static func inLiveWindow(payload: FmkPayload, now: Date) -> Bool {
     payload.sessions.contains { row in
       guard let start = row.start, let end = row.end else { return false }
@@ -135,20 +114,16 @@ struct FmkLockWidgetView: View {
 
   /// 다음 세션(하이라이트) 행 — 콤팩트 뷰와 같은 선택 규칙.
   private var nextRow: FmkSessionRow? {
-    let highlight = entry.payload.highlightIndex(at: entry.date)
-    let index = (1...5).contains(highlight)
-        && highlight <= entry.payload.sessions.count
-      ? highlight - 1 : 0
-    return entry.payload.sessions.indices.contains(index)
-      ? entry.payload.sessions[index] : nil
+    entry.payload.nextScheduleRow(at: entry.date)
   }
 
   /// 다음 세션까지 남은 일수(당일 0). 정보 없으면 nil.
   private var daysLeft: Int? {
     guard let start = nextRow?.start else { return nil }
-    let days = Calendar.current.dateComponents(
-      [.day], from: Calendar.current.startOfDay(for: entry.date),
-      to: Calendar.current.startOfDay(for: start)
+    let calendar = FmkPayload.scheduleTimeCalendar
+    let days = calendar.dateComponents(
+      [.day], from: calendar.startOfDay(for: entry.date),
+      to: calendar.startOfDay(for: start)
     ).day
     return days.map { max($0, 0) }
   }
@@ -164,7 +139,7 @@ struct FmkLockWidgetView: View {
       } else if let row = nextRow {
         Text("🏁 \(row.name) \(row.date) \(row.time)")
       } else {
-        Text("🏁 비아 포뮬러")
+        Text(entry.payload.isEmpty ? "🏁 비아 포뮬러" : "🏁 다음 일정 없음")
       }
     case .accessoryCircular:
       VStack(spacing: 0) {
@@ -247,6 +222,13 @@ struct FmkScheduleView: View {
       }
       .padding(.bottom, 4)
 
+      if payload.sessions.isEmpty {
+        Text("다음 일정이 없습니다")
+          .font(.system(size: 13, weight: .medium))
+          .foregroundColor(FmkTheme.dim)
+          .frame(maxHeight: .infinity)
+      }
+
       ForEach(Array(payload.sessions.enumerated()), id: \.offset) { index, row in
         let isNext = highlight == index + 1
         let isPast = highlight > index + 1 || (highlight == 0 && row.start != nil)
@@ -281,11 +263,7 @@ struct FmkScheduleCompactView: View {
 
   var body: some View {
     let payload = entry.payload
-    let highlight = payload.highlightIndex(at: entry.date)
-    // 다음 세션(하이라이트) 우선, 없으면 첫 행 — Kotlin buildCompact 와 동일.
-    let index = (1...5).contains(highlight) && highlight <= payload.sessions.count
-      ? highlight - 1 : 0
-    let row = payload.sessions.indices.contains(index) ? payload.sessions[index] : nil
+    let row = payload.nextScheduleRow(at: entry.date)
 
     VStack(alignment: .leading, spacing: 3) {
       Text("VIA FORMULA")

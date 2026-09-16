@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/race_result.dart';
@@ -6,6 +8,60 @@ import 'package:fmk_app/services/fmk_home_widget_bridge.dart';
 import 'package:fmk_app/services/race_results_repository.dart';
 
 void main() {
+  group('iOS autonomous schedule calendar', () {
+    test('stores every non-cancelled GP in chronological order', () {
+      final decoded = jsonDecode(buildFmkWidgetScheduleCalendar()) as Map;
+      expect(decoded['version'], 1);
+      final saved = decoded['races'] as List;
+      final expected = races
+          .where((race) => !race.isCancelled && race.sessions.isNotEmpty)
+          .toList();
+      expect(saved.map((race) => race['id']), expected.map((race) => race.id));
+      expect(saved.length, greaterThan(3));
+      expect(utf8.encode(jsonEncode(decoded)).length, lessThan(100000));
+      for (var i = 0; i < expected.length; i++) {
+        final race = expected[i];
+        final storedRace = saved[i] as Map;
+        expect(storedRace['name'], race.nameKo);
+        expect(
+          storedRace['endEpochMs'],
+          getRaceWeekendEndDate(race)!.millisecondsSinceEpoch,
+        );
+        final sessions = storedRace['sessions'] as List;
+        expect(sessions.length, race.sessions.take(5).length);
+        for (var j = 0; j < sessions.length; j++) {
+          final session = sessions[j] as Map;
+          expect(session['id'], race.sessions[j].id);
+          expect(
+            session['startEpochMs'],
+            getSessionDate(race, race.sessions[j]).millisecondsSinceEpoch,
+          );
+          expect(
+            session['endEpochMs'],
+            getSessionEndDate(race, race.sessions[j]).millisecondsSinceEpoch,
+          );
+          expect(
+            session['endEpochMs'],
+            greaterThan(session['startEpochMs'] as int),
+          );
+          expect(session['date'], isNotEmpty);
+          expect(session['time'], matches(RegExp(r'^\d{2}:\d{2}$')));
+        }
+      }
+    });
+
+    test('normalizes unordered input and supports an empty season', () {
+      expect(
+        buildFmkWidgetScheduleCalendar(raceList: races.reversed),
+        buildFmkWidgetScheduleCalendar(),
+      );
+      expect(jsonDecode(buildFmkWidgetScheduleCalendar(raceList: [])), {
+        'version': 1,
+        'races': [],
+      });
+    });
+  });
+
   test('home widget default payload shows next grand prix sessions', () {
     final payload = buildFmkHomeWidgetPayload(
       now: DateTime.parse('2026-03-01T12:00:00+09:00'),
@@ -213,5 +269,4 @@ void main() {
     expect(fmkWidgetTabIndexForUri(Uri.parse('https://live')), isNull);
     expect(fmkWidgetTabIndexForUri(null), isNull);
   });
-
 }

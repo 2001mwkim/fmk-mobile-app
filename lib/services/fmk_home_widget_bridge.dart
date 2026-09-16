@@ -174,8 +174,8 @@ class FmkHomeWidgetBridge {
   /// 기록). Android 에서는 no-op 이지만 분기 없이 한 번만 호출해 둔다.
   static Future<void> _ensureAppGroup() async {
     if (_appGroupConfigured || !_isIOS) return;
-    _appGroupConfigured = true;
     await HomeWidget.setAppGroupId(fmkWidgetAppGroupId);
+    _appGroupConfigured = true;
   }
 
   /// 애플워치 동기화 채널(iOS 네이티브 FmkWatchSync.swift). App Group 은
@@ -247,6 +247,20 @@ class FmkHomeWidgetBridge {
   static Future<void> update({DateTime? now}) async {
     if (!_supported) return;
 
+    // Publish offline schedule data before waiting for standings/results HTTP.
+    if (_isIOS) {
+      try {
+        await _ensureAppGroup();
+        await HomeWidget.saveWidgetData<String>(
+          'scheduleCalendarV1',
+          buildFmkWidgetScheduleCalendar(),
+        );
+        await HomeWidget.updateWidget(iOSName: fmkHomeWidgetIOSKind);
+      } catch (error) {
+        debugPrint('Failed to publish iOS widget calendar: $error');
+      }
+    }
+
     await _ensureStandings();
     if (_isIOS) await _ensureLatestResult();
     final payload = buildFmkHomeWidgetPayload(now: now);
@@ -274,8 +288,7 @@ class FmkHomeWidgetBridge {
             fmkConstructorStandingsWidgetProviderQualifiedName,
         iOSName: fmkTeamStandingsWidgetIOSKind,
       );
-      if (_isIOS) {
-      }
+      if (_isIOS) {}
       await HomeWidget.updateWidget(
         qualifiedAndroidName: fmkMyDriverWidgetProviderQualifiedName,
         iOSName: fmkMyDriverWidgetIOSKind,
@@ -320,8 +333,7 @@ class FmkHomeWidgetBridge {
         qualifiedAndroidName: fmkMyTeamWidgetProviderQualifiedName,
         iOSName: fmkMyTeamWidgetIOSKind,
       );
-      if (_isIOS) {
-      }
+      if (_isIOS) {}
       await _syncWatch();
     } catch (error, stackTrace) {
       debugPrint('Failed to update widget theme: $error');
@@ -1029,9 +1041,54 @@ FmkHomeWidgetPayload _buildResultPayload(
   );
 }
 
+/// Versioned, single-write snapshot for autonomous iOS schedule timelines.
+/// Keep all known races so reopening the app is not required between weekends.
+@visibleForTesting
+String buildFmkWidgetScheduleCalendar({Iterable<Race>? raceList}) {
+  final calendarRaces =
+      (raceList ?? races)
+          .where((race) => !race.isCancelled && race.sessions.isNotEmpty)
+          .toList()
+        ..sort(
+          (a, b) => getRaceWeekendStartDate(
+            a,
+          )!.compareTo(getRaceWeekendStartDate(b)!),
+        );
+  return jsonEncode({
+    'version': 1,
+    'races': [
+      for (final race in calendarRaces)
+        {
+          'id': race.id,
+          'name': race.nameKo,
+          'flag': _flagForRace(race),
+          'endEpochMs': getRaceWeekendEndDate(
+            race,
+          )!.toUtc().millisecondsSinceEpoch,
+          'sessions': [
+            for (final session in race.sessions.take(5))
+              {
+                'id': session.id,
+                'name': _sessionName(session),
+                'date': _formatDateKst(getSessionDate(race, session)),
+                'time': _formatTimeKst(getSessionDate(race, session)),
+                'startEpochMs': getSessionDate(
+                  race,
+                  session,
+                ).toUtc().millisecondsSinceEpoch,
+                'endEpochMs': getSessionEndDate(
+                  race,
+                  session,
+                ).toUtc().millisecondsSinceEpoch,
+              },
+          ],
+        },
+    ],
+  });
+}
+
 /// 다음 그랑프리와 세션 일정 행(최대 5개). 두 모드가 공유한다.
-/// highlightIndex 는 아직 시작 전인 첫 세션(1-based, 없으면 0) — 진행 중
-/// 세션은 위젯이 라이브 모드로 전환되므로 여기서 따로 다루지 않는다.
+/// highlightIndex는 아직 시작 전인 첫 세션(1-based, 없으면 0).
 ({Race race, List<FmkHomeWidgetSessionRow> rows, int highlightIndex})
 _nextRaceSchedule(DateTime now) {
   final race = getNextRace(now);

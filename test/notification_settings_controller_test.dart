@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/models/race.dart';
 import 'package:fmk_app/models/race_session.dart';
@@ -6,6 +9,109 @@ import 'package:fmk_app/services/notification_settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('iOS notification authorization', () {
+    const channel = MethodChannel('dexterous.com/flutter/local_notifications');
+    final calls = <String>[];
+    var authorized = false;
+    var provisional = false;
+    PlatformException? scheduleError;
+
+    setUp(() {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      IOSFlutterLocalNotificationsPlugin.registerWith();
+      calls.clear();
+      authorized = false;
+      provisional = false;
+      scheduleError = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call.method);
+            if (call.method == 'checkPermissions') {
+              return {
+                'isEnabled': authorized,
+                'isProvisionalEnabled': provisional,
+              };
+            }
+            if (call.method == 'zonedSchedule' && scheduleError != null) {
+              throw scheduleError!;
+            }
+            return true;
+          });
+    });
+
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    NotificationSettingsController controller() =>
+        NotificationSettingsController(
+          store: _MemoryNotificationSettingsStore()
+            ..preferences = const NotificationPreferences(
+              categories: {SessionCategory.practice, SessionCategory.race},
+            ),
+          scheduler: FlutterSessionNotificationScheduler(),
+          races: [_futureRace(year: DateTime.now().year + 1)],
+          now: () => DateTime.utc(DateTime.now().year + 1, 6, 30),
+        );
+
+    test(
+      'startup skips denied permissions and retries after authorization',
+      () async {
+        final subject = controller();
+        expect(await subject.refreshScheduledNotifications(), 0);
+        expect(calls, isNot(contains('zonedSchedule')));
+        expect(calls, isNot(contains('requestPermissions')));
+        expect((await subject.load()).hasAnyEnabled, isTrue);
+        authorized = true;
+        expect(await subject.refreshScheduledNotifications(), 4);
+        expect(
+          calls.where((method) => method == 'zonedSchedule'),
+          hasLength(4),
+        );
+      },
+    );
+
+    test('provisional authorization permits scheduling', () async {
+      provisional = true;
+      expect(await controller().refreshScheduledNotifications(), 4);
+    });
+
+    test('revocation during scheduling does not escape startup', () async {
+      authorized = true;
+      scheduleError = PlatformException(
+        code: 'Error 2003',
+        details: 'UNErrorDomain',
+      );
+      expect(await controller().refreshScheduledNotifications(), 0);
+      expect(calls.where((method) => method == 'zonedSchedule'), hasLength(1));
+    });
+
+    test('settings update reports revoked permission', () async {
+      final result = await controller().update(
+        category: SessionCategory.practice,
+        enabled: false,
+      );
+      expect(result.permissionDenied, isTrue);
+      expect(result.scheduledCount, 0);
+    });
+
+    test('unrelated platform failures remain visible', () async {
+      authorized = true;
+      scheduleError = PlatformException(
+        code: 'Error 2003',
+        details: 'OtherDomain',
+      );
+      await expectLater(
+        controller().refreshScheduledNotifications(),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+  });
+
   group('Notification settings store', () {
     test('defaults to all categories off', () async {
       SharedPreferences.setMockInitialValues({});
@@ -139,10 +245,7 @@ void main() {
         notifications.every((n) => n.category == SessionCategory.practice),
         isTrue,
       );
-      expect(
-        notifications.every((n) => n.title == '비아 포뮬러 세션 알림'),
-        isTrue,
-      );
+      expect(notifications.every((n) => n.title == '비아 포뮬러 세션 알림'), isTrue);
     });
 
     test('combines selected categories (practice + race)', () {
@@ -332,6 +435,7 @@ List<Race> _futureRaceWindow() {
 }
 
 Race _futureRace({
+  int year = 2026,
   String id = 'test-2026',
   int round = 9,
   int startDay = 1,
@@ -346,8 +450,8 @@ Race _futureRace({
     countryKo: '대한민국',
     cityKo: '서울',
     circuitKo: '테스트 서킷',
-    startDate: '2026-07-${_twoDigits(startDay)}',
-    endDate: '2026-07-${_twoDigits(raceDay)}',
+    startDate: '$year-07-${_twoDigits(startDay)}',
+    endDate: '$year-07-${_twoDigits(raceDay)}',
     hasSprint: false,
     status: RaceStatus.scheduled,
     isCancelled: isCancelled,

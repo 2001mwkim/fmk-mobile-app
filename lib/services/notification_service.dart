@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -37,9 +38,7 @@ SessionCategory? sessionCategoryOf(String sessionId) {
 }
 
 class NotificationPreferences {
-  const NotificationPreferences({
-    this.categories = const <SessionCategory>{},
-  });
+  const NotificationPreferences({this.categories = const <SessionCategory>{}});
 
   /// 알림을 켠 세션 카테고리 집합.
   final Set<SessionCategory> categories;
@@ -215,6 +214,10 @@ class _RaceNotificationCandidate {
   final List<ScheduledSessionNotification> notifications;
 }
 
+class NotificationPermissionDenied implements Exception {
+  const NotificationPermissionDenied();
+}
+
 abstract class SessionNotificationScheduler {
   Future<void> initialize();
   Future<bool> requestPermission();
@@ -320,6 +323,19 @@ class FlutterSessionNotificationScheduler
   ) async {
     await initialize();
     if (_unavailable) return;
+    if (notifications.isEmpty) return;
+    final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    if (isIOS) {
+      final permissions = await _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.checkPermissions();
+      if (permissions == null ||
+          (!permissions.isEnabled && !permissions.isProvisionalEnabled)) {
+        throw const NotificationPermissionDenied();
+      }
+    }
     const details = NotificationDetails(
       android: _androidDetails,
       iOS: _darwinDetails,
@@ -327,15 +343,25 @@ class FlutterSessionNotificationScheduler
     final androidScheduleMode = await _androidScheduleMode();
 
     for (final notification in notifications) {
-      await _plugin.zonedSchedule(
-        id: notification.id,
-        title: notification.title,
-        body: notification.body,
-        scheduledDate: notification.scheduledAt,
-        notificationDetails: details,
-        androidScheduleMode: androidScheduleMode,
-        payload: '${notification.raceId}:${notification.sessionId}',
-      );
+      try {
+        await _plugin.zonedSchedule(
+          id: notification.id,
+          title: notification.title,
+          body: notification.body,
+          scheduledDate: notification.scheduledAt,
+          notificationDetails: details,
+          androidScheduleMode: androidScheduleMode,
+          payload: '${notification.raceId}:${notification.sessionId}',
+        );
+      } on PlatformException catch (error) {
+        // Authorization can change after checkPermissions completes.
+        if (isIOS &&
+            error.code == 'Error 2003' &&
+            error.details == 'UNErrorDomain') {
+          throw const NotificationPermissionDenied();
+        }
+        rethrow;
+      }
     }
   }
 
