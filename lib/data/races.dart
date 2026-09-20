@@ -873,8 +873,9 @@ const List<Race> races = [
   Race(
     // 원래 4월 사키르(바레인) 개최였으나 중동 정세로 취소 → 세팡(말레이시아)으로
     // 이전해 10월 개최. 공식 명칭(바레인 그랑프리)·국기(바레인)는 그대로 두고
-    // 개최지만 세팡(서킷·도시·일정)으로 반영한다. 레이스 시각은 FIA 확정 전
-    // 잠정값(현지 UTC+8 → KST +1시간).
+    // 개최지만 세팡(서킷·도시·일정)으로 반영한다. 세션 시각은 F1 공식 일정
+    // 기준 KST(현지 UTC+8 → +1시간). 2026-09-20 확인:
+    // https://www.formula1.com/en/racing/2026/bahrain
     id: 'bahrain',
     round: 16,
     nameKo: '바레인 그랑프리',
@@ -927,8 +928,8 @@ const List<Race> races = [
         label: '레이스',
         fullLabel: '레이스',
         date: '10.4 일',
-        time: '17:00',
-        fullDateTime: '10월 4일 일요일 17:00',
+        time: '16:00',
+        fullDateTime: '10월 4일 일요일 16:00',
       ),
     ],
   ),
