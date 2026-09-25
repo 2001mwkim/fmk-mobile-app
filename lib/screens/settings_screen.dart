@@ -14,7 +14,9 @@ import '../services/live_session_controller.dart';
 import '../services/notification_settings_controller.dart';
 import '../services/app_theme_controller.dart';
 import '../services/notification_service.dart';
+import '../services/position_debug_service.dart' show kPositionDebugUrl;
 import '../services/widget_theme_controller.dart';
+import 'position_debug_screen.dart';
 
 const String _instagramUrl = 'https://www.instagram.com/formula_magazine.kr';
 const String _contactEmail = 'contact@formulamagazine.kr';
@@ -61,6 +63,9 @@ class SettingsScreen extends StatelessWidget {
               _Section(title: '개발자 (디버그)', child: _DebugLiveActivityCard()),
               SizedBox(height: 20),
               _Section(title: '라이브 연결 (디버그)', child: _DebugLivePollCard()),
+              SizedBox(height: 20),
+              // Position.z feasibility POC(2026-09) — 프로덕션 기능 아님.
+              _Section(title: 'Position 실험 (디버그)', child: _DebugPositionCard()),
             ],
           ],
         ),
@@ -918,6 +923,35 @@ class _DebugLivePollCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Position.z 실험 화면 진입점(디버그 전용, 2026-09 POC).
+/// 프로덕션 라이브 센터에는 추가하지 않는다 — 실험이 끝나면 통째로 제거한다.
+class _DebugPositionCard extends StatelessWidget {
+  const _DebugPositionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PositionDebugScreen(),
+              ),
+            ),
+            child: const _DlRow(
+              label: 'Position 트랙맵 열기',
+              value: '열기',
+              showTopBorder: false,
+            ),
+          ),
+          const _DlRow(label: 'endpoint', value: kPositionDebugUrl),
+        ],
+      ),
     );
   }
 }
