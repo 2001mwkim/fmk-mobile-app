@@ -79,6 +79,8 @@ const Map<String, int> _driverAccent = {
   'NOR': 0xFFFF8700,
   'PIA': 0xFFFF8700,
   'VER': 0xFF1E41FF,
+  // 츠노다는 2026 정규 라인업(standings.dart 22명)에 없지만 레드불 대체 출전으로
+  // 세 경기를 뛰었다. 그 경기들의 결과·라이브 기록에서 색이 빠지므로 지우지 말 것.
   'TSU': 0xFF1E41FF,
   'LEC': 0xFFE80020,
   'HAM': 0xFFE80020,
@@ -92,7 +94,10 @@ const Map<String, int> _driverAccent = {
   'COL': 0xFFFF87BC,
   'OCO': 0xFFF4F4F4,
   'BEA': 0xFFF4F4F4,
-  'HAD': 0xFF6CC3FF,
+  // 하자르는 2026 시즌 레드불 레이싱 — standings.dart 소속과 맞춘다.
+  // 레이싱 불스(0xFF6CC3FF)로 남아 있어서 순위 화면(teamKo 기준)은 레드불 파랑,
+  // 라이브 센터·홈·위젯(TLA 기준)은 하늘색으로 갈렸다.
+  'HAD': 0xFF1E41FF,
   'LAW': 0xFF6CC3FF,
   'HUL': 0xFF4B5563, // 아우디(2026) — 순위 페이지와 동일한 짙은 회색
   'BOR': 0xFF4B5563,

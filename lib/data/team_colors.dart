@@ -10,7 +10,9 @@ const Map<String, int> teamColorHexMap = {
   '레이싱 불스': 0xFF6CC3FF,
   '하스': 0xFFF4F4F4,
   '킥 자우버': 0xFF52E252,
-  '애스턴 마틴': 0xFF006F62,
+  // 라이브 센터가 쓰던 밝은 녹색으로 통일(2026-09). 순위 화면은 이 맵을,
+  // 라이브 계열은 drivers.dart 의 ALO/STR 액센트를 쓰는데 둘이 갈려 있었다.
+  '애스턴 마틴': 0xFF229971,
   '캐딜락': 0xFFD4AF37,
   '아우디': 0xFF4B5563,
 };
