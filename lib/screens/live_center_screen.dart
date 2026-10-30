@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/races.dart';
 import '../models/live_session.dart';
+import '../models/race_control_ko.dart';
 import '../models/race_session.dart';
 import '../services/live_session_controller.dart';
 import '../services/live_session_service.dart';
@@ -1943,6 +1944,10 @@ class _RaceControlCard extends StatefulWidget {
 class _RaceControlCardState extends State<_RaceControlCard> {
   final ScrollController _controller = ScrollController();
 
+  /// 한국어 번역 대신 FIA 원문을 보여 줄지. 용어를 원문으로 익힌 팬도 있어서
+  /// 카드 단위로 바로 바꿀 수 있게 한다(화면을 나가면 기본값 번역으로 돌아감).
+  bool _showOriginal = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -1956,13 +1961,38 @@ class _RaceControlCardState extends State<_RaceControlCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '레이스 컨트롤',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '레이스 컨트롤',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (messages.isNotEmpty)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _showOriginal = !_showOriginal),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      _showOriginal ? '번역 보기' : '원문 보기',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           if (messages.isEmpty)
@@ -1984,7 +2014,10 @@ class _RaceControlCardState extends State<_RaceControlCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       for (final message in messages)
-                        _ControlMessage(message: message),
+                        _ControlMessage(
+                          message: message,
+                          showOriginal: _showOriginal,
+                        ),
                     ],
                   ),
                 ),
@@ -1997,9 +2030,10 @@ class _RaceControlCardState extends State<_RaceControlCard> {
 }
 
 class _ControlMessage extends StatelessWidget {
-  const _ControlMessage({required this.message});
+  const _ControlMessage({required this.message, required this.showOriginal});
 
   final LiveRaceControlMessage message;
+  final bool showOriginal;
 
   @override
   Widget build(BuildContext context) {
@@ -2031,7 +2065,11 @@ class _ControlMessage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  message.message,
+                  // 번역 규칙에 없는 문형은 null → 원문 그대로.
+                  showOriginal
+                      ? message.message
+                      : translateRaceControlMessage(message.message) ??
+                            message.message,
                   style: TextStyle(
                     color: AppColors.slate300,
                     fontSize: 12,
