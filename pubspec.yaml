@@ -48,6 +48,7 @@ dependencies:
   # 프리미엄 톤이 안 나온다(자산 출처: HatScripts/circle-flags, MIT).
   flutter_svg: ^2.0.10
   sentry_flutter: ^9.26.0
+  just_audio: ^0.10.6
 
 dev_dependencies:
   flutter_test:
@@ -87,6 +88,8 @@ flutter:
   assets:
     - assets/circuits/
     - assets/flags/
+    # 라이브 트랙맵 외곽선(F1 좌표계). 생성: fmk-f1-calendar `npm run track-outlines`
+    - assets/track_outlines.json
 
   fonts:
     - family: Pretendard

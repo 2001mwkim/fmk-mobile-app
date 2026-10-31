@@ -257,6 +257,8 @@ LiveSessionSnapshot? parseLiveJson(String body) {
       raceControlMessages: _parseRaceControlMessages(
         map['raceControlMessages'] ?? map['raceControl'],
       ),
+      teamRadio: _parseTeamRadio(map['teamRadio']),
+      positionsAvailable: _bool(map['positionsAvailable']) ?? false,
       // lastSession 은 스냅샷이 아니라 body 최상위 필드(스냅샷과 수명이 다름).
       lastSession: _parseLastSession(decoded['lastSession']),
       playbackCapturedAt: _dateTime(playback['capturedAt']),
@@ -389,6 +391,25 @@ LiveWeather? _parseWeather(dynamic value) {
     return null;
   }
   return weather;
+}
+
+/// 팀 라디오 목록. mp3 는 F1 정적 서버(https)만 허용한다 — collector 가 오염돼도
+/// 앱이 임의 주소의 오디오를 스트리밍하지 않게 한다.
+List<LiveTeamRadio> _parseTeamRadio(dynamic value) {
+  if (value is! List) return const [];
+  final result = <LiveTeamRadio>[];
+  for (final item in value.take(40)) {
+    if (item is! Map) continue;
+    final map = item.cast<String, dynamic>();
+    final utc = _dateTime(map['utc']);
+    final number = _string(map['racingNumber']);
+    final url = _string(map['url']);
+    if (utc == null || number == null || url == null) continue;
+    if (!url.startsWith('https://livetiming.formula1.com/static/')) continue;
+    result.add(LiveTeamRadio(utc: utc, racingNumber: number, url: url));
+  }
+  result.sort((a, b) => b.utc.compareTo(a.utc));
+  return result.take(20).toList(growable: false);
 }
 
 List<LiveRaceControlMessage> _parseRaceControlMessages(dynamic value) {

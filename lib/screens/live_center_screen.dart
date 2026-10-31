@@ -15,6 +15,8 @@ import '../widgets/app_card.dart';
 import '../widgets/classification_panel_parts.dart';
 import '../widgets/flag_icon.dart';
 import '../widgets/live_session_builder.dart';
+import '../widgets/live_team_radio_card.dart';
+import '../widgets/live_track_map.dart';
 import '../widgets/app_ui.dart';
 
 const String _liveCenterDelayPrefsKey = 'live_center_delay_seconds';
@@ -613,8 +615,22 @@ class _LiveContent extends StatelessWidget {
           isStale: isStale,
           delaySeconds: delaySeconds,
         ),
+        // 트랙맵은 상단(2026-10 결정). 좌표가 있을 때(collector 에 F1TV 토큰 +
+        // 세션 진행 중)만 띄워서, 그 밖에는 좌표 요청을 한 건도 보내지 않는다.
+        if (snapshot.status == LiveSessionStatus.live &&
+            snapshot.positionsAvailable) ...[
+          const SizedBox(height: 12),
+          LiveTrackMapCard(snapshot: snapshot, delaySeconds: delaySeconds),
+        ],
         const SizedBox(height: 12),
         _TimingCard(snapshot: snapshot),
+        if (snapshot.teamRadio.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          LiveTeamRadioCard(
+            radios: snapshot.teamRadio,
+            drivers: snapshot.classification,
+          ),
+        ],
         const SizedBox(height: 12),
         _RaceControlCard(messages: snapshot.raceControlMessages),
         if (snapshot.weather != null) ...[

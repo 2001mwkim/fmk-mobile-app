@@ -213,6 +213,22 @@ class LiveRaceControlMessage {
   final String? racingNumber;
 }
 
+/// 팀 라디오 1건(2026-10). 웹 `lib/live/types.ts` 의 LiveTeamRadio 와 수동 동기화.
+///
+/// [url] 은 F1 정적 서버의 mp3 — 토큰 없이 열려 앱이 직접 스트리밍한다
+/// (우리 서버는 목록만 전달, 오디오 트래픽 비용 0).
+class LiveTeamRadio {
+  const LiveTeamRadio({
+    required this.utc,
+    required this.racingNumber,
+    required this.url,
+  });
+
+  final DateTime utc;
+  final String racingNumber;
+  final String url;
+}
+
 /// 웹 LiveSessionSnapshot 대응(표시에 필요한 필드만).
 class LiveSessionSnapshot {
   const LiveSessionSnapshot({
@@ -237,6 +253,8 @@ class LiveSessionSnapshot {
     this.clockStopped = false,
     this.weather,
     this.raceControlMessages = const [],
+    this.teamRadio = const [],
+    this.positionsAvailable = false,
     this.lastSession,
     this.playbackCapturedAt,
     this.playbackDelaySeconds = 0,
@@ -276,6 +294,13 @@ class LiveSessionSnapshot {
   final bool clockStopped;
   final LiveWeather? weather;
   final List<LiveRaceControlMessage> raceControlMessages;
+
+  /// 최신순 최근 무전(최대 20). collector 에 F1TV 토큰이 없으면 비어 있다.
+  final List<LiveTeamRadio> teamRadio;
+
+  /// collector `/positions.json` 에 최근 좌표가 있는지. true 일 때만 트랙맵
+  /// 카드를 띄우고 좌표 폴링을 시작한다 — 토큰 없음·세션 사이엔 요청 0건.
+  final bool positionsAvailable;
 
   /// 가장 최근에 끝난 세션의 최종 순위(컨트롤러가 스냅샷과 별개로 보존).
   final LiveLastSession? lastSession;
