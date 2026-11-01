@@ -1,0 +1,41 @@
+# PR·푸시마다 정적 분석과 테스트를 돌린다 — 바이브 코딩 특성상 한 화면을 고치다
+# 다른 화면 규칙(라이브 표시 정책, 위젯 키, 버전 표기 등)을 깨는 회귀가 잦아
+# 머지 전에 기계적으로 걸러내기 위함. 릴리스 빌드·서명은 하지 않는다
+# (서명 키는 Windows 머신에만 있다 — CLAUDE.md '릴리스 서명').
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # 로컬 개발 머신과 같은 버전으로 고정(업그레이드 시 함께 올릴 것).
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      # 테스트는 KST 수동 변환 규칙을 검증하므로 러너 시간대와 무관해야 한다.
+      # 서울로 고정해 두 개발 머신(한국)과 같은 조건에서 돌린다.
+      - name: Test
+        env:
+          TZ: Asia/Seoul
+        run: flutter test

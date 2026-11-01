@@ -9,6 +9,7 @@ import 'package:workmanager/workmanager.dart';
 
 import 'app.dart';
 import 'services/app_theme_controller.dart';
+import 'services/error_reporting.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/fmk_live_activity_bridge.dart';
 import 'services/live_activity_service.dart';
@@ -71,8 +72,11 @@ void fmkWidgetBackgroundDispatcher() {
         await FmkHomeWidgetBridge.refreshStandingsFromNetwork();
       }
       return true;
-    } catch (_) {
+    } catch (error, stackTrace) {
       // 실패해도 재시도 폭주를 피하기 위해 성공 처리(다음 주기에 다시 시도).
+      // 백그라운드 isolate 는 Sentry 미초기화라 여기선 no-op 이지만, 같은 경로를
+      // 쓰는 포그라운드 호출에서 맥락이 남도록 통일해 둔다.
+      reportSilentFailure('widget_background_refresh', error, stackTrace);
       return true;
     }
   });
@@ -134,7 +138,9 @@ Future<void> _bootstrap() async {
   // 번쩍이는 플래시 방지). prefs 실패 시 기본 다크로 계속 진행.
   try {
     await appThemeController.load();
-  } catch (_) {}
+  } catch (error, stackTrace) {
+    reportSilentFailure('theme_load', error, stackTrace);
+  }
   liveSessionController.attachLifecycle();
   liveSessionController.enabled = true;
   // iOS Live Activity(잠금화면·다이나믹 아일랜드) — 라이브 폴링과 동기화.

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/driver_team_assignments.dart';
 import '../models/race_result.dart';
+import 'error_reporting.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
 /// 결과 요청 타임아웃(순위/뉴스와 동일 — 화면 응답성 우선).
@@ -278,9 +279,17 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
       final response = await httpClient
           .get(uri)
           .timeout(kRaceResultsFetchTimeout);
-      if (response.statusCode != 200) return diskBody;
+      if (response.statusCode != 200) {
+        reportHttpStatus('race_results', response.statusCode);
+        return diskBody;
+      }
       final body = utf8.decode(response.bodyBytes);
-      jsonDecode(body);
+      final decoded = jsonDecode(body);
+      // 10/31 사고 유형: 원격 fetch 실패를 Vercel 라우트가 f1dbTag "" + 빈 배열의
+      // 200 으로 감췄다. 개막 전 빈 races 는 정상이라 태그로만 판별한다.
+      if (decoded is! Map || (decoded['f1dbTag'] ?? '') == '') {
+        reportDataAnomaly('race_results', 'missing f1dbTag in 200 response');
+      }
       _memoryBody = body;
       _memoryFetchedAt = now;
       _memorySeason = season;
@@ -289,7 +298,8 @@ class HttpRaceResultsRepository implements RaceResultsRepository {
         preferences.setInt(timeKey, now.millisecondsSinceEpoch),
       ]);
       return body;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      reportSilentFailure('race_results', error, stackTrace);
       return diskBody;
     } finally {
       httpClient.close();

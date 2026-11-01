@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_version.dart';
+import 'error_reporting.dart';
 
 /// 앱 업데이트 권장 팝업용 버전 파일 endpoint.
 ///
@@ -161,7 +162,8 @@ class AppUpdateService {
         jsonDecode(utf8.decode(response.bodyBytes, allowMalformed: true)),
         isIOS: _isIOS,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      reportSilentFailure('app_update', error, stackTrace);
       return null;
     } finally {
       if (client == null) httpClient.close();

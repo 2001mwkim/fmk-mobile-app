@@ -23,6 +23,13 @@ const String _contactEmail = 'contact@formulamagazine.kr';
 const String _f1dbUrl = 'https://github.com/f1db/f1db';
 const String _privacyPolicyUrl = 'https://www.formulamagazine.kr/privacy';
 
+/// 비공식 앱·상표 고지(앱 정보 카드 하단). 테스트가 존재를 확인한다.
+const String kUnofficialAppNotice =
+    '비아 포뮬러는 포뮬러 매거진 코리아가 운영하는 비공식 팬 앱으로, '
+    'Formula 1 그룹 및 FIA 와 제휴·후원 관계가 없습니다. '
+    'F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, '
+    'GRAND PRIX 및 관련 표장은 Formula One Licensing B.V. 의 상표입니다.';
+
 // 웹 설정 페이지 전용 색.
 final Color _muted = AppColors.muted; // #7880a0
 final Color _sectionMuted = AppColors.textMuted; // 섹션 제목/배지 텍스트
@@ -788,6 +795,24 @@ class _AppInfoCard extends StatelessWidget {
               value: '보기',
               onTap: () =>
                   _openExternalUri(context, Uri.parse(_privacyPolicyUrl)),
+            ),
+            // 비공식 앱·상표 고지 — 서드파티 F1 앱(Box Box 등)의 업계 관행이자
+            // App Store 5.2.1(지식재산) 심사 대비. 스토어 설명에도 같은 문구를 둔다.
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: _faintBorder)),
+              ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+              child: Text(
+                kUnofficialAppNotice,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _muted,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),

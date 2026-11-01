@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/live_session.dart';
+import 'error_reporting.dart';
 
 /// live.json endpoint (기존 SignalR collector 가 제공).
 ///
@@ -153,6 +154,7 @@ class LiveSessionService {
           .get(_requestUri(endpoint))
           .timeout(kLiveFetchTimeout);
       if (response.statusCode != 200) {
+        reportHttpStatus('live', response.statusCode);
         return const LiveSessionFetchResult.failed();
       }
       // bodyBytes 로 직접 디코딩한다 — Vercel 폴백은 charset 없는
@@ -171,8 +173,9 @@ class LiveSessionService {
         return const LiveSessionFetchResult.success(null);
       }
       return LiveSessionFetchResult.success(snapshot);
-    } catch (_) {
-      // 네트워크 오류/타임아웃/파싱 오류 모두 무시하고 실패로 처리(다음 endpoint 시도).
+    } catch (error, stackTrace) {
+      // 네트워크 오류/타임아웃/파싱 오류 모두 실패로 처리(다음 endpoint 시도).
+      reportSilentFailure('live', error, stackTrace);
       return const LiveSessionFetchResult.failed();
     } finally {
       if (client == null) httpClient.close();

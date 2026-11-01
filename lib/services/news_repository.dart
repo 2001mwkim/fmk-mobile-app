@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../data/news_samples.dart';
 import '../models/news_item.dart';
+import 'error_reporting.dart';
 
 /// 소식 탭에 노출할 최대 항목 수.
 const int kNewsDisplayLimit = 20;
@@ -58,13 +59,23 @@ class HttpNewsRepository implements NewsRepository {
         queryParameters: {'limit': '$limit', 'lang': 'ko'},
       );
       final response = await httpClient.get(uri).timeout(kNewsFetchTimeout);
-      if (response.statusCode != 200) return const [];
+      if (response.statusCode != 200) {
+        reportHttpStatus('news', response.statusCode);
+        return const [];
+      }
       // JSON 은 스펙상 UTF-8 (RFC 8259). 서버가 charset 헤더를 생략하면
       // response.body 가 latin1 로 잘못 디코딩돼 한글 브리핑이 깨지므로
       // bodyBytes 를 UTF-8 로 직접 디코딩한다.
-      return parseNewsJson(utf8.decode(response.bodyBytes), limit: limit);
-    } catch (_) {
+      final items = parseNewsJson(
+        utf8.decode(response.bodyBytes),
+        limit: limit,
+      );
+      // 30분마다 수집하는 피드가 비어 있다면 수집기/중계 쪽 사고다.
+      if (items.isEmpty) reportDataAnomaly('news', 'empty 200 response');
+      return items;
+    } catch (error, stackTrace) {
       // 네트워크/타임아웃/파싱 오류 → 빈 목록(빈 상태 UI 표시).
+      reportSilentFailure('news', error, stackTrace);
       return const [];
     } finally {
       if (client == null) httpClient.close();

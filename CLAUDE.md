@@ -56,7 +56,8 @@ flutter build appbundle --release
 - **시간**: 모든 표시 시간은 KST 고정(UTC+9 수동 변환). 세션 지속시간 추정은 `races.dart`의 `_sessionDurations`(레이스 120분 = F1 2시간 제한)
 - 주석은 한국어로, "왜"(규칙의 근거, 웹 원본 출처)를 남긴다
 - 라이브 표시 정책(중요 규칙): Practice/Qualifying은 랩타임만 표시(없으면 '—', gap 폴백 금지, 컬럼 라벨 'BEST'), Race/Sprint는 interval만(없으면 '—' — gapToLeader 폴백 금지, 컬럼 라벨 'INTERVAL'). 세션 종료 노출 기한은 "다음 세션 30분 전까지(마지막 세션은 +1시간)". 퀄리파잉만 세그먼트(Q1/Q2) 사이 ended를 LIVE로 보정
-- 검증: 변경 후 `flutter analyze` + `flutter test`, 위젯/알림 등 네이티브 변경은 `flutter build apk --debug`까지
+- 검증: 변경 후 `flutter analyze` + `flutter test`, 위젯/알림 등 네이티브 변경은 `flutter build apk --debug`까지. GitHub Actions(`.github/workflows/ci.yml`)가 PR·main 푸시마다 analyze+test 를 돌린다(Flutter 버전을 로컬과 같이 고정 — 업그레이드 시 함께 올릴 것)
+- 조용히 폴백하는 catch 블록·"200 인데 쓸 수 없는 응답" 은 `services/error_reporting.dart`(`reportSilentFailure`/`reportDataAnomaly`)로 Sentry 에 남긴다 — 네트워크성은 breadcrumb, 데이터성은 표본 warning 이벤트. 10/31 빈 순위 사고처럼 서버 장애가 폴백 뒤에 숨는 것을 막기 위함
 
 ## 외부 비용 제약 (중요)
 
@@ -68,6 +69,12 @@ flutter build appbundle --release
 - 측정값(2026-08-24): 이전 후 **0.15초 / 4.1 KB / cf-cache-status HIT**(직결은 0.55초·29.5 KB). Cloudflare 가 응답을 자동 압축하므로 collector gzip 은 선택 사항이다. collector 는 `Cache-Control: ... s-maxage=5 ...` 를 이미 보내고 있고, **HEAD 요청에는 404 를 준다** — 점검은 `curl -s -D - -o NUL` 로 할 것.
 - 레이스/스프린트 중에는 **10초** 폴링(`LiveSessionController.racePollInterval`). **기본값이 켜짐**이라 플래그 없이 빌드해도 적용된다 — 되돌릴 때만 `--dart-define=LIVE_FAST_POLL=false`. 원래 꺼 두었던 이유는 Vercel 요청 비용이었고 Cloudflare 이전으로 사라졌다. 연습/퀄리는 랩타임 갱신이 드물어 20초를 유지한다.
 - 라이브 센터만 영상 동기화용 **0~120초 지연**을 지원한다(`live_center_delay_seconds`, 5초 단위). 홈·위젯·Live Activity는 항상 실시간이다. 앱은 `live.json?delay=N`을 별도 컨트롤러로 폴링하며, collector는 최근 5분을 1초 버킷으로 메모리 보관한다. 지연 응답의 `playback.requestedDelaySeconds`와 `capturedAt`이 없으면 구버전 서버가 쿼리를 무시한 것으로 보고 최신 스냅샷을 노출하지 않는다. 따라서 배포는 collector를 먼저, 앱을 나중에 한다.
+
+## 라이선스·법적 제약 (2026-11 정리)
+
+- 앱은 **비공식** 팬 앱이다. 설정 › 앱 정보 하단의 비공식·상표 고지(`settings_screen.dart` `kUnofficialAppNotice`)를 지우지 말고, 스토어 설명에도 같은 문구를 둔다. 공식 F1·팀 로고, F1 TV 영상·캡처는 쓰지 않는다. 스토어명·아이콘에서 "F1"을 앞세우지 않는다(App Store 5.2.1 리젝션 사례 다수).
+- FOM 법적 고지는 라이브 타이밍·과거 레이스 데이터·사진을 보호 대상으로 두고 상업적 이용엔 허락(admin@formula1.com)을 요구한다. 공식 앱은 트래커·팀 라디오를 F1 TV 유료 기능으로 판다 — 우리가 F1TV 토큰으로 받은 위치·무전을 무료 재배포하는 것이 가장 큰 리스크다(제3자 앱 제재 사례는 2026-11 조사에서 찾지 못함).
+- 그래서 **수익화(광고·구독)를 붙일 때 라이브 타이밍·트래커·라디오를 과금 대상에 넣지 말 것.** 과금은 매거진 콘텐츠·직관 가이드·위젯 커스터마이즈 쪽으로 하고, 유료화 전에 FOM 미디어 사용 허가 문의나 법률 검토를 먼저 한다.
 
 ## 미해결 사항
 

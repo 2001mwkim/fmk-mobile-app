@@ -109,5 +109,8 @@ void main() {
     // 설정 최하단 개인정보 처리방침 링크
     await tester.scrollUntilVisible(find.text('개인정보 처리방침'), 200);
     expect(find.text('개인정보 처리방침'), findsOneWidget);
+    // 비공식 앱·상표 고지(App Store 5.2.1 대비) — 앱 정보 카드 하단.
+    await tester.scrollUntilVisible(find.text(kUnofficialAppNotice), 200);
+    expect(find.text(kUnofficialAppNotice), findsOneWidget);
   });
 }

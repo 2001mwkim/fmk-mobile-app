@@ -14,6 +14,7 @@ import 'services/app_theme_controller.dart';
 import 'services/fmk_home_widget_bridge.dart';
 import 'services/notification_service.dart';
 import 'services/app_update_service.dart';
+import 'services/error_reporting.dart';
 import 'services/notification_settings_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
@@ -161,8 +162,9 @@ class _MainShellState extends State<MainShell> {
         Uri.parse(info.storeUrl),
         mode: LaunchMode.externalApplication,
       );
-    } catch (_) {
-      // 네트워크/prefs/url_launcher 실패는 조용히 무시 — 팝업은 부가 기능.
+    } catch (error, stackTrace) {
+      // 네트워크/prefs/url_launcher 실패는 사용자에겐 조용히 넘긴다 — 팝업은 부가 기능.
+      reportSilentFailure('app_update_prompt', error, stackTrace);
     }
   }
 
@@ -210,8 +212,9 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
       );
-    } catch (_) {
-      // shared_preferences/알림 플러그인 미가용(테스트 등) — 조용히 무시.
+    } catch (error, stackTrace) {
+      // shared_preferences/알림 플러그인 미가용(테스트 등) — 사용자에겐 조용히 넘긴다.
+      reportSilentFailure('notification_opt_in', error, stackTrace);
     }
   }
 

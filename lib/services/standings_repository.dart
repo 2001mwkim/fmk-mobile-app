@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/driver_team_assignments.dart';
 import '../models/standing.dart';
+import 'error_reporting.dart';
 import 'news_repository.dart' show kNewsApiBaseUrl;
 
 /// 순위 요청 타임아웃(뉴스와 동일 — 화면 응답성 우선).
@@ -100,6 +101,10 @@ class HttpStandingsRepository implements StandingsRepository {
 
     final freshBody = await _fetchBody();
     final fresh = freshBody == null ? null : parseStandingsJson(freshBody);
+    if (freshBody != null && fresh == null) {
+      // 200 인데 그리드 규모에 못 미치는 응답 — 10/31 빈 순위 사고 유형.
+      reportDataAnomaly('standings', 'unusable 200 response');
+    }
     if (fresh != null) {
       _memoryBody = freshBody;
       _memoryFetchedAt = now;
@@ -122,11 +127,15 @@ class HttpStandingsRepository implements StandingsRepository {
       final response = await httpClient
           .get(uri)
           .timeout(kStandingsFetchTimeout);
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        reportHttpStatus('standings', response.statusCode);
+        return null;
+      }
       // JSON 은 UTF-8 (RFC 8259) — 한글 이름 깨짐 방지(뉴스와 동일 규칙).
       return utf8.decode(response.bodyBytes);
-    } catch (_) {
+    } catch (error, stackTrace) {
       // 네트워크/타임아웃/파싱 오류 → null(정적 데이터 유지).
+      reportSilentFailure('standings', error, stackTrace);
       return null;
     } finally {
       if (client == null) httpClient.close();
