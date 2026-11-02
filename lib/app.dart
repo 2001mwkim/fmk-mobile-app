@@ -269,6 +269,8 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 탭 바가 떠 있는 유리 캡슐이라 콘텐츠가 그 아래로 흘러 비쳐 보여야 한다.
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: [

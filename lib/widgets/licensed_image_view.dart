@@ -34,7 +34,7 @@ class LicensedImageView extends StatelessWidget {
               Image.network(
                 image!.imageUrl,
                 fit: BoxFit.cover,
-                alignment: _objectPosition(image!.objectPosition),
+                alignment: licensedImageAlignment(image!.objectPosition),
                 semanticLabel: semanticLabel,
                 errorBuilder: (_, _, _) => _ImageFallback(icon: fallbackIcon),
                 loadingBuilder: (context, child, progress) =>
@@ -54,7 +54,7 @@ class LicensedImageView extends StatelessWidget {
               Positioned(
                 right: 10,
                 bottom: 10,
-                child: _CreditButton(image: image!),
+                child: LicensedImageCreditButton(image: image!),
               ),
           ],
         ),
@@ -63,8 +63,9 @@ class LicensedImageView extends StatelessWidget {
   }
 }
 
-class _CreditButton extends StatelessWidget {
-  const _CreditButton({required this.image});
+/// 사진 출처(작가·라이선스) 시트를 여는 작은 버튼. 상세 화면 헤더에서도 쓴다.
+class LicensedImageCreditButton extends StatelessWidget {
+  const LicensedImageCreditButton({super.key, required this.image});
 
   final LicensedImage image;
 
@@ -199,7 +200,8 @@ Future<void> _openLink(BuildContext context, String url) async {
   );
 }
 
-Alignment _objectPosition(String? value) {
+/// CSS object-position 식 문자열("52% 22%")을 이미지 정렬로 바꾼다.
+Alignment licensedImageAlignment(String? value) {
   if (value == null) return Alignment.center;
   final match = RegExp(
     r'^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$',

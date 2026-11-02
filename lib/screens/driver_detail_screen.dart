@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../data/driver_bios.dart';
 import '../data/drivers.dart';
+import '../data/race_results.dart';
 import '../data/standing_insights.dart';
 import '../data/standing_profiles.dart';
 import '../data/team_colors.dart';
+import '../models/race_result.dart';
 import '../models/standing.dart';
-import '../models/licensed_image.dart';
 import '../models/standing_insight.dart';
 import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
-import '../widgets/licensed_image_view.dart';
+import '../widgets/flag_icon.dart';
+import '../widgets/glass.dart';
 import '../widgets/standing_detail_parts.dart';
 import 'race_detail_screen.dart';
 
+/// 드라이버 상세(2026-10 재설계).
+/// [사진/팀 색 헤더 → 성적 한 줄 → 시즌 포인트 상세 → 팀메이트 맞대결(포인트·
+///  레이스·퀄리) → 프로필 → 시즌 전체 결과]
 class DriverDetailScreen extends StatefulWidget {
   const DriverDetailScreen({
     super.key,
@@ -53,81 +59,114 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final standing = widget.standing;
-    final allDrivers = widget.allDrivers;
-    final onOpenTeam = widget.onOpenTeam;
-    final onOpenDriver = widget.onOpenDriver;
-    final raceResults = _seasonResults?.raceResultsByRaceId;
-    final championshipResults = _seasonResults?.championshipResultsByRaceId;
+    // 서버 응답 전·실패 시엔 번들 정적 레이스 결과로 그린다(퀄리는 없음).
+    final raceResults =
+        _seasonResults?.raceResultsByRaceId ?? raceResultsByRaceId;
+    final championshipResults =
+        _seasonResults?.championshipResultsByRaceId ?? raceResultsByRaceId;
+    final qualifyingResults =
+        _seasonResults?.qualifyingResultsByRaceId ?? const {};
     final code = driverCodeByNameKo[standing.driverKo] ?? 'DRV';
     final profile = driverProfilesByCode[code];
     final accent = liveDriverAccent(code);
-    final summary = driverSeasonSummary(
-      standing.driverKo,
-      resultsByRaceId: raceResults,
-    );
-    final recent = recentDriverResults(
-      standing.driverKo,
-      resultsByRaceId: raceResults,
-    );
     final teammate = _teammate();
-    final leader = allDrivers.isEmpty ? standing : allDrivers.first;
+    final leader = widget.allDrivers.isEmpty
+        ? standing
+        : widget.allDrivers.first;
     final gap = leader.points - standing.points;
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: AppLayout.pagePadding(context),
+    return DetailPageScaffold(
+      hero: DetailHero(
+        accent: accent,
+        image: profile?.image,
+        imageLabel: '${standing.driverKo} 드라이버 사진',
+        fallbackMark: code,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const DetailBackButton(),
-            const SizedBox(height: 14),
-            Text(
-              '드라이버 상세 · 2026 SEASON',
-              style: TextStyle(
-                color: accent,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+            Expanded(
+              child: _DriverIdentity(
+                standing: standing,
+                code: code,
+                nationality: profile?.nationalityKo,
+                onOpenTeam: widget.onOpenTeam,
               ),
             ),
-            const SizedBox(height: 10),
-            _DriverHero(
-              standing: standing,
-              code: code,
-              nationality: profile?.nationalityKo ?? '—',
-              image: profile?.image,
-              accent: accent,
-              gapToLeader: gap,
-              onOpenTeam: onOpenTeam,
+            const SizedBox(width: 12),
+            DetailRankBlock(
+              position: standing.position,
+              points: standing.points,
+              note: standing.position == 1
+                  ? '챔피언십 리더'
+                  : '선두와 ${formatDetailPoints(gap)} PTS',
             ),
-            const SizedBox(height: 12),
-            AppCard(
-              child: SummaryMetrics(summary: summary, accent: accent),
-            ),
-            const SizedBox(height: 12),
-            StandingTrendCard(
-              points: driverStandingTrend(
-                standing.driverKo,
-                resultsByRaceId: championshipResults,
-              ),
-              color: accent,
-            ),
-            if (teammate != null) ...[
-              const SizedBox(height: 12),
-              _TeammateCard(
-                driver: standing,
-                teammate: teammate,
-                accent: accent,
-                onTap: onOpenDriver == null
-                    ? null
-                    : () => onOpenDriver(teammate),
-              ),
-            ],
-            const SizedBox(height: 12),
-            _RecentResultsCard(results: recent, accent: accent),
           ],
         ),
       ),
+      children: [
+        DetailStatStrip(
+          summary: driverSeasonSummary(
+            standing.driverKo,
+            resultsByRaceId: raceResults,
+          ),
+        ),
+        DetailSection(
+          title: '시즌 포인트',
+          child: SeasonPointsCard(
+            totalPoints: standing.points,
+            color: accent,
+            breakdown: driverPointsBreakdown(
+              standing.driverKo,
+              raceResults: raceResults,
+              championshipResults: championshipResults,
+              qualifyingResults: qualifyingResults,
+            ),
+          ),
+        ),
+        if (teammate != null)
+          DetailSection(
+            title: '팀메이트 맞대결',
+            child: _TeammateHeadToHead(
+              driver: standing,
+              teammate: teammate,
+              accent: accent,
+              raceResults: raceResults,
+              qualifyingResults: qualifyingResults,
+              onOpenTeammate: widget.onOpenDriver == null
+                  ? null
+                  : () => widget.onOpenDriver!(teammate),
+            ),
+          ),
+        if (_profileRows(code, profile?.nationalityKo) case final rows
+            when rows.isNotEmpty)
+          DetailSection(title: '프로필', child: DetailInfoCard(rows: rows)),
+        DetailSection(
+          title: '시즌 결과',
+          child: _SeasonResultsList(
+            forms: recentDriverResults(
+              standing.driverKo,
+              limit: 99,
+              resultsByRaceId: raceResults,
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  /// 프로필 행 — 데이터가 없는 항목은 뺀다(빈 값 '—' 줄을 만들지 않는다).
+  List<(String, String)> _profileRows(String code, String? nationality) {
+    final bio = driverBiosByCode[code];
+    return [
+      if (bio != null)
+        ('생년월일', formatBirthDateKo(bio.birthDate, DateTime.now())),
+      if (bio != null) ('출생지', bio.birthPlaceKo),
+      if (nationality != null) ('국적', nationality),
+      if (bio != null) ('차량 번호', '${bio.number}'),
+      if (bio != null) ('F1 데뷔', '${bio.debutYear}년'),
+      if (bio != null && bio.championships > 0)
+        ('월드 챔피언', '${bio.championships}회'),
+    ];
   }
 
   DriverStanding? _teammate() {
@@ -140,357 +179,284 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
   }
 }
 
-class _DriverHero extends StatelessWidget {
-  const _DriverHero({
+/// 헤더 왼쪽 아래: "ANT · 이탈리아" / 이름 / 팀(탭하면 팀 상세).
+class _DriverIdentity extends StatelessWidget {
+  const _DriverIdentity({
     required this.standing,
     required this.code,
     required this.nationality,
-    required this.image,
-    required this.accent,
-    required this.gapToLeader,
     required this.onOpenTeam,
   });
 
   final DriverStanding standing;
   final String code;
-  final String nationality;
-  final LicensedImage? image;
-  final Color accent;
-  final num gapToLeader;
+  final String? nationality;
   final VoidCallback? onOpenTeam;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withValues(alpha: 0.22), AppColors.card],
+    final white = AppColors.pureWhite;
+    final team = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            color: getTeamColor(standing.teamKo),
+            borderRadius: BorderRadius.circular(1.5),
+          ),
         ),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
-        borderRadius: AppRadius.largeBorder,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    code,
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.8,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    standing.driverKo,
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 22,
-                      height: 1.12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    standing.driverEn,
-                    style: TextStyle(
-                      color: AppColors.nameMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      _HeroPill(label: 'P${standing.position}', color: accent),
-                      _HeroPill(label: '${standing.points} PTS'),
-                    ],
-                  ),
-                  const SizedBox(height: 9),
-                  Text(
-                    standing.position == 1
-                        ? '챔피언십 리더'
-                        : '선두와 ${_formatPoints(gapToLeader)} PTS 차이',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: onOpenTeam,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 3,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: getTeamColor(standing.teamKo),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 7),
-                          Flexible(
-                            child: Text(
-                              '${standing.teamKo} · $nationality',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: AppColors.slate300,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          if (onOpenTeam != null) ...[
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 16,
-                              color: AppColors.textMuted,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            standing.teamKo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppType.body.copyWith(color: white),
           ),
-          SizedBox(
-            width: 140,
-            child: LicensedImageView(
-              image: image,
-              aspectRatio: 4 / 5,
-              semanticLabel: '${standing.driverKo} 드라이버 사진',
-              fallbackIcon: Icons.person_outline_rounded,
-            ),
+        ),
+        if (onOpenTeam != null)
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: white.withValues(alpha: 0.7),
           ),
-        ],
-      ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          nationality == null ? code : '$code · $nationality',
+          style: AppType.subhead.copyWith(color: white.withValues(alpha: 0.75)),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          standing.driverKo,
+          maxLines: 2,
+          style: AppType.largeTitle.copyWith(color: white),
+        ),
+        const SizedBox(height: 6),
+        if (onOpenTeam == null)
+          team
+        else
+          AppPressable(onTap: onOpenTeam, child: team),
+      ],
     );
   }
 }
 
-class _HeroPill extends StatelessWidget {
-  const _HeroPill({required this.label, this.color});
-
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = color ?? AppColors.slate300;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.24)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: accent,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-class _TeammateCard extends StatelessWidget {
-  const _TeammateCard({
+/// 팀메이트 맞대결 카드. 포인트·레이스는 늘 보이고, 퀄리는 서버 세션 결과가
+/// 있을 때만(번들 정적 데이터엔 퀄리가 없다).
+class _TeammateHeadToHead extends StatelessWidget {
+  const _TeammateHeadToHead({
     required this.driver,
     required this.teammate,
     required this.accent,
-    required this.onTap,
+    required this.raceResults,
+    required this.qualifyingResults,
+    required this.onOpenTeammate,
   });
 
   final DriverStanding driver;
   final DriverStanding teammate;
   final Color accent;
-  final VoidCallback? onTap;
+  final Map<String, List<RaceResultEntry>> raceResults;
+  final Map<String, List<RaceResultEntry>> qualifyingResults;
+  final VoidCallback? onOpenTeammate;
 
   @override
   Widget build(BuildContext context) {
+    final race = headToHead(
+      driver.driverKo,
+      teammate.driverKo,
+      resultsByRaceId: raceResults,
+    );
+    final qualifying = headToHead(
+      driver.driverKo,
+      teammate.driverKo,
+      resultsByRaceId: qualifyingResults,
+    );
+    final rivalName = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            teammate.driverKo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: AppType.headline.copyWith(color: AppColors.textMuted),
+          ),
+        ),
+        if (onOpenTeammate != null)
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: AppColors.textEnded,
+          ),
+      ],
+    );
+
     return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const DetailSectionTitle('팀메이트 비교'),
-          const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _comparisonSide(driver, true)),
-              Container(width: 1, height: 56, color: AppColors.rowBorder),
               Expanded(
-                child: InkWell(
-                  onTap: onTap,
-                  borderRadius: AppRadius.smallBorder,
-                  child: _comparisonSide(teammate, false),
+                child: Text(
+                  driver.driverKo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppType.headline.copyWith(color: AppColors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: onOpenTeammate == null
+                      ? rivalName
+                      : AppPressable(
+                          key: ValueKey('teammate-${teammate.driverKo}'),
+                          onTap: onOpenTeammate,
+                          child: rivalName,
+                        ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          HeadToHeadRow(
+            label: '포인트',
+            left: driver.points,
+            right: teammate.points,
+            leftText: formatDetailPoints(driver.points),
+            rightText: formatDetailPoints(teammate.points),
+            leftColor: accent,
+          ),
+          if (race.total > 0)
+            HeadToHeadRow(
+              label: '레이스',
+              left: race.wins,
+              right: race.losses,
+              leftColor: accent,
+            ),
+          if (qualifying.total > 0)
+            HeadToHeadRow(
+              label: '퀄리파잉',
+              left: qualifying.wins,
+              right: qualifying.losses,
+              leftColor: accent,
+            ),
         ],
       ),
     );
   }
-
-  Widget _comparisonSide(DriverStanding value, bool selected) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value.driverKo,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: selected ? accent : AppColors.slate300,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'P${value.position}  ·  ${value.points} PTS',
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
-class _RecentResultsCard extends StatelessWidget {
-  const _RecentResultsCard({required this.results, required this.accent});
+/// 시즌 전체 결과(최신 라운드부터). 탭하면 GP 상세.
+class _SeasonResultsList extends StatelessWidget {
+  const _SeasonResultsList({required this.forms});
 
-  final List<DriverRaceForm> results;
-  final Color accent;
+  final List<DriverRaceForm> forms;
 
   @override
   Widget build(BuildContext context) {
+    if (forms.isEmpty) {
+      return AppCard(
+        child: Text(
+          '아직 기록된 결과가 없습니다.',
+          style: AppType.body.copyWith(color: AppColors.textMuted),
+        ),
+      );
+    }
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 10),
-            child: DetailSectionTitle('최근 5경기'),
-          ),
-          if (results.isEmpty)
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                '아직 기록된 결과가 없습니다.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-              ),
-            )
-          else
-            for (final form in results)
-              InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => RaceDetailScreen(race: form.race),
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 11,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: AppColors.rowBorder)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          form.result.positionLabel == 'DNF'
-                              ? 'DNF'
-                              : 'P${form.result.position}',
-                          style: TextStyle(
-                            color: form.result.positionLabel == 'DNF'
-                                ? AppColors.redSoft
-                                : accent,
-                            fontSize: form.result.positionLabel == 'DNF'
-                                ? 8
-                                : 11,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              form.race.nameKo,
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'R${form.race.round} · ${form.result.points} PTS',
-                              style: TextStyle(
-                                color: AppColors.textEnded,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.textEnded,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          for (final (index, form) in forms.indexed) ...[
+            if (index > 0) const DetailRowDivider(indent: 52),
+            _ResultRow(form: form),
+          ],
         ],
       ),
     );
   }
 }
 
-String _formatPoints(num points) =>
-    points == points.roundToDouble() ? points.toInt().toString() : '$points';
+class _ResultRow extends StatelessWidget {
+  const _ResultRow({required this.form});
+
+  final DriverRaceForm form;
+
+  @override
+  Widget build(BuildContext context) {
+    final result = form.result;
+    final classified = int.tryParse(result.positionLabel) != null;
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => RaceDetailScreen(race: form.race),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 36,
+              child: Text(
+                'R${form.race.round}',
+                style: AppType.subhead.copyWith(
+                  color: AppColors.textMuted,
+                  fontFeatures: AppType.tabular,
+                ),
+              ),
+            ),
+            FlagIcon(countryKo: form.race.countryKo, size: 14),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                form.race.nameKo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppType.body.copyWith(color: AppColors.white),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 44,
+              child: Text(
+                classified ? 'P${result.position}' : result.positionLabel,
+                textAlign: TextAlign.right,
+                style: AppType.headline.copyWith(
+                  color: classified ? AppColors.white : AppColors.textMuted,
+                  fontWeight: result.position <= 3 && classified
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  fontFeatures: AppType.tabular,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 56,
+              child: Text(
+                '${formatDetailPoints(result.points)} PTS',
+                textAlign: TextAlign.right,
+                style: AppType.caption.copyWith(
+                  color: AppColors.textMuted,
+                  fontFeatures: AppType.tabular,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

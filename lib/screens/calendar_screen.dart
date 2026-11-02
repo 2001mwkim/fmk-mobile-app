@@ -93,7 +93,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return Scaffold(
+      // 아래는 떠 있는 탭 바 밑으로 흐르게 둔다(여백은 pagePadding 이 준다).
       body: SafeArea(
+        bottom: false,
         child: ListView(
           padding: AppLayout.pagePadding(context),
           children: children,

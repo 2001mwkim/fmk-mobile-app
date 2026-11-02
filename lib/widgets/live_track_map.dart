@@ -17,17 +17,26 @@ import 'live_team_radio_card.dart';
 ///
 /// 이름 라벨은 22대 모두 띄운다(겹쳐도 됨 — 2026-10 결정). 팀 라디오 재생 중인
 /// 드라이버는 [liveTalkingRacingNumber] 로 강조한다.
+///
+/// 카드는 라이브가 아닐 때도 뜬다(사용자 요청 2026-10) — 그때는 다음 GP 의
+/// 서킷 외곽선만 그리고 좌표 컨트롤러를 만들지 않는다. 좌표 폴링은 여전히
+/// 세션 진행 중 + positionsAvailable 일 때만이라 요청 비용은 그대로다.
 class LiveTrackMapCard extends StatefulWidget {
   const LiveTrackMapCard({
     super.key,
-    required this.snapshot,
+    this.snapshot,
+    this.raceId,
     required this.delaySeconds,
     this.controllerOverride,
     this.outlineOverride,
     this.clock,
   });
 
-  final LiveSessionSnapshot snapshot;
+  /// 라이브 스냅샷(없으면 외곽선만).
+  final LiveSessionSnapshot? snapshot;
+
+  /// 외곽선을 고를 GP. 없으면 [snapshot] 의 raceId.
+  final String? raceId;
   final int delaySeconds;
 
   /// 테스트 주입용.
@@ -41,48 +50,68 @@ class LiveTrackMapCard extends StatefulWidget {
 
 class _LiveTrackMapCardState extends State<LiveTrackMapCard>
     with SingleTickerProviderStateMixin {
-  late LivePositionsController _controller;
+  LivePositionsController? _controller;
   late final Ticker _ticker;
   final ValueNotifier<int> _frame = ValueNotifier<int>(0);
   TrackOutline? _outline;
-  bool _outlineLoaded = false;
   String? _selected;
 
   @override
   void initState() {
     super.initState();
-    _controller = _createController();
-    _controller.start();
-    _ticker = createTicker((_) => _frame.value++)..start();
+    _ticker = createTicker((_) => _frame.value++);
+    _syncCars();
     _loadOutline();
   }
 
-  LivePositionsController _createController() =>
-      widget.controllerOverride ??
-      LivePositionsController(delaySeconds: widget.delaySeconds);
+  String? get _raceId => widget.raceId ?? widget.snapshot?.raceId;
+
+  /// 차량을 그릴지 — 세션 진행 중이고 collector 가 좌표를 줄 때만.
+  bool get _showCars {
+    if (widget.controllerOverride != null) return true;
+    final s = widget.snapshot;
+    return s != null &&
+        s.status == LiveSessionStatus.live &&
+        s.positionsAvailable;
+  }
+
+  /// [_showCars] 에 맞춰 좌표 컨트롤러·프레임 티커를 켜고 끈다(평소엔 0 요청).
+  void _syncCars() {
+    if (_showCars && _controller == null) {
+      _controller =
+          (widget.controllerOverride ??
+                LivePositionsController(delaySeconds: widget.delaySeconds))
+            ..start();
+      if (!_ticker.isActive) _ticker.start();
+    } else if (!_showCars && _controller != null) {
+      if (widget.controllerOverride == null) _controller!.dispose();
+      _controller = null;
+      _ticker.stop();
+    }
+  }
 
   Future<void> _loadOutline() async {
     final outline =
-        widget.outlineOverride ??
-        await TrackOutlineRepository.forRace(widget.snapshot.raceId);
+        widget.outlineOverride ?? await TrackOutlineRepository.forRace(_raceId);
     if (!mounted) return;
-    setState(() {
-      _outline = outline;
-      _outlineLoaded = true;
-    });
+    setState(() => _outline = outline);
   }
 
   @override
   void didUpdateWidget(covariant LiveTrackMapCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.delaySeconds != widget.delaySeconds &&
-        widget.controllerOverride == null) {
+        widget.controllerOverride == null &&
+        _controller != null) {
       // 지연 설정이 바뀌면 이전 시점의 타임라인을 버리고 새로 받는다.
-      _controller.dispose();
-      _controller = _createController()..start();
+      _controller!.dispose();
+      _controller = null;
     }
-    if (oldWidget.snapshot.raceId != widget.snapshot.raceId) {
-      _outlineLoaded = false;
+    _syncCars();
+    final oldRaceId = oldWidget.raceId ?? oldWidget.snapshot?.raceId;
+    if (oldRaceId != _raceId) {
+      // 다른 GP 로 바뀌면 이전 서킷을 잠깐이라도 보여주지 않는다.
+      _outline = null;
       _loadOutline();
     }
   }
@@ -91,20 +120,23 @@ class _LiveTrackMapCardState extends State<LiveTrackMapCard>
   void dispose() {
     _ticker.dispose();
     _frame.dispose();
-    if (widget.controllerOverride == null) _controller.dispose();
+    if (widget.controllerOverride == null) _controller?.dispose();
     super.dispose();
   }
 
   Map<String, LiveDriverPosition> get _driversByNumber => {
-    for (final d in widget.snapshot.classification)
+    for (final d
+        in widget.snapshot?.classification ?? const <LiveDriverPosition>[])
       if (d.racingNumber != null) d.racingNumber!: d,
   };
 
   void _handleTap(TapUpDetails details, Size size, _MapGeometry geometry) {
+    final controller = _controller;
+    if (controller == null) return;
     final now = (widget.clock ?? DateTime.now)();
     String? best;
     var bestDistance = 22.0;
-    _controller.positionsAt(now).forEach((number, raw) {
+    controller.positionsAt(now).forEach((number, raw) {
       final p = geometry.toCanvas(geometry.outline.project(raw));
       final d = (p - details.localPosition).distance;
       if (d < bestDistance) {
@@ -118,9 +150,20 @@ class _LiveTrackMapCardState extends State<LiveTrackMapCard>
   @override
   Widget build(BuildContext context) {
     final outline = _outline;
-    // 이 서킷 외곽선이 없으면(신규 서킷 등) 카드를 띄우지 않는다.
-    if (_outlineLoaded && outline == null) return const SizedBox.shrink();
+    // 외곽선이 준비되기 전·없을 때(신규 서킷 등)는 카드를 그리지 않는다.
+    // 로딩 중에 빈 자리를 잡았다가 '외곽선 없음'으로 사라지면 아래 카드들이
+    // 위로 튄다(카드가 늘 뜨게 되면서 드러난 문제).
+    if (outline == null) return const SizedBox.shrink();
     final drivers = _driversByNumber;
+    final cars = _controller != null;
+    final live = widget.snapshot?.status == LiveSessionStatus.live;
+    final subtitle = cars
+        ? (widget.delaySeconds > 0
+              ? '${widget.delaySeconds}초 지연'
+              : '몇 초 지연된 위치')
+        : live
+        ? '차량 위치 준비 중'
+        : '세션 중 차량 위치 표시';
 
     return AppCard(
       child: Column(
@@ -139,9 +182,7 @@ class _LiveTrackMapCardState extends State<LiveTrackMapCard>
                 ),
               ),
               Text(
-                widget.delaySeconds > 0
-                    ? '${widget.delaySeconds}초 지연'
-                    : '몇 초 지연된 위치',
+                subtitle,
                 style: TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 11,
@@ -151,48 +192,47 @@ class _LiveTrackMapCardState extends State<LiveTrackMapCard>
             ],
           ),
           const SizedBox(height: 12),
-          if (outline == null)
-            const SizedBox(height: 180)
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final aspect = (outline.bounds.height / outline.bounds.width)
-                    .clamp(0.5, 0.95);
-                final size = Size(width, width * aspect + 28);
-                final geometry = _MapGeometry(outline, size);
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: GestureDetector(
-                    onTapUp: (d) => _handleTap(d, size, geometry),
-                    child: ColoredBox(
-                      color: AppColors.tileSurface,
-                      child: CustomPaint(
-                        size: size,
-                        painter: _TrackMapPainter(
-                          geometry: geometry,
-                          controller: _controller,
-                          drivers: drivers,
-                          selected: _selected,
-                          clock: widget.clock ?? DateTime.now,
-                          repaint: Listenable.merge([
-                            _frame,
-                            liveTalkingRacingNumber,
-                          ]),
-                        ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final aspect = (outline.bounds.height / outline.bounds.width)
+                  .clamp(0.5, 0.95);
+              final size = Size(width, width * aspect + 28);
+              final geometry = _MapGeometry(outline, size);
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GestureDetector(
+                  onTapUp: (d) => _handleTap(d, size, geometry),
+                  child: ColoredBox(
+                    color: AppColors.tileSurface,
+                    child: CustomPaint(
+                      size: size,
+                      painter: _TrackMapPainter(
+                        geometry: geometry,
+                        controller: _controller,
+                        drivers: drivers,
+                        selected: _selected,
+                        clock: widget.clock ?? DateTime.now,
+                        repaint: Listenable.merge([
+                          _frame,
+                          liveTalkingRacingNumber,
+                        ]),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          const SizedBox(height: 8),
-          Text(
-            _selected == null
-                ? '차량을 탭하면 그 드라이버만 강조돼요'
-                : '${drivers[_selected]?.code ?? '#$_selected'} 강조 중 · 다시 탭하면 해제',
-            style: TextStyle(color: AppColors.muted, fontSize: 11),
+                ),
+              );
+            },
           ),
+          if (cars) ...[
+            const SizedBox(height: 8),
+            Text(
+              _selected == null
+                  ? '차량을 탭하면 그 드라이버만 강조돼요'
+                  : '${drivers[_selected]?.code ?? '#$_selected'} 강조 중 · 다시 탭하면 해제',
+              style: TextStyle(color: AppColors.muted, fontSize: 11),
+            ),
+          ],
         ],
       ),
     );
@@ -204,7 +244,8 @@ class _MapGeometry {
   _MapGeometry(this.outline, this.size) {
     const pad = 22.0;
     final b = outline.bounds;
-    scale = ((size.width - pad * 2) / b.width).clamp(0, double.infinity)
+    scale = ((size.width - pad * 2) / b.width)
+        .clamp(0, double.infinity)
         .toDouble();
     final scaleY = (size.height - pad * 2) / b.height;
     if (scaleY < scale) scale = scaleY;
@@ -233,7 +274,9 @@ class _TrackMapPainter extends CustomPainter {
   }) : super(repaint: repaint);
 
   final _MapGeometry geometry;
-  final LivePositionsController controller;
+
+  /// null 이면 외곽선만 그린다(세션 밖).
+  final LivePositionsController? controller;
   final Map<String, LiveDriverPosition> drivers;
   final String? selected;
   final DateTime Function() clock;
@@ -298,6 +341,8 @@ class _TrackMapPainter extends CustomPainter {
       );
     }
 
+    final controller = this.controller;
+    if (controller == null) return;
     final talking = liveTalkingRacingNumber.value;
     final focus = talking ?? selected;
     final positions = controller.positionsAt(clock()).entries.toList()
@@ -317,8 +362,7 @@ class _TrackMapPainter extends CustomPainter {
       final alpha = dimmed ? 0.3 : 1.0;
 
       if (number == talking) {
-        final pulse =
-            (DateTime.now().millisecondsSinceEpoch % 1200) / 1200.0;
+        final pulse = (DateTime.now().millisecondsSinceEpoch % 1200) / 1200.0;
         canvas.drawCircle(
           p,
           7 + pulse * 12,
@@ -354,5 +398,6 @@ class _TrackMapPainter extends CustomPainter {
   bool shouldRepaint(covariant _TrackMapPainter old) =>
       old.geometry.size != geometry.size ||
       old.selected != selected ||
-      old.drivers != drivers;
+      old.drivers != drivers ||
+      old.controller != controller;
 }

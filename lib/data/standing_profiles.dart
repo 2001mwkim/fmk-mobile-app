@@ -266,8 +266,8 @@ final Map<String, TeamProfile> teamProfilesByKo = {
     carName: 'AMR26',
     image: _chineseGpPhoto('2026 Chinese GP - Aston Martin - AMR26.jpg'),
   ),
-  '캐딕락': TeamProfile(
-    teamKo: '캐딕락',
+  '캐딜락': TeamProfile(
+    teamKo: '캐딜락',
     countryKo: '미국',
     carName: 'MAC-26',
     image: _chineseGpPhoto('2026 Chinese GP - Cadillac - MAC-26.jpg'),

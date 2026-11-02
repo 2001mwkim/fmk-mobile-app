@@ -20,14 +20,17 @@ void main() {
     expect(AppThemeMode.fromStorage('fmk'), AppThemeMode.fmk);
   });
 
-  test('다크 팔레트는 종전 상수값과 비트 단위로 동일하다(기존 디자인 회귀 방지)', () {
+  // 2026-10 디자인 정리로 다크 팔레트를 iOS 시스템 다크 계열로 옮겼다
+  // (이전엔 웹 Tailwind 원본값과 비트 동일을 강제했다). 핵심 면 값이 의도치
+  // 않게 바뀌지 않도록 고정해 둔다.
+  test('기본 다크 팔레트는 순검정 배경 + 무채색 카드 + systemRed 다', () {
     appThemeController.resetForTest();
-    expect(AppColors.background, const Color(0xFF090B12));
-    expect(AppColors.card, const Color(0xFF141828));
-    expect(AppColors.red, const Color(0xFFEF4444));
+    expect(AppColors.background, const Color(0xFF000000));
+    expect(AppColors.card, const Color(0xFF1C1C1E));
+    expect(AppColors.red, const Color(0xFFFF453A));
     expect(AppColors.white, const Color(0xFFFFFFFF));
-    expect(AppColors.border, const Color(0x1AFFFFFF));
-    expect(AppColors.heroAccent, const Color(0xFFF25C5C));
+    expect(AppColors.textMuted, const Color(0xFF8E8E93));
+    expect(AppColors.heroAccent, AppColors.red);
   });
 
   test('save 는 팔레트를 즉시 바꾸고 prefs 에 저장한다', () async {

@@ -64,10 +64,15 @@ class SeasonRaceResults {
   const SeasonRaceResults({
     required this.raceResultsByRaceId,
     required this.championshipResultsByRaceId,
+    this.qualifyingResultsByRaceId = const {},
   });
 
   final Map<String, List<RaceResultEntry>> raceResultsByRaceId;
   final Map<String, List<RaceResultEntry>> championshipResultsByRaceId;
+
+  /// 본 퀄리파잉(스프린트 퀄리 제외) 결과. 상세 화면의 팀메이트 퀄리
+  /// 맞대결용 — 구버전 응답처럼 세션이 없으면 비어 있고, 화면은 그 줄을 숨긴다.
+  final Map<String, List<RaceResultEntry>> qualifyingResultsByRaceId;
 }
 
 /// 레이스 결과 공급 계층.
@@ -314,9 +319,19 @@ SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
 
     final raceResults = <String, List<RaceResultEntry>>{};
     final championshipResults = <String, List<RaceResultEntry>>{};
+    final qualifyingResults = <String, List<RaceResultEntry>>{};
     for (final rawRace in decoded['races'] as List) {
       if (rawRace is! Map || rawRace['raceId'] is! String) continue;
       final raceId = rawRace['raceId'] as String;
+      if (rawRace['sessions'] is List) {
+        for (final rawSession in rawRace['sessions'] as List) {
+          if (rawSession is! Map || rawSession['sessionType'] != 'QUALIFYING') {
+            continue;
+          }
+          final qualifying = _parseResultData(rawSession, raceId: raceId);
+          if (qualifying != null) qualifyingResults[raceId] = qualifying.entries;
+        }
+      }
       final raceData = _raceDataFromSeasonRow(rawRace, raceId: raceId);
       if (raceData == null) continue;
       raceResults[raceId] = raceData.entries;
@@ -359,6 +374,7 @@ SeasonRaceResults? parseSeasonRaceResultsJson(String body) {
     return SeasonRaceResults(
       raceResultsByRaceId: Map.unmodifiable(raceResults),
       championshipResultsByRaceId: Map.unmodifiable(championshipResults),
+      qualifyingResultsByRaceId: Map.unmodifiable(qualifyingResults),
     );
   } catch (_) {
     return null;

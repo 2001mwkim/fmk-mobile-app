@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_tokens.dart';
 
 class AppTheme {
   const AppTheme._();
@@ -23,54 +24,27 @@ class AppTheme {
       color: AppColors.white,
       leadingDistribution: TextLeadingDistribution.even,
     );
+    // 2026-10 디자인 정리: 굵기는 w700 이하로 낮추고 크기는 AppType 스케일에
+    // 맞췄다(이전 값은 w800 위주라 화면 전체가 같은 무게로 소리쳤다).
     final textTheme = TextTheme(
-      displaySmall: baseText.copyWith(
-        fontSize: 30,
-        height: 1.12,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.6,
-      ),
-      headlineMedium: baseText.copyWith(
-        fontSize: 26,
-        height: 1.2,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.4,
-      ),
-      titleLarge: baseText.copyWith(
-        fontSize: 20,
-        height: 1.3,
-        fontWeight: FontWeight.w800,
-      ),
-      titleMedium: baseText.copyWith(
-        fontSize: 16,
-        height: 1.35,
-        fontWeight: FontWeight.w800,
-      ),
-      bodyLarge: baseText.copyWith(fontSize: 15, height: 1.5),
-      bodyMedium: baseText.copyWith(
-        fontSize: 13,
-        height: 1.5,
-        color: AppColors.textMuted,
-      ),
-      bodySmall: baseText.copyWith(
-        fontSize: 12,
-        height: 1.45,
-        color: AppColors.textMuted,
-      ),
-      labelLarge: baseText.copyWith(fontSize: 13, height: 1.25),
-      labelMedium: baseText.copyWith(
-        fontSize: 11,
-        height: 1.3,
-        color: AppColors.muted,
-        fontWeight: FontWeight.w700,
-      ),
-      labelSmall: baseText.copyWith(
-        fontSize: 11,
-        height: 1.3,
-        color: AppColors.muted,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-      ),
+      displaySmall: baseText.merge(AppType.largeTitle),
+      headlineMedium: baseText.merge(AppType.largeTitle),
+      titleLarge: baseText.merge(AppType.title),
+      titleMedium: baseText.merge(AppType.headline),
+      bodyLarge: baseText.merge(AppType.body),
+      bodyMedium: baseText
+          .merge(AppType.subhead)
+          .copyWith(fontWeight: FontWeight.w400, color: AppColors.textMuted),
+      bodySmall: baseText
+          .merge(AppType.caption)
+          .copyWith(fontWeight: FontWeight.w400, color: AppColors.textMuted),
+      labelLarge: baseText.merge(AppType.subhead),
+      labelMedium: baseText
+          .merge(AppType.caption)
+          .copyWith(color: AppColors.textMuted),
+      labelSmall: baseText
+          .merge(AppType.caption)
+          .copyWith(color: AppColors.textMuted),
     );
 
     return ThemeData(
@@ -80,6 +54,10 @@ class AppTheme {
       colorScheme: colorScheme,
       textTheme: textTheme,
       scaffoldBackgroundColor: AppColors.background,
+      // 머티리얼 물결(ripple) 대신 눌린 동안만 면이 살짝 밝아지는 iOS 식
+      // 피드백. 물결이 카드 전체로 퍼지는 효과가 웹 이식 앱 인상을 키웠다.
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: AppColors.white.withValues(alpha: 0.06),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.white,
@@ -91,24 +69,16 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 0,
-        // 웹 Card.tsx rounded-2xl + border-white/10
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: AppColors.border),
-          borderRadius: const BorderRadius.all(Radius.circular(16)),
-        ),
+        // 테두리 없이 배경 명도 차이로만 면을 나눈다(AppCard 와 동일).
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.cardBorder),
       ),
-      dividerTheme: DividerThemeData(
-        color: AppColors.border,
-        thickness: 1,
-      ),
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: AppColors.red,
-      ),
+      dividerTheme: DividerThemeData(color: AppColors.border, thickness: 0.5),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.red),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.redSoft,
           textStyle: textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

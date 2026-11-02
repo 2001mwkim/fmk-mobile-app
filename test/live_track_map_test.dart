@@ -204,5 +204,45 @@ void main() {
       expect(find.text('차량을 탭하면 그 드라이버만 강조돼요'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('track map and radio cards also show outside a session', (
+      tester,
+    ) async {
+      // 세션 밖: 외곽선만 그리고 좌표 컨트롤러를 만들지 않는다(요청 0).
+      final outline = TrackOutline(
+        rotationDeg: 0,
+        rawPoints: [
+          for (var i = 0; i < 40; i++)
+            Offset(i * 40.0, i < 20 ? 0 : 400),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ListView(
+              children: [
+                LiveTrackMapCard(
+                  raceId: 'mexico-2026',
+                  delaySeconds: 0,
+                  outlineOverride: outline,
+                ),
+                const LiveTeamRadioCard(
+                  radios: [],
+                  drivers: [],
+                  emptyMessage: '세션이 시작되면 팀 라디오가 여기에 표시돼요',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('트랙맵'), findsOneWidget);
+      expect(find.text('세션 중 차량 위치 표시'), findsOneWidget);
+      expect(find.text('차량을 탭하면 그 드라이버만 강조돼요'), findsNothing);
+      expect(find.text('팀 라디오'), findsOneWidget);
+      expect(find.text('세션이 시작되면 팀 라디오가 여기에 표시돼요'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

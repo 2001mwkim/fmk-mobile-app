@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// 앱 테마 식별자. 저장 문자열·설정 UI 라벨은
 /// services/app_theme_controller.dart 가 담당한다.
-/// - dark: 기존 기본 디자인(블루톤 다크 + 레드 라인) — 값은 웹 Tailwind 원본 그대로
+/// - dark: 기본(순검정 + 무채색 카드 + 레드) — 2026-10 디자인 정리로 iOS 시스템 다크 계열
 /// - light: 흰 배경 + 레드 라인
 /// - fmk: 포뮬러 매거진 코리아 브랜드(검정 배경 + 옐로 라인)
 enum AppThemeId { dark, light, fmk }
@@ -149,81 +149,65 @@ class AppPalette {
   final Color tyreMediumLabel;
   final Color tyreHardLabel;
 
-  /// 기존 기본 디자인 — 웹(fmk-f1-calendar) Tailwind 원본값 그대로.
-  /// 이 팔레트의 값은 비트 단위로 종전 AppColors 상수와 동일해야 한다
-  /// (테마 도입으로 인한 기존 디자인 회귀 방지).
+  /// 기본 다크 — 2026-10 디자인 정리로 웹 Tailwind 원본값(블루 틴트 네이비)
+  /// 에서 iOS 시스템 다크 계열 무채색으로 옮겼다. 네이비 틴트 배경 + 테두리
+  /// 카드 조합이 흔한 템플릿 인상을 줬고, 순검정 배경 위 무채색 카드(#1C1C1E)
+  /// 는 테두리 없이 명도 차이만으로 면이 구분된다. 레드는 iOS systemRed(다크).
   static const AppPalette dark = AppPalette(
     id: AppThemeId.dark,
     brightness: Brightness.dark,
-    // 웹 body 배경 (globals.css --background: #090b12)
-    background: Color(0xFF090B12),
-    // 웹 공유 카드 표면 (Card.tsx bg-[#141828])
-    card: Color(0xFF141828),
-    // 웹 하단 네비 배경 (BottomNav.tsx bg-[#0c0e18])
-    navSurface: Color(0xFF0C0E18),
+    // iOS systemBackground / secondarySystemBackground (dark)
+    background: Color(0xFF000000),
+    card: Color(0xFF1C1C1E),
+    navSurface: Color(0xFF0E0E0F),
     textPrimary: Color(0xFFFFFFFF),
     onAccent: Color(0xFFFFFFFF),
-    // 웹 neutral 칩 / 네비 비활성 텍스트 (#959bb6)
-    textMuted: Color(0xFF959BB6),
-    // 웹 ended 칩 텍스트 (#5b6178)
-    textEnded: Color(0xFF5B6178),
-    // 웹 border-white/10 (Card / BottomNav)
-    border: Color(0x1AFFFFFF),
-    // 웹 red-500 / red-400 (Tailwind)
-    red: Color(0xFFEF4444),
-    redSoft: Color(0xFFF87171),
-    greenSoft: Color(0xFF4ADE80),
-    // 웹 blue-400 (Tailwind) — blue 칩 텍스트
-    blueSoft: Color(0xFF60A5FA),
-    // 순위 변동 칩 등 orange-400 (Tailwind)
-    orangeSoft: Color(0xFFFB923C),
-    // 중립 칩 배경 원색 slate-400 (Tailwind)
-    slate400: Color(0xFF94A3B8),
-    // 웹 mono 칩 텍스트 (slate-300)
-    slate300: Color(0xFFCBD5E1),
-    // 웹 #7880a0 — 라벨/메타 등 기본 보조 텍스트
-    muted: Color(0xFF7880A0),
-    // 웹 #aab0cc — 비활성/보조 이름 텍스트
-    nameMuted: Color(0xFFAAB0CC),
-    // 웹 #8088a8 — 히어로 서브 텍스트
-    heroSub: Color(0xFF8088A8),
-    // 웹 #0e1018 — 카드 안 타일 표면
-    tileSurface: Color(0xFF0E1018),
-    // 웹 white/8 — 헤어라인 구분선
-    hairline: Color(0x14FFFFFF),
-    // 웹 white/7 — 칸 구분선
-    divider: Color(0x12FFFFFF),
-    // 웹 white/6 — 옅은 보더
-    faintBorder: Color(0x0FFFFFFF),
-    // 웹 white/5 — 행 구분선
-    rowBorder: Color(0x0DFFFFFF),
-    // black/20 — 패널 헤더 등 어두운 오버레이
+    // iOS secondaryLabel / tertiaryLabel 을 불투명 값으로 환산
+    textMuted: Color(0xFF8E8E93),
+    textEnded: Color(0xFF545458),
+    // iOS separator (dark)
+    border: Color(0x2EFFFFFF),
+    // iOS systemRed (dark)
+    red: Color(0xFFFF453A),
+    redSoft: Color(0xFFFF6961),
+    greenSoft: Color(0xFF30D158),
+    blueSoft: Color(0xFF64D2FF),
+    orangeSoft: Color(0xFFFF9F0A),
+    slate400: Color(0xFF98989D),
+    slate300: Color(0xFFC7C7CC),
+    muted: Color(0xFF8E8E93),
+    nameMuted: Color(0xFFAEAEB2),
+    heroSub: Color(0xFF8E8E93),
+    // 카드 안의 한 단계 낮은 표면
+    tileSurface: Color(0xFF131314),
+    hairline: Color(0x1FFFFFFF),
+    divider: Color(0x1AFFFFFF),
+    faintBorder: Color(0x14FFFFFF),
+    rowBorder: Color(0x12FFFFFF),
     black20: Color(0x33000000),
-    // 홈 '최근 레이스 결과' 카드 (디자인 핸드오프 recent_race_result_card.html)
-    resultRowSurface: Color(0xFF1C2030),
-    resultChipSurface: Color(0xFF232838),
-    textSoft: Color(0xFFE9EAF0),
-    // 홈 리디자인 (home_screen_2a.html) — 히어로 일정 리스트
-    dotInactive: Color(0xFF3A4054),
-    scheduleText: Color(0xFFC6C9D4),
-    // 히어로 v2 (Home v2.dc.html 1a) — 기존 red 보다 살짝 웜톤
-    heroAccent: Color(0xFFF25C5C),
-    heroAccentBright: Color(0xFFF58A8A),
-    heroGradTop: Color(0xFF221018),
-    heroGradMid: Color(0xFF16121C),
-    heroGradBottom: Color(0xFF121218),
-    heroMeta: Color(0xFF8B8B99),
-    heroSubText: Color(0xFF9A9AA8),
-    heroDim: Color(0xFF6E6E7C),
-    heroRowText: Color(0xFFA8A8B6),
-    heroDotIdle: Color(0xFF3A3A46),
-    panelSurface: Color(0xFF141019),
+    // iOS tertiarySystemBackground / systemGray5 (dark)
+    resultRowSurface: Color(0xFF2C2C2E),
+    resultChipSurface: Color(0xFF3A3A3C),
+    textSoft: Color(0xFFE5E5EA),
+    dotInactive: Color(0xFF48484A),
+    scheduleText: Color(0xFFD1D1D6),
+    heroAccent: Color(0xFFFF453A),
+    heroAccentBright: Color(0xFFFF6961),
+    heroGradTop: Color(0xFF1C1C1E),
+    heroGradMid: Color(0xFF1C1C1E),
+    heroGradBottom: Color(0xFF1C1C1E),
+    heroMeta: Color(0xFF8E8E93),
+    heroSubText: Color(0xFF8E8E93),
+    heroDim: Color(0xFF6C6C70),
+    heroRowText: Color(0xFFAEAEB2),
+    heroDotIdle: Color(0xFF48484A),
+    panelSurface: Color(0xFF1C1C1E),
     heroListSurface: Color(0x40000000),
-    metallic: Color(0xFFE8EDF6),
-    circuitBand: Color(0xFF12141E),
-    circuitLabel: Color(0xFF6B7090),
+    metallic: Color(0xFFE5E5EA),
+    circuitBand: Color(0xFF151516),
+    circuitLabel: Color(0xFF6C6C70),
     scrimPill: Color(0x80000000),
-    scrimPillText: Color(0xFFCBD5E1),
+    scrimPillText: Color(0xFFD1D1D6),
     controlSurface: Color(0x33000000),
     tyreSoftLabel: Color(0xFFF87171),
     tyreMediumLabel: Color(0xFFFFD12E),
@@ -235,13 +219,14 @@ class AppPalette {
   static const AppPalette light = AppPalette(
     id: AppThemeId.light,
     brightness: Brightness.light,
-    background: Color(0xFFF6F7FA),
+    // iOS systemGroupedBackground — 흰 카드가 테두리 없이 떠 보인다
+    background: Color(0xFFF2F2F7),
     card: Color(0xFFFFFFFF),
     navSurface: Color(0xFFFFFFFF),
-    textPrimary: Color(0xFF14161F),
+    textPrimary: Color(0xFF0B0B0C),
     onAccent: Color(0xFFFFFFFF),
-    textMuted: Color(0xFF5C6274),
-    textEnded: Color(0xFF9BA0B0),
+    textMuted: Color(0xFF6C6C70),
+    textEnded: Color(0xFFAEAEB2),
     border: Color(0x14000000),
     // red-600 — 흰 배경에서 red-500 보다 대비가 좋다
     red: Color(0xFFDC2626),
@@ -251,10 +236,10 @@ class AppPalette {
     orangeSoft: Color(0xFFEA580C),
     slate400: Color(0xFF64748B),
     slate300: Color(0xFF475569),
-    muted: Color(0xFF6A7086),
-    nameMuted: Color(0xFF565C70),
-    heroSub: Color(0xFF6E7488),
-    tileSurface: Color(0xFFF1F2F7),
+    muted: Color(0xFF8A8A8E),
+    nameMuted: Color(0xFF636366),
+    heroSub: Color(0xFF6C6C70),
+    tileSurface: Color(0xFFF2F2F7),
     hairline: Color(0x10000000),
     divider: Color(0x0E000000),
     faintBorder: Color(0x0C000000),
@@ -384,6 +369,9 @@ class AppColors {
   /// "진짜 흰색"이 필요하면 pureWhite 를 쓸 것.
   static Color get white => palette.textPrimary;
   static const Color pureWhite = Color(0xFFFFFFFF);
+
+  /// 사진 위 스크림 등 테마와 무관하게 "진짜 검정"이 필요한 곳.
+  static const Color pureBlack = Color(0xFF000000);
 
   /// 액센트 단색 배경 위 텍스트/아이콘(FMK 옐로 위엔 검정).
   static Color get onAccent => palette.onAccent;

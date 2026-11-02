@@ -1,18 +1,15 @@
+// 색 인자는 테마 getter 기본값 때문에 private 필드로 받는다(아래 생성자 주석).
+// ignore_for_file: prefer_initializing_formals
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 
-/// 웹 components/Card.tsx 의 Flutter 포팅.
-///
-/// 웹 클래스:
-///   rounded-2xl border border-white/10 bg-[#141828]
-///   shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]
-///
-/// - rounded-2xl => BorderRadius 16
-/// - border-white/10 => AppColors.border
-/// - bg-[#141828] => AppColors.card
-/// - 상단 inner-highlight => 1px 흰색 4% 라인으로 근사 (Flutter는 inset shadow 미지원)
+/// 공용 카드 표면. 원래 웹 components/Card.tsx(테두리 + 네이비 배경) 포팅이었으나
+/// 2026-10 디자인 정리로 테두리를 없앴다 — 순검정 배경 위 무채색 카드는 명도
+/// 차이만으로 충분히 구분되고, 모든 카드에 선을 두르면 화면이 칸막이처럼 보였다.
+/// 강조가 꼭 필요한 곳만 borderColor 를 넘긴다.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -23,8 +20,8 @@ class AppCard extends StatelessWidget {
     // AppColors 가 getter 라 기본 인자로 못 쓴다).
     Color? backgroundColor,
     Color? borderColor,
-  })  : _backgroundColor = backgroundColor, // ignore: prefer_initializing_formals
-        _borderColor = borderColor; // ignore: prefer_initializing_formals
+  }) : _backgroundColor = backgroundColor,
+       _borderColor = borderColor;
 
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -32,12 +29,12 @@ class AppCard extends StatelessWidget {
   final Color? _borderColor;
 
   Color get backgroundColor => _backgroundColor ?? AppColors.card;
-  Color get borderColor => _borderColor ?? AppColors.border;
+  Color get borderColor => _borderColor ?? Colors.transparent;
 
   /// 웹에서 Card 를 <Link> 로 감싸 클릭 가능하게 쓰던 경우를 위한 옵션.
   final VoidCallback? onTap;
 
-  static const BorderRadius _radius = AppRadius.mediumBorder;
+  static const BorderRadius _radius = AppRadius.cardBorder;
 
   @override
   Widget build(BuildContext context) {

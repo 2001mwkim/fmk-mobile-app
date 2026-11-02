@@ -65,9 +65,7 @@ void main() {
     );
   });
 
-  testWidgets('weather metrics form a readable two-by-two grid on mobile', (
-    tester,
-  ) async {
+  testWidgets('weather metrics fit on a single line on mobile', (tester) async {
     tester.view.physicalSize = const Size(390, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -107,11 +105,14 @@ void main() {
       find.byKey(const ValueKey('weather-metric-바람')),
     );
 
-    expect(air.top, track.top);
-    expect(humidity.top, wind.top);
-    expect(humidity.top, greaterThan(air.bottom));
-    expect(air.left, humidity.left);
-    expect(track.left, wind.left);
+    // 2026-10: 2x2 타일 → 한 줄. 네 지표가 같은 줄에 왼쪽부터 놓인다.
+    // 칸마다 FittedBox 축소율이 달라 top 은 소수점만큼 어긋날 수 있다 — 중심선으로 비교.
+    expect(track.center.dy, closeTo(air.center.dy, 1));
+    expect(humidity.center.dy, closeTo(air.center.dy, 1));
+    expect(wind.center.dy, closeTo(air.center.dy, 1));
+    expect(air.left, lessThan(track.left));
+    expect(track.left, lessThan(humidity.left));
+    expect(humidity.left, lessThan(wind.left));
     expect(find.text('22.4°'), findsOneWidget);
     expect(find.text('2.7m/s'), findsOneWidget);
   });
@@ -179,8 +180,9 @@ void main() {
     expect(find.text('28.100'), findsNothing);
 
     // Weather metrics use a stable icon and accent color for quick scanning.
-    expect(find.text('대기 온도'), findsOneWidget);
-    expect(find.text('트랙 온도'), findsOneWidget);
+    // 한 줄 스트립이라 화면엔 짧은 라벨, 전체 이름은 접근성 라벨로 남는다.
+    expect(find.text('대기'), findsOneWidget);
+    expect(find.text('트랙'), findsOneWidget);
     expect(find.byIcon(Icons.thermostat_rounded), findsOneWidget);
     expect(find.byIcon(Icons.route_rounded), findsOneWidget);
     expect(find.byIcon(Icons.water_drop_rounded), findsOneWidget);
@@ -202,7 +204,9 @@ void main() {
       AppColors.weatherWind,
     );
 
-    // SECTOR 탭: S1 라벨 + 값.
+    // SECTOR 탭: S1 라벨 + 값. (상단 트랙맵 카드 때문에 화면 밖일 수 있다)
+    await tester.ensureVisible(find.text('SECTOR'));
+    await tester.pump();
     await tester.tap(find.text('SECTOR'));
     await tester.pump();
     expect(find.text('SECTOR TIME'), findsOneWidget);
@@ -502,6 +506,9 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    // 트랙맵·팀 라디오 카드가 늘 떠서 화면 밖으로 밀릴 수 있다 — 실제로 보이게.
+    await tester.ensureVisible(find.text('4위 이하 순위 보기'));
+    await tester.pump();
     await tester.tap(find.text('4위 이하 순위 보기'));
     await tester.pump();
     expect(find.text('D4'), findsOneWidget);

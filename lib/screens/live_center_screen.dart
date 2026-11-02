@@ -108,7 +108,9 @@ class _LiveCenterScreenState extends State<LiveCenterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 아래는 떠 있는 탭 바 밑으로 흐르게 둔다(여백은 pagePadding 이 준다).
       body: SafeArea(
+        bottom: false,
         child: LiveSessionBuilder(
           controller: widget.snapshotOverride == null
               ? _activeController
@@ -451,6 +453,16 @@ class _OfflineCenter extends StatelessWidget {
             ],
           ),
         ),
+        // 라이브가 아닐 때도 다음 GP 서킷과 팀 라디오 자리를 보여준다(외곽선은
+        // 번들 에셋이라 네트워크 요청 없음).
+        const SizedBox(height: 12),
+        LiveTrackMapCard(raceId: race.id, delaySeconds: 0),
+        const SizedBox(height: 12),
+        const LiveTeamRadioCard(
+          radios: [],
+          drivers: [],
+          emptyMessage: '세션이 시작되면 팀 라디오가 여기에 표시돼요',
+        ),
         const SizedBox(height: 12),
         AppCard(
           padding: EdgeInsets.zero,
@@ -528,31 +540,29 @@ class _TimingPreviewCard extends StatelessWidget {
   }
 }
 
-/// 비라이브용 트랙 & 날씨 자리 카드 — 메트릭 틀을 '—'로 유지.
+/// 비라이브용 트랙 & 날씨 자리 — 값이 전부 '—'인 타일을 크게 깔던 것을
+/// 제목과 안내 한 줄로 줄였다(빈 값이 자리만 차지했다).
 class _WeatherPreviewCard extends StatelessWidget {
   const _WeatherPreviewCard();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(16),
+      child: Row(
         children: [
-          Text(
-            '트랙 & 날씨',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+          Expanded(
+            child: Text(
+              '트랙 & 날씨',
+              style: AppType.headline.copyWith(color: AppColors.white),
             ),
           ),
-          SizedBox(height: 12),
-          _WeatherMetrics(
-            airTemperature: '—',
-            trackTemperature: '—',
-            humidity: '—',
-            windSpeed: '—',
+          Text(
+            '세션 중에 표시돼요',
+            style: AppType.subhead.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
@@ -615,28 +625,26 @@ class _LiveContent extends StatelessWidget {
           isStale: isStale,
           delaySeconds: delaySeconds,
         ),
-        // 트랙맵은 상단(2026-10 결정). 좌표가 있을 때(collector 에 F1TV 토큰 +
-        // 세션 진행 중)만 띄워서, 그 밖에는 좌표 요청을 한 건도 보내지 않는다.
-        if (snapshot.status == LiveSessionStatus.live &&
-            snapshot.positionsAvailable) ...[
-          const SizedBox(height: 12),
-          LiveTrackMapCard(snapshot: snapshot, delaySeconds: delaySeconds),
-        ],
-        const SizedBox(height: 12),
-        _TimingCard(snapshot: snapshot),
-        if (snapshot.teamRadio.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          LiveTeamRadioCard(
-            radios: snapshot.teamRadio,
-            drivers: snapshot.classification,
-          ),
-        ],
-        const SizedBox(height: 12),
-        _RaceControlCard(messages: snapshot.raceControlMessages),
+        // 트랙·날씨는 한 줄짜리라 세션 헤더 바로 아래 상황 정보로 둔다.
         if (snapshot.weather != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _WeatherCard(weather: snapshot.weather!),
         ],
+        // 트랙맵은 상단(2026-10 결정)이고 늘 띄운다(사용자 요청). 차량 좌표는
+        // 카드가 알아서 세션 진행 중 + positionsAvailable 일 때만 받아서,
+        // 그 밖에는 외곽선만 그리고 좌표 요청을 한 건도 보내지 않는다.
+        const SizedBox(height: 12),
+        LiveTrackMapCard(snapshot: snapshot, delaySeconds: delaySeconds),
+        const SizedBox(height: 12),
+        _TimingCard(snapshot: snapshot),
+        // 팀 라디오도 늘 띄운다 — 무전이 없으면 빈 상태 안내.
+        const SizedBox(height: 12),
+        LiveTeamRadioCard(
+          radios: snapshot.teamRadio,
+          drivers: snapshot.classification,
+        ),
+        const SizedBox(height: 12),
+        _RaceControlCard(messages: snapshot.raceControlMessages),
       ],
     );
   }
@@ -913,6 +921,10 @@ class _RemainingMetricState extends State<_RemainingMetric> {
   }
 }
 
+/// 트랙·날씨 지표 한 줄. 이전엔 색 타일 2x2(높이 ~150)였는데 세션 중에
+/// 거의 변하지 않는 값이라 그만한 자리를 차지할 이유가 없었다(사용자 피드백
+/// 2026-10). 네 칸을 한 줄에 고르게 놓고, 좁거나 큰 글씨면 칸 안에서 줄인다.
+/// 의미색(대기/트랙/습도/바람)은 아이콘에만 남긴다.
 class _WeatherMetrics extends StatelessWidget {
   const _WeatherMetrics({
     required this.airTemperature,
@@ -928,55 +940,37 @@ class _WeatherMetrics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columnCount = constraints.maxWidth >= 520 ? 4 : 2;
-        const gap = 8.0;
-        final itemWidth =
-            (constraints.maxWidth - gap * (columnCount - 1)) / columnCount;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            SizedBox(
-              width: itemWidth,
-              child: _WeatherMetric(
-                label: '대기 온도',
-                value: airTemperature,
-                icon: Icons.thermostat_rounded,
-                color: AppColors.weatherAir,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _WeatherMetric(
-                label: '트랙 온도',
-                value: trackTemperature,
-                icon: Icons.route_rounded,
-                color: AppColors.weatherTrack,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _WeatherMetric(
-                label: '습도',
-                value: humidity,
-                icon: Icons.water_drop_rounded,
-                color: AppColors.weatherHumidity,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _WeatherMetric(
-                label: '바람',
-                value: windSpeed,
-                icon: Icons.air_rounded,
-                color: AppColors.weatherWind,
-              ),
-            ),
-          ],
-        );
-      },
+    return Row(
+      children: [
+        _WeatherMetric(
+          label: '대기 온도',
+          shortLabel: '대기',
+          value: airTemperature,
+          icon: Icons.thermostat_rounded,
+          color: AppColors.weatherAir,
+        ),
+        _WeatherMetric(
+          label: '트랙 온도',
+          shortLabel: '트랙',
+          value: trackTemperature,
+          icon: Icons.route_rounded,
+          color: AppColors.weatherTrack,
+        ),
+        _WeatherMetric(
+          label: '습도',
+          shortLabel: '습도',
+          value: humidity,
+          icon: Icons.water_drop_rounded,
+          color: AppColors.weatherHumidity,
+        ),
+        _WeatherMetric(
+          label: '바람',
+          shortLabel: '바람',
+          value: windSpeed,
+          icon: Icons.air_rounded,
+          color: AppColors.weatherWind,
+        ),
+      ],
     );
   }
 }
@@ -984,75 +978,50 @@ class _WeatherMetrics extends StatelessWidget {
 class _WeatherMetric extends StatelessWidget {
   const _WeatherMetric({
     required this.label,
+    required this.shortLabel,
     required this.value,
     required this.icon,
     required this.color,
   });
 
+  /// 접근성 라벨과 테스트 키에 쓰는 전체 이름.
   final String label;
+  final String shortLabel;
   final String value;
   final IconData icon;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Expanded(
       key: ValueKey('weather-metric-$label'),
-      height: 68,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: AppRadius.smallBorder,
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              icon,
-              size: 19,
-              color: color,
-              semanticLabel: '$label 아이콘',
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
+      child: Semantics(
+        label: '$label $value',
+        excludeSemantics: true,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: color),
+              const SizedBox(width: 4),
+              Text(
+                shortLabel,
+                style: AppType.caption.copyWith(color: AppColors.textMuted),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: AppType.subhead.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: AppType.tabular,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1910,6 +1879,8 @@ Color _compoundColor(String value) => switch (value.trim().toUpperCase()) {
   _ => AppColors.textMuted,
 };
 
+/// 라이브 중 트랙·날씨. 제목 없이 한 줄짜리 얇은 카드로, 세션 헤더 바로
+/// 아래(상황 정보 자리)에 둔다.
 class _WeatherCard extends StatelessWidget {
   const _WeatherCard({required this.weather});
 
@@ -1920,26 +1891,19 @@ class _WeatherCard extends StatelessWidget {
     String number(double? value, String suffix) =>
         value == null ? '—' : '${value.toStringAsFixed(1)}$suffix';
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
         children: [
-          Text(
-            '트랙 & 날씨',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+          Expanded(
+            child: _WeatherMetrics(
+              airTemperature: number(weather.airTemperature, '°'),
+              trackTemperature: number(weather.trackTemperature, '°'),
+              humidity: number(weather.humidity, '%'),
+              windSpeed: number(weather.windSpeed, 'm/s'),
             ),
           ),
-          const SizedBox(height: 12),
-          _WeatherMetrics(
-            airTemperature: number(weather.airTemperature, '°'),
-            trackTemperature: number(weather.trackTemperature, '°'),
-            humidity: number(weather.humidity, '%'),
-            windSpeed: number(weather.windSpeed, 'm/s'),
-          ),
           if (weather.rainfall == true) ...[
-            const SizedBox(height: 12),
+            const SizedBox(width: 8),
             _StatusPill(label: '강수 감지', color: AppColors.blueSoft),
           ],
         ],

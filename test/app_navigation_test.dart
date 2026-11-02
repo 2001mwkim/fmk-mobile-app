@@ -10,17 +10,18 @@ void main() {
     await tester.pumpWidget(const FmkApp(runStartupPrompts: false));
 
     expect(find.text('Via Formula'), findsOneWidget);
-    expect(find.text('F1 관련 정보를 내 손안에'), findsOneWidget);
+    // 정보 없는 눈썹 문구는 2026-10 디자인 정리에서 뺐다.
+    expect(find.text('F1 관련 정보를 내 손안에'), findsNothing);
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     expect(find.byIcon(Icons.notifications_outlined), findsWidgets);
     expect(find.text('홈'), findsWidgets);
     expect(find.text('일정'), findsOneWidget);
     expect(find.text('순위'), findsOneWidget);
     expect(find.text('라이브'), findsOneWidget);
-    // 히어로 상태 칩은 시점에 따라 '다음 그랑프리' 또는 '진행중'으로 표시된다.
+    // 히어로 상태 캡션은 시점에 따라 '다음 그랑프리' 또는(주말 중) '이번 주말'.
     expect(
       find.text('다음 그랑프리').evaluate().isNotEmpty ||
-          find.text('진행중').evaluate().isNotEmpty,
+          find.text('이번 주말').evaluate().isNotEmpty,
       isTrue,
     );
     // 주말 일정은 히어로 카드에 통합됨(별도 '이번 주말 일정' 카드 제거).

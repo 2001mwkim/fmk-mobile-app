@@ -11,11 +11,20 @@ void main() {
   ) async {
     await _pumpHome(tester, now: _beforeBritishSprint);
 
-    // 히어로 v2: 카운트다운 3칸(DAYS/HRS/MIN)이 카드의 주인공.
-    // 다음 세션 타일은 제거 — 세션 리스트 하이라이트가 그 역할을 한다.
-    expect(find.text('DAYS'), findsOneWidget);
-    expect(find.text('HRS'), findsOneWidget);
-    expect(find.text('MIN'), findsOneWidget);
+    // 카운트다운("○○ 시작까지 / N일 N시간 N분")이 카드의 주인공.
+    // 영문 DAYS/HRS/MIN 라벨은 2026-10 디자인 정리에서 한글 단위로 바꿨다.
+    expect(find.byKey(const ValueKey('home-countdown')), findsOneWidget);
+    expect(find.textContaining('시작까지'), findsOneWidget);
+    // 일·시간·분 세 칸('일'은 세션 목록의 일요일과 겹쳐 카운트다운 안에서만 찾는다).
+    Finder inCountdown(String text) => find.descendant(
+      of: find.byKey(const ValueKey('home-countdown')),
+      matching: find.text(text),
+    );
+    expect(inCountdown('일'), findsOneWidget);
+    expect(inCountdown('시간'), findsOneWidget);
+    expect(inCountdown('분'), findsOneWidget);
+    expect(inCountdown('초'), findsNothing); // 초 단위는 사용자 결정으로 뺐다
+    expect(find.text('DAYS'), findsNothing);
     expect(find.textContaining('다음 세션 · '), findsNothing);
     // 별도 '이번 주말 일정' 카드 대신 히어로 안에 전체 세션 리스트가 있다.
     expect(find.text('이번 주말 일정'), findsNothing);
@@ -24,15 +33,16 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('home hero clamps countdown to zero while a session is live', (
+  testWidgets('home hero shows live state instead of a zero countdown', (
     tester,
   ) async {
     // 스프린트 시작 시각 정각 — 다음 세션(라이브)의 시작이 지났으므로
-    // 카운트다운은 00 00 00 으로 클램프되고 상태 뱃지가 '진행중'이 된다.
+    // 0 0 0 카운트다운 대신 '진행중'을 보여준다(주말 캡션은 '이번 주말').
     await _pumpHome(tester, now: _duringBritishSprint);
 
-    expect(find.text('진행중'), findsOneWidget); // 히어로 상태 뱃지
-    expect(find.text('00'), findsNWidgets(3));
+    expect(find.text('진행중'), findsOneWidget);
+    expect(find.text('이번 주말'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-countdown')), findsNothing);
   });
 
   testWidgets('home hero moves to next GP when live data marks race ended', (

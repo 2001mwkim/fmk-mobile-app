@@ -25,7 +25,11 @@ class LiveTeamRadioCard extends StatefulWidget {
     required this.radios,
     required this.drivers,
     this.clock,
+    this.emptyMessage = '아직 들어온 무전이 없어요',
   });
+
+  /// 무전이 없을 때 안내(카드는 평소에도 뜬다 — 사용자 요청 2026-10).
+  final String emptyMessage;
 
   final List<LiveTeamRadio> radios;
   final List<LiveDriverPosition> drivers;
@@ -117,38 +121,46 @@ class _LiveTeamRadioCardState extends State<LiveTeamRadioCard> {
                   ),
                 ),
               ),
-              Text(
-                '${widget.radios.length}건',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              // 빈 상태에선 '0건' 대신 아래 안내 문구만 둔다.
+              if (widget.radios.isNotEmpty)
+                Text(
+                  '${widget.radios.length}건',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
-          ConstrainedBox(
-            // 레이스 컨트롤 카드처럼 고정 높이 안에서 스크롤 — 20건이 화면을 밀지 않게.
-            constraints: const BoxConstraints(maxHeight: 260),
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              itemCount: widget.radios.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
-              itemBuilder: (context, index) {
-                final radio = widget.radios[index];
-                return _RadioRow(
-                  radio: radio,
-                  driver: byNumber[radio.racingNumber],
-                  now: now,
-                  playing: _playingUrl == radio.url,
-                  loading: _loadingUrl == radio.url,
-                  onTap: () => _toggle(radio),
-                );
-              },
+          if (widget.radios.isEmpty)
+            Text(
+              widget.emptyMessage,
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            )
+          else
+            ConstrainedBox(
+              // 레이스 컨트롤 카드처럼 고정 높이 안에서 스크롤 — 20건이 화면을 밀지 않게.
+              constraints: const BoxConstraints(maxHeight: 260),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: widget.radios.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 6),
+                itemBuilder: (context, index) {
+                  final radio = widget.radios[index];
+                  return _RadioRow(
+                    radio: radio,
+                    driver: byNumber[radio.racingNumber],
+                    now: now,
+                    playing: _playingUrl == radio.url,
+                    loading: _loadingUrl == radio.url,
+                    onTap: () => _toggle(radio),
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -240,7 +252,10 @@ class _RadioRow extends StatelessWidget {
                       children: [
                         Text(
                           '$clock · $ago',
-                          style: TextStyle(color: AppColors.muted, fontSize: 11),
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 11,
+                          ),
                         ),
                         if (fresh) ...[
                           const SizedBox(width: 6),
@@ -292,7 +307,9 @@ class _RadioRow extends StatelessWidget {
                               ),
                             )
                           : Icon(
-                              playing ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                              playing
+                                  ? Icons.stop_rounded
+                                  : Icons.play_arrow_rounded,
                               size: 20,
                               color: playing
                                   ? AppColors.background

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/data/standing_profiles.dart';
+import 'package:fmk_app/data/standing_insights.dart';
 import 'package:fmk_app/models/licensed_image.dart';
+import 'package:fmk_app/models/race_result.dart';
 import 'package:fmk_app/models/standing.dart';
 import 'package:fmk_app/screens/driver_detail_screen.dart';
 import 'package:fmk_app/screens/standings_screen.dart';
@@ -57,7 +59,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('driver row opens a 4:5 licensed detail hero and credits', (
+  testWidgets('driver row opens the redesigned detail with photo credits', (
     tester,
   ) async {
     await pumpStandings(tester);
@@ -66,19 +68,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(DriverDetailScreen), findsOneWidget);
-    expect(find.text('드라이버 상세 · 2026 SEASON'), findsOneWidget);
-    expect(find.text('시즌 성과'), findsOneWidget);
-    expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.workspace_premium_outlined), findsOneWidget);
-    expect(find.text('시즌 순위 흐름'), findsOneWidget);
-    expect(find.text('팀메이트 비교'), findsOneWidget);
-
-    final imageView = find.byType(LicensedImageView);
-    expect(imageView, findsOneWidget);
-    final ratio = tester.widget<AspectRatio>(
-      find.descendant(of: imageView, matching: find.byType(AspectRatio)),
-    );
-    expect(ratio.aspectRatio, 4 / 5);
+    // 2026-10 재설계: 사진 헤더 → 성적 한 줄 → 라운드별 포인트 → 맞대결 → 시즌 결과.
+    expect(find.byType(DetailHero), findsOneWidget);
+    expect(find.text('우승'), findsOneWidget);
+    expect(find.text('포디움'), findsOneWidget);
+    expect(find.byType(SeasonPointsCard), findsOneWidget);
+    expect(find.text('라운드별 포인트'), findsNothing);
+    expect(find.text('드라이버 상세 · 2026 SEASON'), findsNothing);
+    expect(find.text('팀메이트 맞대결'), findsOneWidget);
+    expect(find.text('시즌 결과'), findsOneWidget);
+    // 사진 상자(LicensedImageView)는 헤더 배경으로 옮겨 더는 쓰지 않는다.
+    expect(find.byType(LicensedImageView), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('photo-credits-button')));
     await tester.pumpAndSettle();
@@ -87,7 +87,7 @@ void main() {
     expect(find.textContaining('Cropped'), findsNothing);
   });
 
-  testWidgets('constructor row opens a 16:9 car hero and driver links', (
+  testWidgets('constructor row opens the redesigned detail and driver links', (
     tester,
   ) async {
     await pumpStandings(tester);
@@ -98,14 +98,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TeamDetailScreen), findsOneWidget);
-    expect(find.text('컨스트럭터 상세 · 2026 SEASON'), findsOneWidget);
-    expect(find.text('드라이버 포인트 기여도'), findsOneWidget);
-
-    final imageView = find.byType(LicensedImageView);
-    final ratio = tester.widget<AspectRatio>(
-      find.descendant(of: imageView, matching: find.byType(AspectRatio)),
-    );
-    expect(ratio.aspectRatio, 16 / 9);
+    expect(find.byType(DetailHero), findsOneWidget);
+    expect(find.text('팀 포인트 기여도'), findsOneWidget);
+    expect(find.text('컨스트럭터 상세 · 2026 SEASON'), findsNothing);
 
     final kimiLink = find.byKey(const ValueKey('team-driver-키미 안토넬리'));
     await tester.scrollUntilVisible(
@@ -116,6 +111,32 @@ void main() {
     await tester.tap(kimiLink);
     await tester.pumpAndSettle();
     expect(find.byType(DriverDetailScreen), findsOneWidget);
+  });
+
+  test('팀메이트 맞대결은 완주가 리타이어보다 앞서고, 둘 다 리타이어면 뺀다', () {
+    RaceResultEntry entry(String name, int position, [String? label]) =>
+        RaceResultEntry(
+          position: position,
+          positionLabel: label ?? '$position',
+          driverKo: name,
+          driverEn: name,
+          teamKo: '팀',
+          teamEn: 'Team',
+          points: 0,
+        );
+    final h2h = headToHead(
+      'A',
+      'B',
+      resultsByRaceId: {
+        'r1': [entry('A', 1), entry('B', 2)],
+        'r2': [entry('B', 3), entry('A', 20, 'DNF')],
+        'r3': [entry('A', 19, 'DNF'), entry('B', 20, 'DNF')],
+        'r4': [entry('B', 5), entry('A', 18, 'DNF')],
+        'r5': [entry('A', 4)],
+      },
+    );
+    expect(h2h.wins, 1);
+    expect(h2h.losses, 2);
   });
 
   testWidgets('레드불 기여도에는 베르스타펜과 하자르만 표시한다', (tester) async {

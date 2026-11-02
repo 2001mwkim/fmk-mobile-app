@@ -4,12 +4,15 @@ import '../data/country_flags.dart';
 import '../data/races.dart';
 import '../models/live_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import 'flag_icon.dart';
 
-/// 웹 components/live/HomeLiveTopThreeCard.tsx 의 Flutter 이식.
+/// 홈 라이브/최근 세션 Top 3 카드. 원래 웹 components/live/HomeLiveTopThreeCard.tsx
+/// 이식이었고, 2026-10 디자인 정리로 홈 히어로와 같은 언어로 다시 그렸다:
+/// 테두리·검은 하단 바·색 원형 순위 배지·10pt 대문자 라벨을 걷고, 레드는
+/// 세션이 실제로 진행 중일 때의 LIVE 표시에만 쓴다.
 ///
 /// snapshot 이 없거나 Top 3 가 3명 미만이면 아무것도 렌더하지 않는다(자리만 차지하지 않음).
-/// 실데이터 연결 전에는 [snapshot] 이 null 로 들어와 화면에 노출되지 않는다.
 class HomeLiveTopThreeCard extends StatelessWidget {
   const HomeLiveTopThreeCard({
     super.key,
@@ -26,60 +29,158 @@ class HomeLiveTopThreeCard extends StatelessWidget {
   final bool isStale;
   final DateTime? now;
 
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(16));
-
   @override
   Widget build(BuildContext context) {
     final s = snapshot;
     if (s == null || s.topThree.length < 3) {
       return const SizedBox.shrink();
     }
+    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: _card(context, s),
-    );
-  }
-
-  Widget _card(BuildContext context, LiveSessionSnapshot s) {
-    final ended = s.isEnded && !isLiveSnapshotSessionActive(s, now);
-
-    final surface = Container(
-      decoration: BoxDecoration(
+      child: Material(
         color: AppColors.card,
-        borderRadius: _radius,
-      ),
-      foregroundDecoration: BoxDecoration(
-        borderRadius: _radius,
-        border: Border.all(
-          color: ended ? AppColors.border : AppColors.red.withValues(alpha: 0.4), // red/40
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: _radius,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
-              child: _topContent(context, s, ended),
+        borderRadius: AppRadius.cardBorder,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(snapshot: s, ended: ended, isStale: isStale),
+                const SizedBox(height: 10),
+                _RaceTitle(snapshot: s),
+                if (_lapLabel(s, ended) case final lap?) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    lap,
+                    style: AppType.subhead.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w400,
+                      fontFeatures: AppType.tabular,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
+                const SizedBox(height: 4),
+                for (var i = 0; i < 3; i++)
+                  _TopThreeRow(
+                    driver: s.topThree[i],
+                    raceLike: s.isRaceOrSprint,
+                  ),
+                const SizedBox(height: 4),
+                Divider(height: 0.5, thickness: 0.5, color: AppColors.border),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '전체 순위 보기',
+                          style: AppType.body.copyWith(color: AppColors.white),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: AppColors.textEnded,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            _footer(ended),
-          ],
+          ),
         ),
       ),
-    );
-
-    if (onTap == null) return surface;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: _radius,
-      child: InkWell(borderRadius: _radius, onTap: onTap, child: surface),
     );
   }
 
-  Widget _topContent(BuildContext context, LiveSessionSnapshot s, bool ended) {
-    final raceLike = s.isRaceOrSprint;
+  /// 레이스/스프린트 진행 중에만 "42 / 66랩". 종료 후엔 헤더가 '최종 결과'를
+  /// 이미 말하므로 따로 적지 않는다.
+  static String? _lapLabel(LiveSessionSnapshot s, bool ended) {
+    if (ended || !s.isRaceOrSprint) return null;
+    final lap = s.currentLap;
+    final total = s.totalLaps;
+    if (lap == null || total == null) return null;
+    return '$lap / $total랩';
+  }
+}
+
+/// [● LIVE · 레이스 ......... 업데이트 13:34 KST]
+/// 종료 후: [최종 결과 · 프리 프랙티스 3 ......]
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.snapshot,
+    required this.ended,
+    required this.isStale,
+  });
+
+  final LiveSessionSnapshot snapshot;
+  final bool ended;
+  final bool isStale;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = AppType.subhead.copyWith(color: AppColors.textMuted);
+    final updated = isStale ? '업데이트 지연' : snapshot.updatedAtLabel;
+    return Row(
+      children: [
+        if (!ended) ...[
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: AppColors.red,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'LIVE',
+            style: AppType.subhead.copyWith(
+              color: AppColors.red,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(' · ', style: muted),
+        ] else
+          Text('최종 결과 · ', style: muted),
+        Expanded(
+          child: Text(
+            snapshot.sessionTitleKo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: muted,
+          ),
+        ),
+        if (updated != null) ...[
+          const SizedBox(width: 8),
+          Text(
+            updated,
+            style: AppType.caption.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RaceTitle extends StatelessWidget {
+  const _RaceTitle({required this.snapshot});
+
+  final LiveSessionSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = snapshot;
     // raceId/raceName → races.dart 의 Race. 국기/한글 GP 이름을 여기서 함께 구한다.
     final race = resolveLiveRace(s.raceId, s.raceName);
     final flag =
@@ -88,248 +189,25 @@ class HomeLiveTopThreeCard extends StatelessWidget {
         s.countryFlag;
     final raceNameKo = race?.nameKo ?? s.raceName ?? 'Live Session';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  _StatusBadge(ended: ended, label: liveEndedHomeLabel),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      s.sessionTitleKo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            _LiveClock(label: s.updatedAtLabel, ended: ended),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            // 매핑되는 국가는 벡터 국기, 라이브 피드가 준 이모지만 폴백.
-            if (race != null) ...[
-              FlagIcon(countryKo: race.countryKo, size: 18),
-              const SizedBox(width: 8),
-            ] else if (flag != null) ...[
-              Text(flag, style: const TextStyle(fontSize: 18, height: 1)),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Text(
-                raceNameKo,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ),
-            if (isStale) ...[const SizedBox(width: 8), const _StaleBadge()],
-          ],
-        ),
-        const SizedBox(height: 10),
-        _summaryRow(s, ended),
-        const SizedBox(height: 8),
-        for (var i = 0; i < 3; i++)
-          _TopThreeRow(
-            driver: s.topThree[i],
-            raceLike: raceLike,
-            isFirst: i == 0,
-          ),
-      ],
-    );
-  }
-
-  Widget _summaryRow(LiveSessionSnapshot s, bool ended) {
-    final label = ended ? s.topThreeLabel : s.summary;
-    if (s.summary.startsWith('Lap')) {
-      final lapText = s.summary.split(' · ').first.toUpperCase();
-      return Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.divider, // white/7
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              lapText,
-              style: TextStyle(
-                fontSize: 11,
-                fontFamily: 'Pretendard',
-                color: AppColors.white,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              s.topThreeLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.muted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Text(
-      label,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontSize: 11,
-        color: AppColors.muted,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-
-  Widget _footer(bool ended) {
-    final color = ended ? AppColors.nameMuted : AppColors.redSoft;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.black20, // black/20
-        border: Border(top: BorderSide(color: AppColors.hairline)), // white/8
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '전체 순위 보기',
-            style: TextStyle(
-              fontSize: 13,
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text('→', style: TextStyle(fontSize: 14, color: color)),
-        ],
-      ),
-    );
-  }
-}
-
-/// 연결이 잠깐 흔들려 마지막 순위를 유지 중임을 알리는 muted 배지(경고 톤 아님).
-class _StaleBadge extends StatelessWidget {
-  const _StaleBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.hairline, // white/8
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Text(
-        '업데이트 지연',
-        style: TextStyle(
-          fontSize: 10,
-          fontFamily: 'Pretendard',
-          color: AppColors.heroSub,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.ended, required this.label});
-
-  final bool ended;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: ended
-            ? AppColors.border
-            : AppColors.red, // white/10 : red
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: ended ? AppColors.muted : AppColors.onAccent,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            ended ? label : 'LIVE',
-            style: TextStyle(
-              fontSize: 10,
-              color: ended ? AppColors.nameMuted : AppColors.onAccent,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LiveClock extends StatelessWidget {
-  const _LiveClock({required this.label, required this.ended});
-
-  final String? label;
-  final bool ended;
-
-  @override
-  Widget build(BuildContext context) {
-    if (label == null) return const SizedBox.shrink();
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 5,
-          height: 5,
-          decoration: BoxDecoration(
-            color: ended ? AppColors.muted : AppColors.red,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label!,
-          style: TextStyle(
-            fontSize: 11,
-            fontFamily: 'Pretendard',
-            color: AppColors.heroSub,
-            fontWeight: FontWeight.w700,
+        // 매핑되는 국가는 벡터 국기, 라이브 피드가 준 이모지만 폴백.
+        if (race != null) ...[
+          FlagIcon(countryKo: race.countryKo, size: 18),
+          const SizedBox(width: 8),
+        ] else if (flag != null) ...[
+          Text(flag, style: const TextStyle(fontSize: 18, height: 1)),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: Text(
+            raceNameKo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppType.headline.copyWith(
+              fontSize: 18,
+              color: AppColors.white,
+            ),
           ),
         ),
       ],
@@ -337,115 +215,65 @@ class _LiveClock extends StatelessWidget {
   }
 }
 
+/// 순위 숫자 · 팀 컬러 · 코드 · 이름 · 기록. 순위는 색 배지 대신 숫자만
+/// 두고(홈 순위 섹션과 동일), 기록은 고정폭 숫자로 세로 정렬을 맞춘다.
 class _TopThreeRow extends StatelessWidget {
-  const _TopThreeRow({
-    required this.driver,
-    required this.raceLike,
-    required this.isFirst,
-  });
+  const _TopThreeRow({required this.driver, required this.raceLike});
 
   final LiveDriverPosition driver;
   final bool raceLike;
-  final bool isFirst;
 
   @override
   Widget build(BuildContext context) {
-    final podium = livePodiumColors(driver.position);
-    final gap = driver.time(raceLike: raceLike);
+    final time = driver.time(raceLike: raceLike);
+    final numberStyle = AppType.body.copyWith(fontFeatures: AppType.tabular);
 
-    return Container(
-      decoration: BoxDecoration(
-        border: isFirst
-            ? null
-            : Border(
-                top: BorderSide(color: AppColors.faintBorder),
-              ), // white/6
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          _RankBadge(position: driver.position, podium: podium, size: 20),
-          const SizedBox(width: 11),
-          Container(
-            width: 3,
-            height: 24,
-            decoration: BoxDecoration(
-              color: liveDriverAccent(driver.code),
-              borderRadius: BorderRadius.circular(2),
+          SizedBox(
+            width: 22,
+            child: Text(
+              '${driver.position}',
+              style: numberStyle.copyWith(color: AppColors.textMuted),
             ),
           ),
-          const SizedBox(width: 11),
+          Container(
+            width: 3,
+            height: 16,
+            decoration: BoxDecoration(
+              color: liveDriverAccent(driver.code),
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          ),
+          const SizedBox(width: 10),
           SizedBox(
-            width: 38,
+            width: 44,
             child: Text(
               driver.code,
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Pretendard',
-                color: AppColors.metallic,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
+              style: AppType.body.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(width: 11),
           Expanded(
             child: Text(
               driver.displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppType.body.copyWith(color: AppColors.textMuted),
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 10),
           Text(
-            gap,
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Pretendard',
-              color: gap == '—' ? AppColors.faint : AppColors.nameMuted,
-              fontWeight: FontWeight.w700,
+            time,
+            style: numberStyle.copyWith(
+              color: time == '—' ? AppColors.textEnded : AppColors.white,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RankBadge extends StatelessWidget {
-  const _RankBadge({
-    required this.position,
-    required this.podium,
-    required this.size,
-  });
-
-  final int position;
-  final ({Color background, Color foreground}) podium;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: podium.background,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        '$position',
-        style: TextStyle(
-          fontSize: 12,
-          fontFamily: 'Pretendard',
-          color: podium.foreground,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }

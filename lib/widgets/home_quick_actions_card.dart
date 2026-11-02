@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../screens/settings_screen.dart';
 import '../services/fmk_home_widget_bridge.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
 import 'app_card.dart';
 
 /// 홈 "빠른 설정" 카드: 알림 설정 이동 + 홈 위젯 추가(pin 요청).
@@ -111,35 +112,41 @@ class HomeQuickActionsCard extends StatelessWidget {
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     final supportsHomeWidget = isAndroid || isIOS;
+    // 설정 앱식 그룹 목록. 이전의 좌우 두 타일은 아이콘 상자·10pt 부제가
+    // 좁은 칸에 몰려 있었고, 위아래 행이 큰 글씨에서도 잘리지 않는다.
     return AppCard(
       padding: EdgeInsets.zero,
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _QuickActionTile(
-              icon: Icons.notifications_outlined,
-              title: '알림 설정',
-              subtitle: '세션 시작 전에 알림',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const NotificationSettingsScreen(),
-                  ),
-                );
-              },
-            ),
+          _QuickActionTile(
+            icon: Icons.notifications_outlined,
+            title: '알림 설정',
+            subtitle: '세션 시작 전에 알림',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const NotificationSettingsScreen(),
+                ),
+              );
+            },
           ),
           if (supportsHomeWidget) ...[
-            Container(width: 1, height: 52, color: AppColors.rowBorder),
-            Expanded(
-              child: _QuickActionTile(
-                icon: Icons.widgets_outlined,
-                title: '위젯 추가',
-                subtitle: '홈 화면에서 바로 확인',
-                onTap: () => isIOS
-                    ? _showIOSAddGuide(context)
-                    : _pickAndRequestPin(context),
+            Padding(
+              // 구분선은 아이콘 뒤 글자 시작점부터(iOS 목록 인셋 구분선).
+              padding: const EdgeInsets.only(left: 52),
+              child: Divider(
+                height: 0.5,
+                thickness: 0.5,
+                color: AppColors.border,
               ),
+            ),
+            _QuickActionTile(
+              icon: Icons.widgets_outlined,
+              title: '위젯 추가',
+              subtitle: '홈 화면에서 바로 확인',
+              onTap: () => isIOS
+                  ? _showIOSAddGuide(context)
+                  : _pickAndRequestPin(context),
             ),
           ],
         ],
@@ -287,11 +294,7 @@ class _WidgetOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
+              Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
             ],
           ),
         ),
@@ -316,23 +319,14 @@ class _QuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.cardBorder,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
         child: Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.resultChipSurface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: AppColors.redSoft),
-            ),
-            const SizedBox(width: 10),
+            Icon(icon, size: 22, color: AppColors.textMuted),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,26 +335,21 @@ class _QuickActionTile extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppType.body.copyWith(color: AppColors.white),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppType.subhead.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
             ),
+            Icon(Icons.chevron_right, size: 20, color: AppColors.textEnded),
           ],
         ),
       ),
