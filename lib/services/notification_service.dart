@@ -4,10 +4,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../data/races.dart' show getSessionEndDate;
 import '../models/race.dart';
 import '../models/race_session.dart';
 
-const Duration sessionNotificationLeadTime = Duration(minutes: 30);
 const String kstTimeZoneName = 'Asia/Seoul';
 const int notificationGrandPrixWindow = 3;
 const String androidNotificationIcon = 'ic_notification';
@@ -37,15 +37,55 @@ SessionCategory? sessionCategoryOf(String sessionId) {
   }
 }
 
+/// 세션 시작 몇 분 전에 알릴지 고를 수 있는 값. 기본 30분(종전 고정값).
+const List<int> notificationLeadMinuteOptions = <int>[5, 15, 30, 60];
+const int defaultNotificationLeadMinutes = 30;
+
+/// 결과 알림은 세션 예상 종료 후 이만큼 뒤에 보낸다(공식 결과 집계 여유).
+const Duration resultReminderDelay = Duration(minutes: 5);
+
 class NotificationPreferences {
-  const NotificationPreferences({this.categories = const <SessionCategory>{}});
+  const NotificationPreferences({
+    this.categories = const <SessionCategory>{},
+    this.leadMinutes = defaultNotificationLeadMinutes,
+    this.resultReminders = false,
+    this.mutedRaceIds = const <String>{},
+  });
 
   /// 알림을 켠 세션 카테고리 집합.
   final Set<SessionCategory> categories;
 
+  /// 시작 알림 시점(분 전). [notificationLeadMinuteOptions] 중 하나.
+  final int leadMinutes;
+
+  /// 켠 카테고리 세션이 끝나면 "결과가 나왔어요" 알림을 보낼지. 로컬 알림이라
+  /// 결과 내용은 모른다 — 그래서 본문에 순위를 넣지 않아 스포일러도 없다.
+  final bool resultReminders;
+
+  /// 알림을 끈 그랑프리(raceId). 새벽 GP 하나만 끄고 싶을 때.
+  final Set<String> mutedRaceIds;
+
+  Duration get leadTime => Duration(minutes: leadMinutes);
+
   bool get hasAnyEnabled => categories.isNotEmpty;
 
   bool contains(SessionCategory category) => categories.contains(category);
+
+  bool isRaceMuted(String raceId) => mutedRaceIds.contains(raceId);
+
+  NotificationPreferences copyWith({
+    Set<SessionCategory>? categories,
+    int? leadMinutes,
+    bool? resultReminders,
+    Set<String>? mutedRaceIds,
+  }) {
+    return NotificationPreferences(
+      categories: categories ?? this.categories,
+      leadMinutes: leadMinutes ?? this.leadMinutes,
+      resultReminders: resultReminders ?? this.resultReminders,
+      mutedRaceIds: mutedRaceIds ?? this.mutedRaceIds,
+    );
+  }
 
   /// [category] 를 켜거나(추가) 끈(제거) 새 설정을 만든다.
   NotificationPreferences withCategory(SessionCategory category, bool enabled) {
@@ -55,9 +95,23 @@ class NotificationPreferences {
     } else {
       next.remove(category);
     }
-    return NotificationPreferences(categories: next);
+    return copyWith(categories: next);
+  }
+
+  /// [raceId] 알림을 끄거나(muted=true) 다시 켠 새 설정.
+  NotificationPreferences withRaceMuted(String raceId, bool muted) {
+    final next = Set<String>.of(mutedRaceIds);
+    if (muted) {
+      next.add(raceId);
+    } else {
+      next.remove(raceId);
+    }
+    return copyWith(mutedRaceIds: next);
   }
 }
+
+/// 세션 알림 종류: 시작 전 알림 / 종료 후 결과 알림.
+enum SessionNotificationKind { reminder, result }
 
 class ScheduledSessionNotification {
   const ScheduledSessionNotification({
@@ -68,12 +122,14 @@ class ScheduledSessionNotification {
     required this.title,
     required this.body,
     required this.scheduledAt,
+    this.kind = SessionNotificationKind.reminder,
   });
 
   final int id;
   final String raceId;
   final String sessionId;
   final SessionCategory category;
+  final SessionNotificationKind kind;
   final String title;
   final String body;
   final tz.TZDateTime scheduledAt;
@@ -96,7 +152,7 @@ class SessionNotificationPlanner {
     final candidates = <_RaceNotificationCandidate>[];
 
     for (final race in races) {
-      if (race.isCancelled) continue;
+      if (race.isCancelled || preferences.isRaceMuted(race.id)) continue;
 
       final notifications = _buildRaceNotifications(
         race: race,
@@ -128,6 +184,7 @@ class SessionNotificationPlanner {
     for (final race in races) {
       for (var index = 0; index < race.sessions.length; index++) {
         ids.add(notificationIdFor(race, index));
+        ids.add(resultNotificationIdFor(race, index));
       }
     }
     return ids;
@@ -135,6 +192,11 @@ class SessionNotificationPlanner {
 
   int notificationIdFor(Race race, int sessionIndex) {
     return 260000 + race.round * 10 + sessionIndex;
+  }
+
+  /// 결과 알림 id. 시작 알림(26xxxx)과 겹치지 않게 27xxxx 대역을 쓴다.
+  int resultNotificationIdFor(Race race, int sessionIndex) {
+    return 270000 + race.round * 10 + sessionIndex;
   }
 
   List<ScheduledSessionNotification> _buildRaceNotifications({
@@ -152,26 +214,49 @@ class SessionNotificationPlanner {
       final sessionStart = _sessionStartAt(race, session);
       if (sessionStart == null) continue;
 
-      final reminderAt = sessionStart.subtract(sessionNotificationLeadTime);
-      if (!reminderAt.isAfter(nowKst)) continue;
+      final reminderAt = sessionStart.subtract(preferences.leadTime);
+      if (reminderAt.isAfter(nowKst)) {
+        notifications.add(
+          ScheduledSessionNotification(
+            id: notificationIdFor(race, index),
+            raceId: race.id,
+            sessionId: session.id,
+            category: category,
+            title: category == SessionCategory.race
+                ? '비아 포뮬러 레이스 알림'
+                : '비아 포뮬러 세션 알림',
+            // 비정확 알람으로 폴백되거나 기기 정책으로 표시가 늦어져도
+            // "30분 뒤"처럼 잘못된 정보를 주지 않도록 절대 시각을 표시한다.
+            body:
+                '${race.nameKo} ${session.label} 시작: '
+                '${_formatSessionStart(sessionStart)}',
+            scheduledAt: reminderAt,
+          ),
+        );
+      }
 
-      notifications.add(
-        ScheduledSessionNotification(
-          id: notificationIdFor(race, index),
-          raceId: race.id,
-          sessionId: session.id,
-          category: category,
-          title: category == SessionCategory.race
-              ? '비아 포뮬러 레이스 알림'
-              : '비아 포뮬러 세션 알림',
-          // 비정확 알람으로 폴백되거나 기기 정책으로 표시가 늦어져도
-          // "30분 뒤"처럼 잘못된 정보를 주지 않도록 절대 시각을 표시한다.
-          body:
-              '${race.nameKo} ${session.label} 시작: '
-              '${_formatSessionStart(sessionStart)}',
-          scheduledAt: reminderAt,
-        ),
-      );
+      if (preferences.resultReminders) {
+        final resultAt = tz.TZDateTime.from(
+          getSessionEndDate(race, session),
+          _location,
+        ).add(resultReminderDelay);
+        if (resultAt.isAfter(nowKst)) {
+          notifications.add(
+            ScheduledSessionNotification(
+              id: resultNotificationIdFor(race, index),
+              raceId: race.id,
+              sessionId: session.id,
+              category: category,
+              kind: SessionNotificationKind.result,
+              title: '비아 포뮬러 결과 알림',
+              // 결과 내용을 모르는 로컬 알림이고, 녹화 시청자를 위해 순위는
+              // 일부러 넣지 않는다.
+              body: '${race.nameKo} ${session.label} 결과가 나왔어요.',
+              scheduledAt: resultAt,
+            ),
+          );
+        }
+      }
     }
 
     return notifications;
@@ -239,7 +324,7 @@ class FlutterSessionNotificationScheduler
       AndroidNotificationDetails(
         'fmk_session_reminders',
         '세션 알림',
-        channelDescription: '그랑프리 세션 시작 30분 전 알림',
+        channelDescription: '그랑프리 세션 시작 전·결과 알림',
         icon: androidNotificationIcon,
         importance: Importance.high,
         priority: Priority.high,

@@ -423,6 +423,113 @@ void main() {
       expect(scheduler.cancelledIds, isNotEmpty);
     });
   });
+
+  group('알림 세분화(시점·결과·GP 끄기)', () {
+    final planner = SessionNotificationPlanner();
+    final now = DateTime.utc(2026, 6, 30);
+    const raceOnly = NotificationPreferences(
+      categories: {SessionCategory.race},
+    );
+
+    test('알림 시점을 고른 만큼 앞당긴다', () {
+      final at15 = planner
+          .buildSchedule(
+            races: [_futureRace()],
+            preferences: raceOnly.copyWith(leadMinutes: 15),
+            now: now,
+          )
+          .single
+          .scheduledAt;
+      final at60 = planner
+          .buildSchedule(
+            races: [_futureRace()],
+            preferences: raceOnly.copyWith(leadMinutes: 60),
+            now: now,
+          )
+          .single
+          .scheduledAt;
+      // 레이스 7월 3일 15:00 KST.
+      expect((at15.hour, at15.minute), (14, 45));
+      expect((at60.hour, at60.minute), (14, 0));
+    });
+
+    test('결과 알림은 예상 종료 후에 스포일러 없이 보낸다', () {
+      final notifications = planner.buildSchedule(
+        races: [_futureRace()],
+        preferences: raceOnly.copyWith(resultReminders: true),
+        now: now,
+      );
+      expect(notifications, hasLength(2));
+      final result = notifications.firstWhere(
+        (n) => n.kind == SessionNotificationKind.result,
+      );
+      // 레이스 15:00 + 120분 + 5분.
+      expect((result.scheduledAt.hour, result.scheduledAt.minute), (17, 5));
+      expect(result.body, '테스트 그랑프리 레이스 결과가 나왔어요.');
+      expect(result.id, isNot(notifications.first.id));
+      expect(
+        planner.allNotificationIds([_futureRace()]),
+        containsAll(notifications.map((n) => n.id)),
+      );
+    });
+
+    test('끈 그랑프리는 건너뛰고 다음 GP 로 창을 채운다', () {
+      final notifications = planner.buildSchedule(
+        races: _futureRaceWindow(),
+        preferences: raceOnly.withRaceMuted('test-1-2026', true),
+        now: now,
+      );
+      expect(notifications.map((n) => n.raceId), [
+        'test-2-2026',
+        'test-3-2026',
+        'test-4-2026',
+      ]);
+    });
+
+    test('저장소가 새 옵션을 저장·복원하고 잘못된 시점은 기본값으로', () async {
+      SharedPreferences.setMockInitialValues({});
+      const store = SharedPreferencesNotificationSettingsStore();
+      await store.save(
+        raceOnly
+            .copyWith(leadMinutes: 15, resultReminders: true)
+            .withRaceMuted('test-1-2026', true),
+      );
+      final loaded = await store.load();
+      expect(loaded.leadMinutes, 15);
+      expect(loaded.resultReminders, isTrue);
+      expect(loaded.mutedRaceIds, {'test-1-2026'});
+
+      SharedPreferences.setMockInitialValues({'notification_lead_minutes': 7});
+      expect((await store.load()).leadMinutes, defaultNotificationLeadMinutes);
+    });
+
+    test('시점만 바꿀 땐 권한을 다시 묻지 않는다', () async {
+      final store = _MemoryNotificationSettingsStore()..preferences = raceOnly;
+      final scheduler = _CountingScheduler();
+      final controller = NotificationSettingsController(
+        store: store,
+        scheduler: scheduler,
+        races: [_futureRace()],
+        now: () => DateTime.utc(2026, 6, 30),
+      );
+      await controller.apply(raceOnly.copyWith(leadMinutes: 5));
+      expect(scheduler.permissionRequests, 0);
+      await controller.apply(
+        raceOnly.withCategory(SessionCategory.qualifying, true),
+      );
+      expect(scheduler.permissionRequests, 1);
+    });
+  });
+}
+
+class _CountingScheduler extends _FakeScheduler {
+  int permissionRequests = 0;
+
+  @override
+  Future<bool> requestPermission() async {
+    permissionRequests++;
+    return true;
+  }
 }
 
 List<Race> _futureRaceWindow() {

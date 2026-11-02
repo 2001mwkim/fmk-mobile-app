@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_version.dart';
+import '../data/races.dart' as race_data;
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -382,16 +383,16 @@ class _NotificationCardState extends State<_NotificationCard> {
     });
   }
 
-  Future<void> _update(SessionCategory category, bool enabled) async {
+  Future<void> _apply(
+    NotificationPreferences next, {
+    bool announce = true,
+  }) async {
     if (_saving) return;
     setState(() => _saving = true);
 
     NotificationSettingsUpdateResult result;
     try {
-      result = await notificationSettingsController.update(
-        category: category,
-        enabled: enabled,
-      );
+      result = await notificationSettingsController.apply(next);
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -407,6 +408,8 @@ class _NotificationCardState extends State<_NotificationCard> {
 
     if (result.permissionDenied) {
       _showSnackBar(context, '알림 권한이 꺼져 있어 알림을 켤 수 없습니다.');
+    } else if (!announce) {
+      return;
     } else if (result.preferences.hasAnyEnabled) {
       _showSnackBar(context, '알림 예약을 업데이트했습니다.');
     } else {
@@ -414,57 +417,185 @@ class _NotificationCardState extends State<_NotificationCard> {
     }
   }
 
+  void _toggle(SessionCategory category, bool enabled) =>
+      _apply(_preferences.withCategory(category, enabled));
+
   @override
   Widget build(BuildContext context) {
+    final lead = _preferences.leadMinutes;
+    final enabled = !_loading && !_saving;
     return AppCard(
       padding: EdgeInsets.zero,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(18, 18, 18, 14),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
               child: _CardHeaderRow(
                 title: '알림 설정',
-                description: '한국시간 기준 세션 시작 30분 전에 로컬 알림을 보냅니다.',
+                description: '한국시간 기준 세션 시작 $lead분 전에 로컬 알림을 보냅니다.',
                 badge: '로컬 알림',
               ),
             ),
             const _RowDivider(),
             _NotificationToggleRow(
               title: '프랙티스',
-              description: 'FP1, FP2, FP3 시작 30분 전에 알림',
+              description: 'FP1, FP2, FP3 시작 $lead분 전에 알림',
               value: _preferences.contains(SessionCategory.practice),
-              enabled: !_loading && !_saving,
-              onChanged: (value) => _update(SessionCategory.practice, value),
+              enabled: enabled,
+              onChanged: (value) => _toggle(SessionCategory.practice, value),
             ),
             const _RowDivider(),
             _NotificationToggleRow(
               title: '퀄리파잉',
-              description: '퀄리파잉 시작 30분 전에 알림',
+              description: '퀄리파잉 시작 $lead분 전에 알림',
               value: _preferences.contains(SessionCategory.qualifying),
-              enabled: !_loading && !_saving,
-              onChanged: (value) => _update(SessionCategory.qualifying, value),
+              enabled: enabled,
+              onChanged: (value) => _toggle(SessionCategory.qualifying, value),
             ),
             const _RowDivider(),
             _NotificationToggleRow(
               title: '스프린트',
-              description: '스프린트 퀄리파잉·스프린트 시작 30분 전에 알림',
+              description: '스프린트 퀄리파잉·스프린트 시작 $lead분 전에 알림',
               value: _preferences.contains(SessionCategory.sprint),
-              enabled: !_loading && !_saving,
-              onChanged: (value) => _update(SessionCategory.sprint, value),
+              enabled: enabled,
+              onChanged: (value) => _toggle(SessionCategory.sprint, value),
             ),
             const _RowDivider(),
             _NotificationToggleRow(
               title: '레이스',
-              description: '레이스 시작 30분 전에 알림',
+              description: '레이스 시작 $lead분 전에 알림',
               value: _preferences.contains(SessionCategory.race),
-              enabled: !_loading && !_saving,
-              onChanged: (value) => _update(SessionCategory.race, value),
+              enabled: enabled,
+              onChanged: (value) => _toggle(SessionCategory.race, value),
             ),
+            const _RowDivider(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '알림 시점',
+                    style: AppType.headline.copyWith(color: AppColors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<int>(
+                      segments: [
+                        for (final minutes in notificationLeadMinuteOptions)
+                          ButtonSegment<int>(
+                            value: minutes,
+                            label: Text(
+                              minutes == 60 ? '1시간 전' : '$minutes분 전',
+                            ),
+                          ),
+                      ],
+                      selected: {lead},
+                      showSelectedIcon: false,
+                      onSelectionChanged: enabled
+                          ? (selection) => _apply(
+                              _preferences.copyWith(
+                                leadMinutes: selection.first,
+                              ),
+                            )
+                          : null,
+                      style: const ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const _RowDivider(),
+            _NotificationToggleRow(
+              title: '결과 알림',
+              description: '켠 세션이 끝나면 결과가 나왔다고 알려요. 순위는 알림에 넣지 않아요.',
+              value: _preferences.resultReminders,
+              enabled: enabled,
+              onChanged: (value) =>
+                  _apply(_preferences.copyWith(resultReminders: value)),
+            ),
+            if (_preferences.hasAnyEnabled) ...[
+              const _RowDivider(),
+              _GrandPrixMuteList(
+                preferences: _preferences,
+                enabled: enabled,
+                onChanged: (raceId, on) => _apply(
+                  _preferences.withRaceMuted(raceId, !on),
+                  announce: false,
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 다가오는 그랑프리별 알림 켜기/끄기. 새벽 GP 하나만 끄고 싶을 때 쓴다.
+class _GrandPrixMuteList extends StatelessWidget {
+  const _GrandPrixMuteList({
+    required this.preferences,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final NotificationPreferences preferences;
+  final bool enabled;
+  final void Function(String raceId, bool on) onChanged;
+
+  /// 목록 길이. 알림은 다음 3개 GP 까지만 예약되므로 그보다 조금 넉넉히.
+  static const int _visibleCount = 6;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final upcoming = race_data.races
+        .where((race) {
+          if (race.isCancelled) return false;
+          final end = race_data.getRaceWeekendEndDate(race);
+          return end != null && end.isAfter(now);
+        })
+        .take(_visibleCount)
+        .toList();
+    if (upcoming.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+          child: Text(
+            '그랑프리별 알림',
+            style: AppType.headline.copyWith(color: AppColors.white),
+          ),
+        ),
+        for (final race in upcoming)
+          SwitchListTile.adaptive(
+            key: ValueKey('gp-notification-${race.id}'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+            title: Text(
+              race.nameKo,
+              style: AppType.body.copyWith(color: AppColors.white),
+            ),
+            subtitle: Text(
+              '${race.startDate.substring(5).replaceAll('-', '.')} ~ '
+              '${race.endDate.substring(5).replaceAll('-', '.')}',
+              style: AppType.caption.copyWith(
+                color: AppColors.textMuted,
+                fontFeatures: AppType.tabular,
+              ),
+            ),
+            value: !preferences.isRaceMuted(race.id),
+            onChanged: enabled ? (on) => onChanged(race.id, on) : null,
+          ),
+        const SizedBox(height: 6),
+      ],
     );
   }
 }

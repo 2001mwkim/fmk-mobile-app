@@ -12,6 +12,11 @@ String _categoryKey(SessionCategory category) =>
 const String _legacyAllSessionsKey = 'notification_all_sessions_30m';
 const String _legacyRaceOnlyKey = 'notification_race_only_30m';
 
+// 2026-11 세분화: 알림 시점·결과 알림·GP별 끄기.
+const String _leadMinutesKey = 'notification_lead_minutes';
+const String _resultRemindersKey = 'notification_result_reminders';
+const String _mutedRacesKey = 'notification_muted_races';
+
 abstract class NotificationSettingsStore {
   Future<NotificationPreferences> load();
   Future<void> save(NotificationPreferences preferences);
@@ -24,6 +29,14 @@ class SharedPreferencesNotificationSettingsStore
   @override
   Future<NotificationPreferences> load() async {
     final prefs = await SharedPreferences.getInstance();
+    final storedLead = prefs.getInt(_leadMinutesKey);
+    final options = NotificationPreferences(
+      leadMinutes: notificationLeadMinuteOptions.contains(storedLead)
+          ? storedLead!
+          : defaultNotificationLeadMinutes,
+      resultReminders: prefs.getBool(_resultRemindersKey) ?? false,
+      mutedRaceIds: (prefs.getStringList(_mutedRacesKey) ?? const []).toSet(),
+    );
 
     // 신형 키가 하나라도 있으면 신형으로 로드.
     final hasNew = SessionCategory.values.any(
@@ -34,21 +47,19 @@ class SharedPreferencesNotificationSettingsStore
         for (final category in SessionCategory.values)
           if (prefs.getBool(_categoryKey(category)) ?? false) category,
       };
-      return NotificationPreferences(categories: categories);
+      return options.copyWith(categories: categories);
     }
 
     // 레거시(전체/레이스만) → 카테고리로 1회 마이그레이션.
     final legacyAll = prefs.getBool(_legacyAllSessionsKey) ?? false;
     final legacyRaceOnly = prefs.getBool(_legacyRaceOnlyKey) ?? false;
     if (legacyAll) {
-      return NotificationPreferences(
-        categories: SessionCategory.values.toSet(),
-      );
+      return options.copyWith(categories: SessionCategory.values.toSet());
     }
     if (legacyRaceOnly) {
-      return const NotificationPreferences(categories: {SessionCategory.race});
+      return options.copyWith(categories: {SessionCategory.race});
     }
-    return const NotificationPreferences();
+    return options;
   }
 
   @override
@@ -60,6 +71,12 @@ class SharedPreferencesNotificationSettingsStore
         preferences.contains(category),
       );
     }
+    await prefs.setInt(_leadMinutesKey, preferences.leadMinutes);
+    await prefs.setBool(_resultRemindersKey, preferences.resultReminders);
+    await prefs.setStringList(
+      _mutedRacesKey,
+      preferences.mutedRaceIds.toList()..sort(),
+    );
     // 혼선 방지를 위해 레거시 키는 제거한다.
     await prefs.remove(_legacyAllSessionsKey);
     await prefs.remove(_legacyRaceOnlyKey);
@@ -104,16 +121,27 @@ class NotificationSettingsController {
     required bool enabled,
   }) async {
     final current = await _store.load();
-    final next = current.withCategory(category, enabled);
+    return apply(current.withCategory(category, enabled));
+  }
+
+  /// 설정 전체를 한 번에 적용한다(온보딩·시점/결과 알림/GP 끄기 변경).
+  /// 새로 켜지는 카테고리가 있을 때만 권한을 요청한다 — 시점만 바꿀 때마다
+  /// 권한 팝업이 뜨면 안 된다.
+  Future<NotificationSettingsUpdateResult> apply(
+    NotificationPreferences next,
+  ) async {
+    final current = await _store.load();
+    final enabling = next.categories.difference(current.categories).isNotEmpty;
 
     // 켤 때만 권한을 확인한다(끄기만 할 땐 불필요). 거부되면 전부 끈다.
-    if (enabled) {
+    if (enabling) {
       final granted = await _scheduler.requestPermission();
       if (!granted) {
-        const disabled = NotificationPreferences();
+        // 카테고리만 끄고 시점·결과 알림·GP 끄기 선택은 남긴다.
+        final disabled = next.copyWith(categories: const {});
         await _store.save(disabled);
         await _cancelAll();
-        return const NotificationSettingsUpdateResult(
+        return NotificationSettingsUpdateResult(
           preferences: disabled,
           scheduledCount: 0,
           permissionDenied: true,
