@@ -11,6 +11,7 @@ import '../models/gp_guide.dart';
 import '../models/race.dart';
 import '../models/race_result.dart';
 import '../models/race_session.dart';
+import '../services/polls_repository.dart';
 import '../services/race_results_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
@@ -19,6 +20,7 @@ import '../widgets/app_chip.dart';
 import '../widgets/circuit_map.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/race_live_classification_panel.dart';
+import '../widgets/race_polls_card.dart';
 import '../widgets/race_result_classification_panel.dart';
 import '../widgets/share_card.dart';
 
@@ -34,12 +36,16 @@ class RaceDetailScreen extends StatefulWidget {
     super.key,
     required this.race,
     this.resultsRepository,
+    this.pollsRepository,
   });
 
   final Race race;
 
   /// 테스트/개발용 주입 지점. 기본값은 실서버(/api/race-results).
   final RaceResultsRepository? resultsRepository;
+
+  /// 테스트용 팬 투표 저장소 주입 지점. 기본값은 collector(Cloudflare).
+  final PollsRepository? pollsRepository;
 
   @override
   State<RaceDetailScreen> createState() => _RaceDetailScreenState();
@@ -137,6 +143,11 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
                   onPressed: () => _shareResults(results, 'RACE', null),
                 ),
               ],
+            ],
+            // 팬 투표: 서버가 이 GP 를 모르거나 실패하면 카드가 스스로 숨는다.
+            if (!race.isCancelled) ...[
+              const SizedBox(height: 12),
+              RacePollsCard(race: race, repository: widget.pollsRepository),
             ],
             const SizedBox(height: 12),
             _SessionScheduleCard(race: race),
