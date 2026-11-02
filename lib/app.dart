@@ -8,14 +8,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/live_center_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/standings_screen.dart';
 import 'services/app_theme_controller.dart';
 import 'services/fmk_home_widget_bridge.dart';
-import 'services/notification_service.dart';
 import 'services/app_update_service.dart';
 import 'services/error_reporting.dart';
-import 'services/notification_settings_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav.dart';
@@ -71,6 +70,8 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   // 첫 실행 알림 권유를 1회만 노출하기 위한 shared_preferences 키.
   static const String _notifPromptKey = 'notif_optin_prompted_v1';
+  // 첫 실행 온보딩 완료 여부(2026-11 알림 권유 팝업을 대체).
+  static const String _onboardingKey = 'onboarding_completed_v1';
 
   int _currentIndex = 0;
   StreamSubscription<Uri?>? _widgetClickSub;
@@ -109,8 +110,8 @@ class _MainShellState extends State<MainShell> {
     }
     if (widget.runStartupPrompts) {
       WidgetsBinding.instance.addPostFrameCallback(
-        // 두 팝업이 겹치지 않게 순차: 알림 권유 → 업데이트 권장.
-        (_) => _maybePromptNotificationOptIn().then(
+        // 겹치지 않게 순차: 첫 실행 온보딩 → 업데이트 권장.
+        (_) => _maybeRunOnboarding().then(
           (_) => _maybePromptAppUpdate(),
         ),
       );
@@ -168,53 +169,32 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  /// 첫 실행 시 세션 알림을 켤지 1회 물어본다. 지금까지는 사용자가 설정에
-  /// 들어가 토글해야만 권한을 요청해, 대다수가 알림을 못 받았다. 맥락을 먼저
-  /// 보여준 뒤 권한을 요청하는 Android 권장 방식.
-  Future<void> _maybePromptNotificationOptIn() async {
+  /// 첫 실행이면 온보딩(소개 → MY PICKS → 알림)을 1회 띄운다.
+  ///
+  /// 종전의 알림 권유 팝업(`_notifPromptKey`)을 대체한다. 그 팝업을 이미 본
+  /// 기존 사용자에겐 온보딩을 보여주지 않는다 — 업데이트 직후 갑자기 소개
+  /// 화면이 뜨면 새 앱을 깐 것처럼 어색하다.
+  Future<void> _maybeRunOnboarding() async {
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      if (!mounted) return;
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool(_notifPromptKey) ?? false) return;
-
-      // 이미 알림을 켠 사용자에겐 다시 묻지 않는다.
-      final current = await notificationSettingsController.load();
-      if (current.hasAnyEnabled) {
-        await prefs.setBool(_notifPromptKey, true);
+      if (prefs.getBool(_onboardingKey) ?? false) return;
+      if (prefs.getBool(_notifPromptKey) ?? false) {
+        await prefs.setBool(_onboardingKey, true);
         return;
       }
       if (!mounted) return;
-
-      final wantsOn = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => _NotificationOptInDialog(
-          onLater: () => Navigator.of(dialogContext).pop(false),
-          onEnable: () => Navigator.of(dialogContext).pop(true),
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => const OnboardingScreen(),
         ),
       );
-
+      // 중간에 앱이 종료되면 다음 실행에 다시 보여주도록 끝난 뒤에 기록한다.
+      await prefs.setBool(_onboardingKey, true);
       await prefs.setBool(_notifPromptKey, true);
-      if (wantsOn != true || !mounted) return;
-
-      final result = await notificationSettingsController.update(
-        category: SessionCategory.race,
-        enabled: true,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(
-            result.permissionDenied
-                ? '알림 권한이 거부되어 켜지 못했어요. 설정에서 다시 켤 수 있어요.'
-                : '레이스 시작 알림을 켰어요.',
-          ),
-        ),
-      );
     } catch (error, stackTrace) {
-      // shared_preferences/알림 플러그인 미가용(테스트 등) — 사용자에겐 조용히 넘긴다.
-      reportSilentFailure('notification_opt_in', error, stackTrace);
+      // shared_preferences 미가용(테스트 등) — 사용자에겐 조용히 넘긴다.
+      reportSilentFailure('onboarding', error, stackTrace);
     }
   }
 
@@ -408,136 +388,6 @@ class _AppUpdateDialog extends StatelessWidget {
                           icon: const Icon(Icons.open_in_new_rounded, size: 18),
                           label: const Text(
                             '업데이트',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationOptInDialog extends StatelessWidget {
-  const _NotificationOptInDialog({
-    required this.onLater,
-    required this.onEnable,
-  });
-
-  final VoidCallback onLater;
-  final VoidCallback onEnable;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.heroGradTop, AppColors.card],
-          ),
-          border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.2)),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 28,
-              offset: Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -42,
-              top: -54,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.heroAccent.withValues(alpha: 0.07),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.heroAccent.withValues(alpha: 0.12),
-                      border: Border.all(color: AppColors.heroAccent.withValues(alpha: 0.3)),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Icon(
-                      Icons.notifications_active_outlined,
-                      color: AppColors.heroAccentBright,
-                      size: 25,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    '레이스 시작을 놓치지 마세요',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 20,
-                      height: 1.3,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '레이스 시작 30분 전에 알림을 보내드려요.',
-                    style: TextStyle(
-                      color: AppColors.nameMuted,
-                      fontSize: 13,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: onLater,
-                        child: Text(
-                          '다음에',
-                          style: TextStyle(color: AppColors.muted),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.red,
-                            foregroundColor: AppColors.onAccent,
-                            minimumSize: const Size(0, 46),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: onEnable,
-                          icon: const Icon(
-                            Icons.notifications_none_rounded,
-                            size: 18,
-                          ),
-                          label: const Text(
-                            '레이스 알림 켜기',
                             style: TextStyle(fontWeight: FontWeight.w800),
                           ),
                         ),
