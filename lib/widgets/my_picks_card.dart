@@ -413,10 +413,23 @@ class MyDriverPickerSheet extends StatelessWidget {
     super.key,
     required this.current,
     required this.drivers,
+    this.title = 'MY DRIVER',
+    this.subtitle = '응원하는 드라이버를 고르세요',
+    this.allowClear = true,
+    this.includeUnranked = true,
   });
 
   final String? current;
   final List<DriverStanding> drivers;
+
+  /// 드라이버 상세의 맞대결 상대 고르기에서도 재사용한다.
+  final String title;
+  final String subtitle;
+  final bool allowClear;
+
+  /// 순위 데이터에 없는(코드 매핑만 있는) 드라이버도 뒤에 붙일지. 맞대결처럼
+  /// 결과가 있어야 의미 있는 선택에서는 끈다.
+  final bool includeUnranked;
 
   @override
   Widget build(BuildContext context) {
@@ -429,14 +442,16 @@ class MyDriverPickerSheet extends StatelessWidget {
       seen.add(code);
       entries.add(_DriverEntry(code: code, standing: d));
     }
-    for (final code in driverNameKoByCode.keys) {
-      if (!seen.contains(code)) entries.add(_DriverEntry(code: code));
+    if (includeUnranked) {
+      for (final code in driverNameKoByCode.keys) {
+        if (!seen.contains(code)) entries.add(_DriverEntry(code: code));
+      }
     }
 
     return _PickerScaffold(
-      title: 'MY DRIVER',
-      subtitle: '응원하는 드라이버를 고르세요',
-      canClear: current != null,
+      title: title,
+      subtitle: subtitle,
+      canClear: allowClear && current != null,
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

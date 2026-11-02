@@ -70,8 +70,9 @@ void main() {
     expect(find.byType(DriverDetailScreen), findsOneWidget);
     // 2026-10 재설계: 사진 헤더 → 성적 한 줄 → 라운드별 포인트 → 맞대결 → 시즌 결과.
     expect(find.byType(DetailHero), findsOneWidget);
-    expect(find.text('우승'), findsOneWidget);
-    expect(find.text('포디움'), findsOneWidget);
+    // 성적 한 줄 + 맞대결 카드(2026-11 H2H 에 우승·포디움 줄 추가).
+    expect(find.text('우승'), findsWidgets);
+    expect(find.text('포디움'), findsWidgets);
     expect(find.byType(SeasonPointsCard), findsOneWidget);
     expect(find.text('라운드별 포인트'), findsNothing);
     expect(find.text('드라이버 상세 · 2026 SEASON'), findsNothing);
@@ -85,6 +86,30 @@ void main() {
     expect(find.text('Photo credits'), findsOneWidget);
     expect(find.text('Photo: Yu Chu Chin · CC BY-SA 4.0'), findsOneWidget);
     expect(find.textContaining('Cropped'), findsNothing);
+  });
+
+  testWidgets('맞대결 상대를 팀메이트에서 다른 드라이버로 바꿀 수 있다', (tester) async {
+    await pumpStandings(tester);
+    await tester.tap(find.text('키미 안토넬리'));
+    await tester.pumpAndSettle();
+
+    final change = find.byKey(const ValueKey('h2h-change-rival'));
+    await tester.scrollUntilVisible(
+      change,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(change);
+    await tester.pumpAndSettle();
+    expect(find.text('맞대결 상대'), findsOneWidget);
+    // 자기 자신은 목록에 없다.
+    expect(find.byKey(const ValueKey('pick-driver-ANT')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('pick-driver-NOR')));
+    await tester.pumpAndSettle();
+    expect(find.text('팀메이트 맞대결'), findsNothing);
+    expect(find.text('맞대결'), findsOneWidget);
+    expect(find.byKey(const ValueKey('teammate-랜도 노리스')), findsOneWidget);
   });
 
   testWidgets('constructor row opens the redesigned detail and driver links', (

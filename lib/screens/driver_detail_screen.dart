@@ -15,6 +15,7 @@ import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/flag_icon.dart';
 import '../widgets/glass.dart';
+import '../widgets/my_picks_card.dart';
 import '../widgets/standing_detail_parts.dart';
 import 'race_detail_screen.dart';
 
@@ -44,6 +45,49 @@ class DriverDetailScreen extends StatefulWidget {
 class _DriverDetailScreenState extends State<DriverDetailScreen> {
   SeasonRaceResults? _seasonResults;
 
+  /// 맞대결 상대(driverKo). null 이면 팀메이트. 사용자가 그리드 어느
+  /// 드라이버와도 비교할 수 있게 한다(2026-11 H2H).
+  String? _rivalKo;
+
+  Future<void> _pickRival(DriverStanding current) async {
+    final result = await showModalBottomSheet<MyPickResult>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => MyDriverPickerSheet(
+        current: driverCodeByNameKo[current.driverKo],
+        // 자기 자신은 상대로 고를 수 없다.
+        drivers: [
+          for (final driver in widget.allDrivers)
+            if (driver.driverKo != widget.standing.driverKo) driver,
+        ],
+        title: '맞대결 상대',
+        subtitle: '비교할 드라이버를 고르세요',
+        allowClear: false,
+        includeUnranked: false,
+      ),
+    );
+    final code = result?.value;
+    if (code == null || !mounted) return;
+    final picked = widget.allDrivers.where(
+      (driver) => driverCodeByNameKo[driver.driverKo] == code,
+    );
+    if (picked.isEmpty || picked.first.driverKo == widget.standing.driverKo) {
+      return;
+    }
+    setState(() => _rivalKo = picked.first.driverKo);
+  }
+
+  DriverStanding? _rival() {
+    final chosen = _rivalKo;
+    if (chosen != null) {
+      for (final driver in widget.allDrivers) {
+        if (driver.driverKo == chosen) return driver;
+      }
+    }
+    return _teammate();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +114,7 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
     final profile = driverProfilesByCode[code];
     final accent = liveDriverAccent(code);
     final teammate = _teammate();
+    final rival = _rival();
     final leader = widget.allDrivers.isEmpty
         ? standing
         : widget.allDrivers.first;
@@ -123,18 +168,21 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
             ),
           ),
         ),
-        if (teammate != null)
+        if (rival != null)
           DetailSection(
-            title: '팀메이트 맞대결',
-            child: _TeammateHeadToHead(
+            title: rival.driverKo == teammate?.driverKo ? '팀메이트 맞대결' : '맞대결',
+            child: _HeadToHeadCard(
               driver: standing,
-              teammate: teammate,
+              rival: rival,
               accent: accent,
               raceResults: raceResults,
               qualifyingResults: qualifyingResults,
-              onOpenTeammate: widget.onOpenDriver == null
+              onOpenRival: widget.onOpenDriver == null
                   ? null
-                  : () => widget.onOpenDriver!(teammate),
+                  : () => widget.onOpenDriver!(rival),
+              onChangeRival: widget.allDrivers.length > 2
+                  ? () => _pickRival(rival)
+                  : null,
             ),
           ),
         if (_profileRows(code, profile?.nationalityKo) case final rows
@@ -248,50 +296,61 @@ class _DriverIdentity extends StatelessWidget {
   }
 }
 
-/// 팀메이트 맞대결 카드. 포인트·레이스는 늘 보이고, 퀄리는 서버 세션 결과가
-/// 있을 때만(번들 정적 데이터엔 퀄리가 없다).
-class _TeammateHeadToHead extends StatelessWidget {
-  const _TeammateHeadToHead({
+//// 맞대결 카드(기본 상대는 팀메이트, '상대 바꾸기' 로 그리드 누구와도).
+/// 포인트·우승·포디움·레이스는 늘 보이고, 퀄리는 서버 세션 결과가 있을 때만
+/// (번들 정적 데이터엔 퀄리가 없다). 0:0 인 줄은 정보가 없어 뺀다.
+class _HeadToHeadCard extends StatelessWidget {
+  const _HeadToHeadCard({
     required this.driver,
-    required this.teammate,
+    required this.rival,
     required this.accent,
     required this.raceResults,
     required this.qualifyingResults,
-    required this.onOpenTeammate,
+    required this.onOpenRival,
+    required this.onChangeRival,
   });
 
   final DriverStanding driver;
-  final DriverStanding teammate;
+  final DriverStanding rival;
   final Color accent;
   final Map<String, List<RaceResultEntry>> raceResults;
   final Map<String, List<RaceResultEntry>> qualifyingResults;
-  final VoidCallback? onOpenTeammate;
+  final VoidCallback? onOpenRival;
+  final VoidCallback? onChangeRival;
 
   @override
   Widget build(BuildContext context) {
     final race = headToHead(
       driver.driverKo,
-      teammate.driverKo,
+      rival.driverKo,
       resultsByRaceId: raceResults,
     );
     final qualifying = headToHead(
       driver.driverKo,
-      teammate.driverKo,
+      rival.driverKo,
       resultsByRaceId: qualifyingResults,
+    );
+    final mine = driverSeasonSummary(
+      driver.driverKo,
+      resultsByRaceId: raceResults,
+    );
+    final theirs = driverSeasonSummary(
+      rival.driverKo,
+      resultsByRaceId: raceResults,
     );
     final rivalName = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
           child: Text(
-            teammate.driverKo,
+            rival.driverKo,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
             style: AppType.headline.copyWith(color: AppColors.textMuted),
           ),
         ),
-        if (onOpenTeammate != null)
+        if (onOpenRival != null)
           Icon(
             Icons.chevron_right_rounded,
             size: 18,
@@ -319,11 +378,11 @@ class _TeammateHeadToHead extends StatelessWidget {
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: onOpenTeammate == null
+                  child: onOpenRival == null
                       ? rivalName
                       : AppPressable(
-                          key: ValueKey('teammate-${teammate.driverKo}'),
-                          onTap: onOpenTeammate,
+                          key: ValueKey('teammate-${rival.driverKo}'),
+                          onTap: onOpenRival,
                           child: rivalName,
                         ),
                 ),
@@ -334,11 +393,25 @@ class _TeammateHeadToHead extends StatelessWidget {
           HeadToHeadRow(
             label: '포인트',
             left: driver.points,
-            right: teammate.points,
+            right: rival.points,
             leftText: formatDetailPoints(driver.points),
-            rightText: formatDetailPoints(teammate.points),
+            rightText: formatDetailPoints(rival.points),
             leftColor: accent,
           ),
+          if (mine.wins + theirs.wins > 0)
+            HeadToHeadRow(
+              label: '우승',
+              left: mine.wins,
+              right: theirs.wins,
+              leftColor: accent,
+            ),
+          if (mine.podiums + theirs.podiums > 0)
+            HeadToHeadRow(
+              label: '포디움',
+              left: mine.podiums,
+              right: theirs.podiums,
+              leftColor: accent,
+            ),
           if (race.total > 0)
             HeadToHeadRow(
               label: '레이스',
@@ -353,13 +426,30 @@ class _TeammateHeadToHead extends StatelessWidget {
               right: qualifying.losses,
               leftColor: accent,
             ),
+          if (onChangeRival != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                key: const ValueKey('h2h-change-rival'),
+                onPressed: onChangeRival,
+                icon: Icon(
+                  Icons.swap_horiz_rounded,
+                  size: 16,
+                  color: AppColors.textMuted,
+                ),
+                label: Text(
+                  '상대 바꾸기',
+                  style: AppType.subhead.copyWith(color: AppColors.textMuted),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-/// 시즌 전체 결과(최신 라운드부터). 탭하면 GP 상세.
+// 시즌 전체 결과(최신 라운드부터). 탭하면 GP 상세.
 class _SeasonResultsList extends StatelessWidget {
   const _SeasonResultsList({required this.forms});
 
