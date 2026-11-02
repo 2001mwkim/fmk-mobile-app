@@ -16,6 +16,7 @@ import '../widgets/app_card.dart';
 import '../widgets/broadcast_sync_sheet.dart';
 import '../widgets/classification_panel_parts.dart';
 import '../widgets/flag_icon.dart';
+import '../widgets/live_gap_chart.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/live_team_radio_card.dart';
 import '../widgets/live_track_map.dart';
@@ -705,6 +706,11 @@ class _LiveContent extends StatelessWidget {
         LiveTrackMapCard(snapshot: snapshot, delaySeconds: delaySeconds),
         const SizedBox(height: 12),
         _TimingCard(snapshot: snapshot),
+        // 갭 추이는 레이스/스프린트에서만. 카드가 떠 있을 때만 30초 폴링한다.
+        if (LiveGapChartCard.appliesTo(snapshot)) ...[
+          const SizedBox(height: 12),
+          LiveGapChartCard(snapshot: snapshot, delaySeconds: delaySeconds),
+        ],
         // 팀 라디오도 늘 띄운다 — 무전이 없으면 빈 상태 안내.
         const SizedBox(height: 12),
         LiveTeamRadioCard(
