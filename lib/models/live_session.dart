@@ -123,6 +123,15 @@ class LiveSectorDetail {
   final List<int> segments;
 }
 
+/// 선두가 한 랩을 시작한 collector 수신 시각. 중계 싱크 맞추기에서 "중계 화면의
+/// 랩 카운터가 바뀐 순간" 과 비교해 영상 지연을 계산하는 기준점이다.
+class LiveLapStart {
+  const LiveLapStart({required this.lap, required this.at});
+
+  final int lap;
+  final DateTime at;
+}
+
 /// 이 세션의 스틴트 하나(타이어 컴파운드 + 사용 랩 수).
 class LiveStint {
   const LiveStint({this.compound, this.laps});
@@ -242,6 +251,7 @@ class LiveSessionSnapshot {
     this.qualifyingPart,
     this.currentLap,
     this.totalLaps,
+    this.recentLapStarts = const [],
     this.topThree = const [],
     this.classification = const [],
     this.countryFlag,
@@ -277,6 +287,10 @@ class LiveSessionSnapshot {
   final int? qualifyingPart;
   final int? currentLap;
   final int? totalLaps;
+
+  /// 최근 랩(최대 5개, 오름차순)의 시작 시각. 레이스/스프린트만 채워지고
+  /// 구버전 collector 에는 없다(빈 목록 → 랩 기준 싱크 맞추기 비활성).
+  final List<LiveLapStart> recentLapStarts;
   final List<LiveDriverPosition> topThree;
   final List<LiveDriverPosition> classification;
   final String? countryFlag;

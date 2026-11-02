@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/races.dart';
+import '../models/broadcast_sync.dart';
 import '../models/live_session.dart';
 import '../models/race_control_ko.dart';
 import '../models/race_session.dart';
@@ -12,6 +13,7 @@ import '../services/live_session_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
+import '../widgets/broadcast_sync_sheet.dart';
 import '../widgets/classification_panel_parts.dart';
 import '../widgets/flag_icon.dart';
 import '../widgets/live_session_builder.dart';
@@ -20,7 +22,10 @@ import '../widgets/live_track_map.dart';
 import '../widgets/app_ui.dart';
 
 const String _liveCenterDelayPrefsKey = 'live_center_delay_seconds';
-const int _maxLiveCenterDelaySeconds = 120;
+const int _maxLiveCenterDelaySeconds = kMaxBroadcastDelaySeconds;
+
+/// 싱크 맞추기로 마지막에 잰 '내 중계' 지연(초).
+const String _broadcastSyncPrefsKey = 'live_center_broadcast_sync_seconds';
 
 class LiveCenterScreen extends StatefulWidget {
   const LiveCenterScreen({super.key, this.snapshotOverride, this.nowOverride});
@@ -90,13 +95,33 @@ class _LiveCenterScreenState extends State<LiveCenterScreen> {
   }
 
   Future<void> _openDelayPicker() async {
-    final selected = await showModalBottomSheet<int>(
+    int? savedSync;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      savedSync = prefs.getInt(_broadcastSyncPrefsKey);
+    } catch (_) {
+      // 저장값 없이도 시트는 열린다.
+    }
+    if (!mounted) return;
+    final selected = await showModalBottomSheet<_DelayChoice>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.card,
-      builder: (context) => _LiveDelaySheet(initialSeconds: _delaySeconds),
+      builder: (context) => _LiveDelaySheet(
+        initialSeconds: _delaySeconds,
+        savedSyncSeconds: savedSync,
+      ),
     );
-    if (selected != null && mounted) _setDelay(selected);
+    if (selected == null || !mounted) return;
+    _setDelay(selected.seconds);
+    if (selected.measured) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt(_broadcastSyncPrefsKey, selected.seconds);
+      } catch (_) {
+        // 저장 실패해도 이번 시청엔 적용됐다.
+      }
+    }
   }
 
   @override
@@ -253,10 +278,22 @@ class _DelayPreparing extends StatelessWidget {
   }
 }
 
+/// 지연 시트의 선택 결과. [measured] 는 싱크 맞추기로 잰 값이라 '내 중계'
+/// 프리셋으로도 저장한다.
+class _DelayChoice {
+  const _DelayChoice(this.seconds, {this.measured = false});
+
+  final int seconds;
+  final bool measured;
+}
+
 class _LiveDelaySheet extends StatefulWidget {
-  const _LiveDelaySheet({required this.initialSeconds});
+  const _LiveDelaySheet({required this.initialSeconds, this.savedSyncSeconds});
 
   final int initialSeconds;
+
+  /// 마지막으로 잰 '내 중계' 지연. 한 번도 안 쟀으면 null.
+  final int? savedSyncSeconds;
 
   @override
   State<_LiveDelaySheet> createState() => _LiveDelaySheetState();
@@ -267,9 +304,25 @@ class _LiveDelaySheetState extends State<_LiveDelaySheet> {
 
   String get _label => _seconds == 0 ? '실시간' : '$_seconds초 지연';
 
+  Future<void> _openBroadcastSync() async {
+    final measured = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.card,
+      builder: (context) => BroadcastSyncSheet(
+        readSnapshot: () => liveSessionController.snapshot,
+        refresh: liveSessionController.refresh,
+      ),
+    );
+    if (measured != null && mounted) {
+      Navigator.pop(context, _DelayChoice(measured, measured: true));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const presets = <int>[0, 30, 60, 90];
+    final saved = widget.savedSyncSeconds;
     return SafeArea(
       top: false,
       child: Padding(
@@ -309,7 +362,22 @@ class _LiveDelaySheetState extends State<_LiveDelaySheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
+            // 쿠팡플레이 등 중계 지연은 기기·네트워크마다 달라 고정 프리셋 대신
+            // 사용자가 직접 재게 한다(models/broadcast_sync.dart).
+            FilledButton.tonalIcon(
+              onPressed: _openBroadcastSync,
+              icon: const Icon(Icons.timer_outlined, size: 18),
+              label: const Text('중계 화면에 맞추기'),
+            ),
+            if (saved != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(context, _DelayChoice(saved)),
+                child: Text('내 중계 $saved초 다시 쓰기'),
+              ),
+            ],
+            const SizedBox(height: 18),
             SegmentedButton<int>(
               segments: presets
                   .map(
@@ -390,7 +458,7 @@ class _LiveDelaySheetState extends State<_LiveDelaySheet> {
             ),
             const SizedBox(height: 10),
             FilledButton.icon(
-              onPressed: () => Navigator.pop(context, _seconds),
+              onPressed: () => Navigator.pop(context, _DelayChoice(_seconds)),
               icon: const Icon(Icons.check_rounded, size: 18),
               label: const Text('적용'),
             ),

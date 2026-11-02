@@ -246,6 +246,7 @@ LiveSessionSnapshot? parseLiveJson(String body) {
       qualifyingPart: _int(map['qualifyingPart'] ?? map['sessionPart']),
       currentLap: _int(map['currentLap']),
       totalLaps: _int(map['totalLaps']),
+      recentLapStarts: _parseLapStarts(map['recentLapStarts']),
       topThree: _parseDrivers(map['topThree']),
       classification: _parseDrivers(map['classification']),
       endedAt: _dateTime(map['endedAt']),
@@ -394,6 +395,23 @@ LiveWeather? _parseWeather(dynamic value) {
     return null;
   }
   return weather;
+}
+
+/// 최근 랩 시작 시각 목록(오름차순, 최대 5개). 깨진 항목은 건너뛴다.
+List<LiveLapStart> _parseLapStarts(dynamic value) {
+  if (value is! List) return const [];
+  final result = <LiveLapStart>[];
+  for (final item in value.take(10)) {
+    if (item is! Map) continue;
+    final lap = _int(item['lap']);
+    final at = _dateTime(item['at']);
+    if (lap == null || at == null) continue;
+    result.add(LiveLapStart(lap: lap, at: at));
+  }
+  result.sort((a, b) => a.lap.compareTo(b.lap));
+  return result.length > 5
+      ? result.sublist(result.length - 5)
+      : List.unmodifiable(result);
 }
 
 /// 팀 라디오 목록. mp3 는 F1 정적 서버(https)만 허용한다 — collector 가 오염돼도
