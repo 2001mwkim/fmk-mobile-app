@@ -20,6 +20,7 @@ import '../widgets/circuit_map.dart';
 import '../widgets/live_session_builder.dart';
 import '../widgets/race_live_classification_panel.dart';
 import '../widgets/race_result_classification_panel.dart';
+import '../widgets/share_card.dart';
 
 // 웹 상세 페이지 전용 색 (page.tsx / globals 에서 사용하는 값).
 final Color _muted = AppColors.muted; // #7880a0
@@ -130,8 +131,12 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
                 _buildSessionResults()
               else if (results.isEmpty)
                 const _RaceResultsPlaceholderCard()
-              else
+              else ...[
                 RaceResultClassificationPanel(results: results),
+                _ShareResultButton(
+                  onPressed: () => _shareResults(results, 'RACE', null),
+                ),
+              ],
             ],
             const SizedBox(height: 12),
             _SessionScheduleCard(race: race),
@@ -181,7 +186,58 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
           title: '${raceSessionTypeLabel(selected.sessionType)} 결과',
           gapBased: gapBased,
         ),
+        if (selected.data.entries.isNotEmpty)
+          _ShareResultButton(
+            onPressed: () => _shareResults(
+              selected.data.entries,
+              selected.sessionType,
+              selected.data.isOfficial ? null : '잠정 결과',
+            ),
+          ),
       ],
+    );
+  }
+
+  void _shareResults(
+    List<RaceResultEntry> entries,
+    String sessionType,
+    String? note,
+  ) {
+    final session = raceSessionTypeLabel(sessionType);
+    final gapBased = sessionType == 'RACE' || sessionType == 'SPRINT';
+    showShareCardSheet(
+      context,
+      fileName: 'via-formula-${race.id}-${sessionType.toLowerCase()}',
+      text: '${race.nameKo} $session 결과 · 비아 포뮬러',
+      card: ShareCard(
+        eyebrow: 'R${race.round} · ${race.startDate.substring(0, 4)}',
+        title: '${race.nameKo} $session 결과',
+        rows: shareRowsFromResults(entries, gapBased: gapBased),
+        note: note,
+      ),
+    );
+  }
+}
+
+/// 결과 패널 아래 '이미지로 공유' 버튼.
+class _ShareResultButton extends StatelessWidget {
+  const _ShareResultButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton.icon(
+        key: const ValueKey('result-share'),
+        onPressed: onPressed,
+        icon: Icon(Icons.ios_share_rounded, size: 16, color: AppColors.textMuted),
+        label: Text(
+          '이미지로 공유',
+          style: AppType.subhead.copyWith(color: AppColors.textMuted),
+        ),
+      ),
     );
   }
 }

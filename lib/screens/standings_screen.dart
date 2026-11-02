@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/share_card.dart';
 import 'driver_detail_screen.dart';
 import 'team_detail_screen.dart';
 
@@ -70,7 +71,16 @@ class _StandingsScreenState extends State<StandingsScreen> {
           padding: AppLayout.pagePadding(context),
           children: [
             // 상단 제목/설명
-            const AppPageHeader(title: '챔피언십 순위', eyebrow: '2026 시즌 기준'),
+            AppPageHeader(
+              title: '챔피언십 순위',
+              eyebrow: '2026 시즌 기준',
+              trailing: IconButton(
+                key: const ValueKey('standings-share'),
+                tooltip: '이미지로 공유',
+                onPressed: () => _share(isDrivers),
+                icon: Icon(Icons.ios_share_rounded, color: AppColors.white),
+              ),
+            ),
             const SizedBox(height: 16),
             // 드라이버 / 컨스트럭터 알약 토글
             _SegmentedTabs(
@@ -86,6 +96,22 @@ class _StandingsScreenState extends State<StandingsScreen> {
             const _DataSourceFooter(),
           ],
         ),
+      ),
+    );
+  }
+
+  void _share(bool drivers) {
+    final kind = drivers ? '드라이버' : '컨스트럭터';
+    showShareCardSheet(
+      context,
+      fileName: drivers ? 'via-formula-drivers' : 'via-formula-constructors',
+      text: '2026 $kind 챔피언십 순위 · 비아 포뮬러',
+      card: ShareCard(
+        eyebrow: '2026 시즌 · TOP 10',
+        title: '$kind 챔피언십 순위',
+        rows: drivers
+            ? shareRowsFromDriverStandings(_drivers)
+            : shareRowsFromConstructorStandings(_constructors),
       ),
     );
   }
