@@ -13,6 +13,7 @@ import '../models/race_result.dart';
 import '../models/race_session.dart';
 import '../services/polls_repository.dart';
 import '../services/race_results_repository.dart';
+import '../services/tyre_allocation_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_card.dart';
@@ -37,6 +38,7 @@ class RaceDetailScreen extends StatefulWidget {
     required this.race,
     this.resultsRepository,
     this.pollsRepository,
+    this.tyreService,
   });
 
   final Race race;
@@ -46,6 +48,9 @@ class RaceDetailScreen extends StatefulWidget {
 
   /// 테스트용 팬 투표 저장소 주입 지점. 기본값은 collector(Cloudflare).
   final PollsRepository? pollsRepository;
+
+  /// 테스트용 타이어 컴파운드 원격 소스. 기본값은 collector(Cloudflare).
+  final TyreAllocationService? tyreService;
 
   @override
   State<RaceDetailScreen> createState() => _RaceDetailScreenState();
@@ -62,13 +67,24 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
   List<SessionResultData>? _sessions;
   String? _selectedSessionType;
 
+  /// collector `/tyres.json` 의 이 GP 컴파운드 — 번들 정적값보다 우선.
+  TyreAllocation? _remoteTyres;
+
   @override
   void initState() {
     super.initState();
+    if (!race.isCancelled) _loadRemoteTyres();
     _results = getRaceResults(race.id) ?? const <RaceResultEntry>[];
     if (getRaceStatus(race) == RaceStatus.ended && !race.isCancelled) {
       _refreshResults();
     }
+  }
+
+  Future<void> _loadRemoteTyres() async {
+    final service = widget.tyreService ?? TyreAllocationService.instance;
+    final tyres = (await service.load())[race.id];
+    if (tyres == null || !mounted) return;
+    setState(() => _remoteTyres = tyres);
   }
 
   Future<void> _refreshResults() async {
@@ -153,7 +169,11 @@ class _RaceDetailScreenState extends State<RaceDetailScreen> {
             _SessionScheduleCard(race: race),
             if (guide != null) ...[
               const SizedBox(height: 12),
-              _GpGuideCard(race: race, guide: guide),
+              _GpGuideCard(
+                race: race,
+                guide: guide,
+                tyres: _remoteTyres ?? guide.tyres,
+              ),
             ],
             if (circuitInfo != null) ...[
               const SizedBox(height: 12),
@@ -243,7 +263,11 @@ class _ShareResultButton extends StatelessWidget {
       child: TextButton.icon(
         key: const ValueKey('result-share'),
         onPressed: onPressed,
-        icon: Icon(Icons.ios_share_rounded, size: 16, color: AppColors.textMuted),
+        icon: Icon(
+          Icons.ios_share_rounded,
+          size: 16,
+          color: AppColors.textMuted,
+        ),
         label: Text(
           '이미지로 공유',
           style: AppType.subhead.copyWith(color: AppColors.textMuted),
@@ -364,10 +388,7 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: _radius,
-      ),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: _radius),
       foregroundDecoration: BoxDecoration(
         borderRadius: _radius,
         border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
@@ -781,7 +802,11 @@ class _SessionGroup {
 }
 
 class _CircuitInfoCard extends StatelessWidget {
-  const _CircuitInfoCard({required this.race, required this.info, this.lapRecord});
+  const _CircuitInfoCard({
+    required this.race,
+    required this.info,
+    this.lapRecord,
+  });
 
   final Race race;
   final CircuitInfo info;
@@ -1091,54 +1116,72 @@ class _LapRecordRow extends StatelessWidget {
 /// 관전 가이드 카드 — 타이어 할당·서킷 특성·관전 포인트·최근 우승자.
 /// 데이터는 lib/data/gp_guides.dart 큐레이션(빠진 섹션은 렌더하지 않는다).
 class _GpGuideCard extends StatelessWidget {
-  const _GpGuideCard({required this.race, required this.guide});
+  const _GpGuideCard({
+    required this.race,
+    required this.guide,
+    required this.tyres,
+  });
 
   final Race race;
   final GpGuide guide;
+
+  /// 원격(/tyres.json) 값이 있으면 그것, 없으면 번들 정적값.
+  final TyreAllocation? tyres;
 
   @override
   Widget build(BuildContext context) {
     final sections = <Widget>[];
 
     // 타이어: 미발표 상태는 안내 문구, 취소 GP 는 섹션 자체를 숨긴다.
-    if (guide.tyres != null) {
-      sections.add(_GuideSection(
-        label: '타이어 컴파운드',
-        child: _TyreAllocationRow(tyres: guide.tyres!),
-      ));
+    final tyres = this.tyres;
+    if (tyres != null) {
+      sections.add(
+        _GuideSection(
+          label: '타이어 컴파운드',
+          child: _TyreAllocationRow(tyres: tyres),
+        ),
+      );
     } else if (!race.isCancelled) {
-      sections.add(_GuideSection(
-        label: '타이어 컴파운드',
-        child: Text(
-          '피렐리 발표 예정',
-          style: TextStyle(
-            fontSize: 12,
-            color: _nameMuted,
-            fontWeight: FontWeight.w600,
+      sections.add(
+        _GuideSection(
+          label: '타이어 컴파운드',
+          child: Text(
+            '피렐리 발표 예정',
+            style: TextStyle(
+              fontSize: 12,
+              color: _nameMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ));
+      );
     }
 
     if (guide.traits != null) {
-      sections.add(_GuideSection(
-        label: '서킷 특성',
-        child: _TraitGauges(traits: guide.traits!),
-      ));
+      sections.add(
+        _GuideSection(
+          label: '서킷 특성',
+          child: _TraitGauges(traits: guide.traits!),
+        ),
+      );
     }
 
     if (guide.watchPoints.isNotEmpty) {
-      sections.add(_GuideSection(
-        label: '관전 포인트',
-        child: _WatchPointList(points: guide.watchPoints),
-      ));
+      sections.add(
+        _GuideSection(
+          label: '관전 포인트',
+          child: _WatchPointList(points: guide.watchPoints),
+        ),
+      );
     }
 
     if (guide.recentWinners.isNotEmpty) {
-      sections.add(_GuideSection(
-        label: '최근 우승자',
-        child: _RecentWinnerList(winners: guide.recentWinners),
-      ));
+      sections.add(
+        _GuideSection(
+          label: '최근 우승자',
+          child: _RecentWinnerList(winners: guide.recentWinners),
+        ),
+      );
     }
 
     if (sections.isEmpty) return const SizedBox.shrink();

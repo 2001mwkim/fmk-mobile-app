@@ -92,7 +92,7 @@ void main() {
     });
 
     testWidgets('타이어 미발표 라운드는 발표 예정 문구를 보여준다', (tester) async {
-      await _pumpDetail(tester, _race('united-states-2026'));
+      await _pumpDetail(tester, _race('qatar-2026'));
 
       expect(find.text('피렐리 발표 예정'), findsOneWidget);
       expect(find.text('소프트'), findsNothing);

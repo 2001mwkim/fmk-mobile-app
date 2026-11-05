@@ -4,7 +4,8 @@ import '../models/gp_guide.dart';
 ///
 /// - 타이어: 피렐리 공식 발표(2026 시즌은 C1~C5, C6 미사용). 발표 전이면 null
 ///   — UI 가 "발표 예정" 으로 처리한다. 통상 각 GP 2~4주 전에 발표되므로
-///   시즌 후반 라운드는 발표 후 여기에 채워 넣을 것.
+///   시즌 후반 라운드는 발표 후 여기에 채워 넣을 것. 앱 업데이트 없이
+///   반영하려면 collector `data/tyres.json`(→ `/tyres.json`, 이 값보다 우선)에 먼저 넣는다.
 /// - 랩 레코드: 결승 레이스 중 기록(퀄리 기록 아님), 2025 시즌 종료 기준.
 /// - 최근 우승자: 2023~2025 (최신 먼저). 해당 연도 미개최면 그 연도는 없다.
 /// - traits/watchPoints: 큐레이션 — 웹 매거진 톤의 짧은 한국어 문장.
@@ -277,6 +278,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
   ),
   // 미국 이후 라운드 타이어는 피렐리 미발표(발표되면 채울 것).
   'united-states-2026': GpGuide(
+    tyres: TyreAllocation(hard: 'C2', medium: 'C3', soft: 'C4'),
     lapRecord: GpLapRecord(time: '1:36.169', driverKo: '샤를 르클레르', year: 2019),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '막스 베르스타펜', teamKo: '레드불 레이싱'),
@@ -291,6 +293,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     ],
   ),
   'mexico-2026': GpGuide(
+    tyres: TyreAllocation(hard: 'C3', medium: 'C4', soft: 'C5'),
     lapRecord: GpLapRecord(time: '1:17.774', driverKo: '발테리 보타스', year: 2021),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
@@ -305,6 +308,7 @@ const Map<String, GpGuide> gpGuideByRaceId = {
     ],
   ),
   'brazil-2026': GpGuide(
+    tyres: TyreAllocation(hard: 'C3', medium: 'C4', soft: 'C5'),
     lapRecord: GpLapRecord(time: '1:10.540', driverKo: '발테리 보타스', year: 2018),
     recentWinners: [
       GpWinner(year: 2025, driverKo: '랜도 노리스', teamKo: '맥라렌'),
