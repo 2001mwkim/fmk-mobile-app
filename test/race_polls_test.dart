@@ -159,12 +159,80 @@ void main() {
     expect(find.text('폴 예측'), findsNothing);
     expect(find.text('레이스 평점'), findsNothing);
 
-    await tester.tap(find.text('예측하기'));
+    await tester.tap(find.text('내 예측 투표하기'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('pick-driver-NOR')));
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
-    expect(find.textContaining('내 예측 랜도 노리스'), findsOneWidget);
+    expect(find.text('내 예측 노리스'), findsOneWidget);
+    // 더 물을 예측이 없으면 CTA 대신 완료 표시, 바꾸기는 타일에서.
+    expect(find.text('내 예측 투표하기'), findsNothing);
+    expect(find.text('참여 완료'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('poll-pick-우승 예측')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('pick-driver-NOR')), findsOneWidget);
+  });
+
+  testWidgets('CTA 는 안 고른 폴·우승을 이어서 묻고, 좁은 폰에서도 넘치지 않는다', (tester) async {
+    // 선택기 시트는 넓은 화면에서 띄우고, 카드 폭만 좁은 폰 기준으로 제한한다.
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Map<String, dynamic> both() {
+      final poll = _poll(ratingOpen: true);
+      (poll['pole'] as Map<String, dynamic>)
+        ..['open'] = true
+        ..['total'] = 2
+        ..['counts'] = {'BOR': 1, 'PIA': 1};
+      return poll;
+    }
+
+    final kinds = <String>[];
+    final repository = PollsRepository(
+      baseUrl: 'https://live.example',
+      client: MockClient((request) async {
+        if (request.method == 'POST') {
+          kinds.add(
+            (jsonDecode(request.body) as Map<String, dynamic>)['kind'] as String,
+          );
+          return http.Response(jsonEncode({'ok': true, 'poll': both()}), 200);
+        }
+        return http.Response(jsonEncode(both()), 200);
+      }),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 288,
+              child: RacePollsCard(
+                race: races.firstWhere((r) => !r.isCancelled),
+                repository: repository,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(find.text('폴 예측'), findsOneWidget);
+    expect(find.text('우승 예측'), findsOneWidget);
+    expect(find.text('레이스 평점'), findsOneWidget);
+
+    await tester.tap(find.text('내 예측 투표하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('pick-driver-NOR')));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    // 첫 표가 끝나면 다음 예측 시트가 바로 뜬다.
+    await tester.tap(find.byKey(const ValueKey('pick-driver-VER')));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(kinds, ['pole', 'winner']);
+    expect(find.text('내 예측 투표하기'), findsNothing);
   });
 
   testWidgets('서버가 GP 를 모르면 카드를 숨긴다', (tester) async {
@@ -225,7 +293,7 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('예측하기'));
+    await tester.tap(find.text('내 예측 투표하기'));
     await tester.pumpAndSettle();
     expect(find.textContaining('P1 · 412'), findsOneWidget);
     expect(find.textContaining('P5 · 73'), findsNothing);
