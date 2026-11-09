@@ -7,6 +7,8 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // Flutter 가 뜨기 전에 시작한다 — 잠금화면 활동 토큰 수신이 앱 UI 실행에 의존하지 않게.
+    FmkLiveActivityManager.shared.startObservingIfConfigured()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

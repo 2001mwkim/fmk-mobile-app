@@ -1,5 +1,6 @@
 import Flutter
 import Foundation
+import UIKit
 
 #if canImport(ActivityKit)
   import ActivityKit
@@ -21,6 +22,18 @@ class FmkLiveActivityManager: NSObject {
 
   private var registerUrl: URL?
   private var observersInstalled = false
+  private let registerUrlKey = "fmk_live_activity_register_url"
+
+  /// 앱 시작 직후(didFinishLaunching) 호출. push-to-start 로 만들어진 활동의 갱신
+  /// 토큰은 시스템이 앱을 깨웠을 때 받아 서버에 올려야 하는데, Dart 의 configure 를
+  /// 기다리면 그 짧은 시간 안에 관찰이 시작되지 못할 수 있다 — 저장해 둔 URL 로 바로 시작.
+  func startObservingIfConfigured() {
+    guard let saved = UserDefaults.standard.string(forKey: registerUrlKey),
+      let url = URL(string: saved)
+    else { return }
+    registerUrl = url
+    installTokenObserversIfNeeded()
+  }
 
   func install(messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(name: "fmk/live_activity", binaryMessenger: messenger)
@@ -32,6 +45,7 @@ class FmkLiveActivityManager: NSObject {
           let raw = args["registerUrl"] as? String
         {
           self.registerUrl = URL(string: raw)
+          UserDefaults.standard.set(raw, forKey: self.registerUrlKey)
         }
         self.installTokenObserversIfNeeded()
         result(true)
@@ -182,8 +196,42 @@ class FmkLiveActivityManager: NSObject {
       "environment": isDebugBuild ? "sandbox" : "production",
     ]
     if let raceId { body["raceId"] = raceId }
+    request.timeoutInterval = 10
     request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-    URLSession.shared.dataTask(with: request).resume()
+    sendInBackgroundTask(request)
+  }
+
+  /// 백그라운드로 깨어난 짧은 시간에도 등록이 끝나도록 작업 시간을 요청한다.
+  private func sendInBackgroundTask(_ request: URLRequest) {
+    DispatchQueue.main.async {
+      var taskId = UIBackgroundTaskIdentifier.invalid
+      let finish = {
+        DispatchQueue.main.async {
+          guard taskId != .invalid else { return }
+          UIApplication.shared.endBackgroundTask(taskId)
+          taskId = .invalid
+        }
+      }
+      taskId = UIApplication.shared.beginBackgroundTask(
+        withName: "FmkLiveActivityToken",
+        expirationHandler: finish
+      )
+      self.post(request, attemptsLeft: 3, done: finish)
+    }
+  }
+
+  /// 재배포 순간 등에 실패해도 토큰을 잃지 않게 짧게 재시도한다.
+  private func post(_ request: URLRequest, attemptsLeft: Int, done: @escaping () -> Void) {
+    URLSession.shared.dataTask(with: request) { _, response, error in
+      let succeeded = error == nil && (response as? HTTPURLResponse)?.statusCode == 200
+      guard !succeeded, attemptsLeft > 1 else {
+        done()
+        return
+      }
+      DispatchQueue.global().asyncAfter(deadline: .now() + 2) {
+        self.post(request, attemptsLeft: attemptsLeft - 1, done: done)
+      }
+    }.resume()
   }
 
   private var isDebugBuild: Bool {
