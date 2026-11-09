@@ -96,6 +96,24 @@ class _LiveGapChartCardState extends State<LiveGapChartCard> {
     };
   }
 
+  /// 화면에 가장 넓게 그려지는 드라이버 코드.
+  String _widestCode(List<String> codes) {
+    final painter = TextPainter(textDirection: TextDirection.ltr);
+    var widest = '';
+    var widestWidth = -1.0;
+    for (final code in codes) {
+      painter
+        ..text = TextSpan(text: code, style: AppType.subhead)
+        ..layout();
+      if (painter.width > widestWidth) {
+        widest = code;
+        widestWidth = painter.width;
+      }
+    }
+    painter.dispose();
+    return widest;
+  }
+
   void _toggle(String code, Set<String> current) {
     final next = {...current};
     if (!next.remove(code)) {
@@ -112,6 +130,7 @@ class _LiveGapChartCardState extends State<LiveGapChartCard> {
         ? history.drivers
         : [for (final d in widget.snapshot.classification) d.code];
     final selected = _selected ?? _defaultSelection(drivers);
+    final widestCode = _widestCode(drivers);
 
     return AppCard(
       child: Column(
@@ -174,7 +193,19 @@ class _LiveGapChartCardState extends State<LiveGapChartCard> {
                 for (final code in drivers)
                   FilterChip(
                     key: ValueKey('gap-chip-$code'),
-                    label: Text(code),
+                    // 글자마다 폭이 달라(I, W 등) 칩 크기가 들쭉날쭉해지지 않게,
+                    // 가장 넓은 코드를 투명하게 깔아 모든 칩을 그 폭에 맞춘다.
+                    // 고정 폭과 달리 시스템 글자 크기를 키워도 잘리지 않는다.
+                    label: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Visibility.maintain(
+                          visible: false,
+                          child: Text(widestCode),
+                        ),
+                        Text(code),
+                      ],
+                    ),
                     selected: selected.contains(code),
                     showCheckmark: false,
                     visualDensity: VisualDensity.compact,
