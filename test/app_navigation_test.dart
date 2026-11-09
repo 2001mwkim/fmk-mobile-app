@@ -42,7 +42,8 @@ void main() {
     expect(find.text('진행중'), findsWidgets);
     expect(find.text('종료'), findsWidgets);
 
-    await tester.tap(find.text('종료'));
+    // 시점에 따라 목록 카드에도 '종료' 배지가 보이므로, 맨 위 필터 버튼을 집는다.
+    await tester.tap(find.text('종료').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('호주 그랑프리'));
     await tester.pumpAndSettle();
