@@ -5,7 +5,9 @@ import '../data/drivers.dart';
 import '../data/standings.dart' as static_standings;
 import '../models/race.dart';
 import '../models/race_poll.dart';
+import '../models/standing.dart';
 import '../services/polls_repository.dart';
+import '../services/standings_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import 'app_card.dart';
@@ -17,12 +19,20 @@ import 'my_picks_card.dart';
 /// 장치(2026-11 개선 목록). 서버가 GP 를 모르거나(404) 실패하면 카드를 통째로
 /// 숨긴다. 예측 분포는 결과가 아니라서 스포일러가 아니다.
 class RacePollsCard extends StatefulWidget {
-  const RacePollsCard({super.key, required this.race, this.repository});
+  const RacePollsCard({
+    super.key,
+    required this.race,
+    this.repository,
+    this.standingsRepository,
+  });
 
   final Race race;
 
   /// 테스트 주입 지점.
   final PollsRepository? repository;
+
+  /// 예측 선택 시트의 드라이버 순위·포인트 출처(테스트 주입 지점).
+  final StandingsRepository? standingsRepository;
 
   @override
   State<RacePollsCard> createState() => _RacePollsCardState();
@@ -36,10 +46,27 @@ class _RacePollsCardState extends State<RacePollsCard> {
   final Map<PollKind, String?> _mine = {};
   bool _voting = false;
 
+  /// 선택 시트에 보여 줄 드라이버 순위. 번들 정적 순위로 시작해 서버 순위가
+  /// 오면 교체한다 — 정적 값만 쓰면 시즌이 진행될수록 순위·포인트가 어긋난다
+  /// (MY PICKS 카드와 같은 방식, 6시간 공유 캐시라 추가 요청은 거의 없다).
+  List<DriverStanding> _drivers = static_standings.driverStandings;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadStandings();
+  }
+
+  Future<void> _loadStandings() async {
+    final repo = widget.standingsRepository ?? const HttpStandingsRepository();
+    try {
+      final snapshot = await repo.fetchLatest();
+      if (!mounted || snapshot == null) return;
+      setState(() => _drivers = snapshot.driverStandings);
+    } catch (_) {
+      // 정적 순위 유지.
+    }
   }
 
   Future<void> _load() async {
@@ -94,7 +121,7 @@ class _RacePollsCardState extends State<RacePollsCard> {
       isScrollControlled: true,
       builder: (_) => MyDriverPickerSheet(
         current: _mine[kind],
-        drivers: static_standings.driverStandings,
+        drivers: _drivers,
         title: title,
         subtitle: '누가 가져갈까요?',
         allowClear: false,

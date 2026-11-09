@@ -5,11 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fmk_app/data/races.dart';
 import 'package:fmk_app/models/race_poll.dart';
+import 'package:fmk_app/models/standing.dart';
 import 'package:fmk_app/services/polls_repository.dart';
+import 'package:fmk_app/services/standings_repository.dart';
 import 'package:fmk_app/widgets/race_polls_card.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// 순위 주입용 — 네트워크 없이 고정 스냅샷을 돌려준다.
+class _FakeStandingsRepository implements StandingsRepository {
+  const _FakeStandingsRepository(this.snapshot);
+  final StandingsSnapshot? snapshot;
+  @override
+  Future<StandingsSnapshot?> fetchLatest() async => snapshot;
+}
 
 Map<String, dynamic> _poll({
   bool winnerOpen = true,
@@ -172,5 +182,52 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
     expect(find.text('팬 투표'), findsNothing);
+  });
+
+  testWidgets('예측 선택 시트는 번들 정적 순위가 아니라 서버 순위를 보여준다', (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repository = PollsRepository(
+      baseUrl: 'https://live.example',
+      client: MockClient((_) async => http.Response(jsonEncode(_poll()), 200)),
+    );
+    // 번들 정적 순위(노리스 P5 · 73)와 다른 값이어야 서버 순위를 쓰는지 가려진다.
+    const standings = _FakeStandingsRepository(
+      StandingsSnapshot(
+        driverStandings: [
+          DriverStanding(
+            position: 1,
+            driverKo: '랜도 노리스',
+            driverEn: 'Lando Norris',
+            teamKo: '맥라렌',
+            teamEn: 'McLaren',
+            points: 412,
+          ),
+        ],
+        constructorStandings: [],
+      ),
+    );
+    final race = races.firstWhere((r) => !r.isCancelled);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: RacePollsCard(
+              race: race,
+              repository: repository,
+              standingsRepository: standings,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('예측하기'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('P1 · 412'), findsOneWidget);
+    expect(find.textContaining('P5 · 73'), findsNothing);
   });
 }
